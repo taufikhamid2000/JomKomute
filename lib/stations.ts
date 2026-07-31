@@ -1,0 +1,82 @@
+// A representative subset of Klang Valley rail stations, grouped by line.
+// Good enough to make the route picker feel real for a UI demo — not
+// guaranteed exhaustive or perfectly current against Prasarana's own list.
+export const LINES = [
+  {
+    id: "kelana-jaya",
+    name: "LRT Kelana Jaya Line",
+    stations: [
+      "Gombak",
+      "Wangsa Maju",
+      "Setiawangsa",
+      "Jelatek",
+      "Ampang Park",
+      "KLCC",
+      "Dang Wangi",
+      "Masjid Jamek",
+      "Pasar Seni",
+      "KL Sentral",
+      "Bangsar",
+      "Universiti",
+      "Taman Jaya",
+      "Kelana Jaya",
+      "Subang Jaya",
+      "SS15",
+      "Putra Heights",
+    ],
+  },
+  {
+    id: "ampang-sri-petaling",
+    name: "LRT Ampang / Sri Petaling Line",
+    stations: [
+      "Ampang",
+      "Pandan Indah",
+      "Maluri",
+      "Chan Sow Lin",
+      "Hang Tuah",
+      "Pudu",
+      "Bandar Tasik Selatan",
+      "Bukit Jalil",
+      "Sri Petaling",
+      "Puchong Perdana",
+      "Putra Heights",
+    ],
+  },
+  {
+    id: "kajang",
+    name: "MRT Kajang Line",
+    stations: [
+      "Kwasa Damansara",
+      "Kota Damansara",
+      "Bandar Utama",
+      "TTDI",
+      "Muzium Negara",
+      "Pasar Seni",
+      "Merdeka",
+      "Bukit Bintang",
+      "Tun Razak Exchange",
+      "Cochrane",
+      "Maluri",
+      "Taman Suntex",
+      "Stadium Kajang",
+      "Kajang",
+    ],
+  },
+  {
+    id: "putrajaya",
+    name: "MRT Putrajaya Line",
+    stations: [
+      "Kwasa Damansara",
+      "Sungai Buloh",
+      "Kota Damansara",
+      "Bandar Utama",
+      "TTDI",
+      "Tun Razak Exchange",
+      "Chan Sow Lin",
+      "Bukit Jalil",
+      "Putrajaya Sentral",
+    ],
+  },
+] as const;
+
+export type LineId = (typeof LINES)[number]["id"];
