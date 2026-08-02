@@ -5,17 +5,20 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Just a git push to gh-pages, not the Pages Deployments API — no
+# `github-pages` environment required, unlike actions/deploy-pages. Pages
+# is set to "Deploy from a branch" (gh-pages, /root) in repo settings,
+# which only watches and serves that branch; this job is what keeps it
+# updated.
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,16 +28,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - uses: actions/upload-pages-artifact@v3
+      - uses: peaceiris/actions-gh-pages@v4
         with:
-          path: out
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./out
