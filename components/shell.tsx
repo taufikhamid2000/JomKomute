@@ -12,6 +12,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   const navLinks = [
     { href: "/dashboard", label: t.nav.dashboard },
+    { href: "/issues", label: t.nav.issues },
     { href: "/", label: t.nav.routes },
     { href: "/new", label: t.nav.addRoute },
     { href: "/settings", label: t.nav.settings },

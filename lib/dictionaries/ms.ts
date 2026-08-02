@@ -4,6 +4,7 @@ export const ms: Dictionary = {
   nav: {
     brand: "JomKomute",
     dashboard: "Papan pemuka",
+    issues: "Isu",
     routes: "Laluan",
     addRoute: "Tambah laluan",
     settings: "Tetapan",
@@ -25,6 +26,15 @@ export const ms: Dictionary = {
     busy: "Biasanya sibuk",
     comfortable: "Biasanya selesa",
     quiet: "Biasanya lengang",
+  },
+  issuesPage: {
+    title: "Isu perkhidmatan",
+    description:
+      "Rupa bentuk jika kami menangkap secara automatik hantaran X/Threads RapidKL sendiri tentang gangguan — insiden pencerobohan, kerosakan isyarat, apa-apa yang akan melewatkan laluan anda. Tiada apa di sini yang sebenar buat masa ini.",
+    conceptBadge: "Konsep — belum ada suapan langsung",
+    minutesAgo: (n: number) => (n === 1 ? "1 minit lalu" : `${n} minit lalu`),
+    seenOn: (source: string) => `Dilihat di ${source}`,
+    empty: "Tiada isu untuk ditunjukkan dalam mock ini buat masa ini.",
   },
   dashboard: {
     title: "Perjalanan seterusnya anda",
