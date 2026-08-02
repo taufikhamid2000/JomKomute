@@ -1,7 +1,7 @@
 1:"$Sreact.fragment"
-2:I[138,["/JomKomute/_next/static/chunks/05-c3ty_6dwfk.js","/JomKomute/_next/static/chunks/14mrh2-p_w84d.js","/JomKomute/_next/static/chunks/0l6gpk88l297c.js"],"Shell"]
-3:I[23298,["/JomKomute/_next/static/chunks/05-c3ty_6dwfk.js","/JomKomute/_next/static/chunks/14mrh2-p_w84d.js","/JomKomute/_next/static/chunks/0l6gpk88l297c.js"],"ThemePicker"]
+2:I[138,["/JomKomute/_next/static/chunks/05-c3ty_6dwfk.js","/JomKomute/_next/static/chunks/14mrh2-p_w84d.js","/JomKomute/_next/static/chunks/33bc68x6d8-4g.js"],"Shell"]
+3:I[11554,["/JomKomute/_next/static/chunks/05-c3ty_6dwfk.js","/JomKomute/_next/static/chunks/14mrh2-p_w84d.js","/JomKomute/_next/static/chunks/33bc68x6d8-4g.js"],"AppearanceForm"]
 4:I[97367,["/JomKomute/_next/static/chunks/05-c3ty_6dwfk.js","/JomKomute/_next/static/chunks/14mrh2-p_w84d.js"],"OutletBoundary"]
 5:"$Sreact.suspense"
-0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"children":["$","div",null,{"className":"animate-page-in mx-auto flex w-full max-w-lg flex-col gap-6 p-4 md:p-8","children":[["$","h1",null,{"className":"text-lg font-semibold text-foreground","children":"Settings"}],["$","$L3",null,{}]]}]}],[["$","script","script-0",{"src":"/JomKomute/_next/static/chunks/0l6gpk88l297c.js","async":true}]],["$","$L4",null,{"children":["$","$5",null,{"name":"Next.MetadataOutlet","children":"$@6"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"9jvHZFAU0A39ROLI6UoxF"}
+0:{"rsc":["$","$1","c",{"children":[["$","$L2",null,{"children":["$","div",null,{"className":"animate-page-in mx-auto flex w-full max-w-lg flex-col gap-6 p-4 md:p-8","children":[["$","h1",null,{"className":"text-lg font-semibold text-foreground","children":"Settings"}],["$","$L3",null,{}]]}]}],[["$","script","script-0",{"src":"/JomKomute/_next/static/chunks/33bc68x6d8-4g.js","async":true}]],["$","$L4",null,{"children":["$","$5",null,{"name":"Next.MetadataOutlet","children":"$@6"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"im_H3Im4j84_NnBYHMrom"}
 6:null
