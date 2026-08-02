@@ -46,11 +46,11 @@ export function ChangePlanModal({
       role="dialog"
       aria-modal="true"
       aria-label={t.changePlanModal.title}
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
+      className="animate-backdrop-in fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-2xl border border-border bg-background p-5"
+        className="animate-modal-in w-full max-w-sm rounded-2xl border border-border bg-background p-5"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-sm font-semibold text-foreground">{t.changePlanModal.title}</h2>
