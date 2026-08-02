@@ -53,6 +53,7 @@ export const en = {
     from: "From",
     to: "To",
     selectStation: "Select station",
+    noStationsFound: "No stations found",
     addTransfer: "+ Add transfer",
     removeTransfer: "Remove last transfer",
     noOtherLine: (station: string) => `${station} isn't served by another line in this feed`,

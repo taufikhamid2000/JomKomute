@@ -55,6 +55,7 @@ export const ms: Dictionary = {
     from: "Dari",
     to: "Ke",
     selectStation: "Pilih stesen",
+    noStationsFound: "Tiada stesen dijumpai",
     addTransfer: "+ Tambah pertukaran",
     removeTransfer: "Buang pertukaran terakhir",
     noOtherLine: (station: string) => `${station} tidak dilalui oleh laluan lain dalam data ini`,

@@ -1,5 +1,6 @@
 "use client";
 
+import { Combobox } from "@/components/combobox";
 import { LINES, lineById, linesServing, stationNameOnLine, type LineId } from "@/lib/lines";
 import type { RouteLeg } from "@/lib/types";
 import { useDictionary } from "@/lib/use-dictionary";
@@ -84,21 +85,13 @@ export function LegsEditor({ legs, onChange }: { legs: RouteLeg[]; onChange: (le
               {isFirst ? (
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-medium text-foreground">{t.legsEditor.from}</label>
-                  <select
-                    required
+                  <Combobox
                     value={leg.originStation}
-                    onChange={(e) => setLegOrigin(index, e.target.value)}
-                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <option value="" disabled>
-                      {t.legsEditor.selectStation}
-                    </option>
-                    {line.stations.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(station) => setLegOrigin(index, station)}
+                    options={line.stations}
+                    placeholder={t.legsEditor.selectStation}
+                    noResultsLabel={t.legsEditor.noStationsFound}
+                  />
                 </div>
               ) : (
                 <div className="flex flex-col gap-1.5">
@@ -110,25 +103,15 @@ export function LegsEditor({ legs, onChange }: { legs: RouteLeg[]; onChange: (le
               )}
             </div>
 
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5 sm:w-1/2">
               <label className="text-sm font-medium text-foreground">{t.legsEditor.to}</label>
-              <select
-                required
+              <Combobox
                 value={leg.destinationStation}
-                onChange={(e) => setLegDestination(index, e.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-1/2"
-              >
-                <option value="" disabled>
-                  {t.legsEditor.selectStation}
-                </option>
-                {line.stations
-                  .filter((s) => s !== leg.originStation)
-                  .map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-              </select>
+                onChange={(station) => setLegDestination(index, station)}
+                options={line.stations.filter((s) => s !== leg.originStation)}
+                placeholder={t.legsEditor.selectStation}
+                noResultsLabel={t.legsEditor.noStationsFound}
+              />
             </div>
           </div>
         );
