@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useDictionary } from "@/lib/use-dictionary";
 
 // WCAG relative luminance / contrast ratio — computed client-side for an
 // instant preview warning instead of a build-time lint.
@@ -32,15 +33,16 @@ export function CustomAccentPicker({
   onBgChange: (value: string) => void;
   onFgChange: (value: string) => void;
 }) {
+  const { t } = useDictionary();
   const ratio = useMemo(() => contrastRatio(bg, fg), [bg, fg]);
   const lowContrast = ratio < 4.5;
 
   return (
     <div className="flex flex-col gap-2 rounded-2xl border border-border bg-muted/40 p-3">
       <div className="flex flex-wrap items-center gap-4">
-        <span className="text-xs font-medium text-foreground/70">Custom</span>
+        <span className="text-xs font-medium text-foreground/70">{t.settings.accentCustom}</span>
         <label className="flex items-center gap-2 text-xs text-foreground/60">
-          Background
+          {t.settings.accentCustomBg}
           <input
             type="color"
             value={bg}
@@ -49,7 +51,7 @@ export function CustomAccentPicker({
           />
         </label>
         <label className="flex items-center gap-2 text-xs text-foreground/60">
-          Text
+          {t.settings.accentCustomFg}
           <input
             type="color"
             value={fg}
@@ -59,9 +61,7 @@ export function CustomAccentPicker({
         </label>
       </div>
       {lowContrast && (
-        <p className="text-xs text-amber-700 dark:text-amber-400">
-          Low contrast between these two colors — text may be hard to read.
-        </p>
+        <p className="text-xs text-amber-700 dark:text-amber-400">{t.settings.accentCustomLowContrast}</p>
       )}
     </div>
   );

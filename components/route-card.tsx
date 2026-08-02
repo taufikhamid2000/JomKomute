@@ -1,9 +1,13 @@
+"use client";
+
 import Link from "next/link";
-import { crowdLabel, forecastForTime } from "@/lib/forecast";
+import { crowdLevelKey, forecastForTime } from "@/lib/forecast";
 import { lineById } from "@/lib/lines";
-import { DAY_LABELS, type SavedRoute } from "@/lib/types";
+import type { SavedRoute } from "@/lib/types";
+import { useDictionary } from "@/lib/use-dictionary";
 
 export function RouteCard({ route }: { route: SavedRoute }) {
+  const { t } = useDictionary();
   const { crowdLevel } = forecastForTime(route.id, route.departureTime);
   const lineNames = route.legs.map((leg) => lineById(leg.line)?.name ?? leg.line).join(" → ");
   const transferCount = route.legs.length - 1;
@@ -19,12 +23,12 @@ export function RouteCard({ route }: { route: SavedRoute }) {
           {route.legs[0].originStation} <span aria-hidden="true">→</span>{" "}
           {route.legs[route.legs.length - 1].destinationStation}
           {transferCount > 0 && (
-            <span className="text-foreground/50"> ({transferCount} transfer{transferCount > 1 ? "s" : ""})</span>
+            <span className="text-foreground/50"> ({t.routesPage.transfer(transferCount)})</span>
           )}
         </span>
         <span className="text-xs text-foreground/50">
-          {lineNames} · {route.departureTime} · {route.days.map((d) => DAY_LABELS[d]).join(", ")}
-          {route.alternateLegs && <span className="text-foreground/40"> · has backup route</span>}
+          {lineNames} · {route.departureTime} · {route.days.map((d) => t.days[d]).join(", ")}
+          {route.alternateLegs && <span className="text-foreground/40"> · {t.routesPage.hasBackup}</span>}
         </span>
       </div>
 
@@ -36,7 +40,7 @@ export function RouteCard({ route }: { route: SavedRoute }) {
           }}
           aria-hidden="true"
         />
-        <span className="text-xs font-medium text-foreground/70">{crowdLabel(crowdLevel)}</span>
+        <span className="text-xs font-medium text-foreground/70">{t.forecast[crowdLevelKey(crowdLevel)]}</span>
       </div>
     </Link>
   );

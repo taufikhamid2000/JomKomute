@@ -7,9 +7,9 @@ import { ExceptionPanel } from "@/components/exception-panel";
 import { ForecastBars } from "@/components/forecast-bars";
 import { LegSummary } from "@/components/leg-summary";
 import { Shell } from "@/components/shell";
-import { crowdLabel, forecastForTime } from "@/lib/forecast";
+import { crowdLevelKey, forecastForTime } from "@/lib/forecast";
 import { useSavedRoutes } from "@/lib/store";
-import { DAY_LABELS } from "@/lib/types";
+import { useDictionary } from "@/lib/use-dictionary";
 
 // A single static page (not a dynamic [id] segment) — the route's id is
 // read from ?id= at runtime instead of being baked in at build time, since
@@ -25,6 +25,7 @@ export default function RouteDetailPage() {
 }
 
 function RouteDetail() {
+  const { t } = useDictionary();
   const id = useSearchParams().get("id");
   const router = useRouter();
   const { routes, removeRoute } = useSavedRoutes();
@@ -36,9 +37,9 @@ function RouteDetail() {
   if (!route) {
     return (
       <div className="animate-page-in mx-auto flex w-full max-w-2xl flex-col gap-3 p-4 md:p-8">
-        <p className="text-sm text-foreground/60">Route not found.</p>
+        <p className="text-sm text-foreground/60">{t.routeDetail.notFound}</p>
         <Link href="/" className="w-fit text-sm text-primary underline-offset-4 hover:underline">
-          Back to your routes
+          {t.routeDetail.backToRoutes}
         </Link>
       </div>
     );
@@ -59,14 +60,14 @@ function RouteDetail() {
           <div className="flex flex-col gap-1">
             <h1 className="text-lg font-semibold text-foreground">{route.label}</h1>
             <p className="text-xs text-foreground/50">
-              {route.departureTime} · {route.days.map((d) => DAY_LABELS[d]).join(", ")}
+              {route.departureTime} · {route.days.map((d) => t.days[d]).join(", ")}
             </p>
           </div>
           <Link
             href={`/new?reverseOf=${route.id}`}
             className="shrink-0 whitespace-nowrap rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
           >
-            Add return trip
+            {t.routeDetail.addReturnTrip}
           </Link>
         </div>
         <LegSummary legs={route.legs} />
@@ -74,22 +75,20 @@ function RouteDetail() {
 
       {route.alternateLegs && (
         <div className="flex flex-col gap-2 rounded-2xl border border-dashed border-border p-3">
-          <p className="text-xs font-medium text-foreground/50">Backup route</p>
+          <p className="text-xs font-medium text-foreground/50">{t.routeDetail.backupRoute}</p>
           <LegSummary legs={route.alternateLegs} />
         </div>
       )}
 
       <div className="flex flex-col gap-3 rounded-2xl border border-border bg-background p-4">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-foreground">Typical crowding by hour</p>
+          <p className="text-sm font-medium text-foreground">{t.routeDetail.crowdingTitle}</p>
           <span className="text-xs font-medium text-foreground/60">
-            At {route.departureTime}: {crowdLabel(crowdLevel)} ({crowdLevel}%)
+            {t.routeDetail.crowdingAt(route.departureTime, t.forecast[crowdLevelKey(crowdLevel)], crowdLevel)}
           </span>
         </div>
         <ForecastBars routeId={route.id} highlightHour={hour} />
-        <p className="text-xs text-foreground/40">
-          Placeholder model based on typical rush-hour patterns — not yet backed by real ridership data.
-        </p>
+        <p className="text-xs text-foreground/40">{t.routeDetail.crowdingNote}</p>
       </div>
 
       <ExceptionPanel routeId={route.id} routeDays={route.days} />
@@ -99,7 +98,7 @@ function RouteDetail() {
         onClick={handleDelete}
         className="w-fit cursor-pointer text-xs text-foreground/40 underline-offset-4 hover:text-destructive hover:underline"
       >
-        Delete this route
+        {t.routeDetail.delete}
       </button>
     </div>
   );

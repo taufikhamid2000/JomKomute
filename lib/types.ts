@@ -31,13 +31,3 @@ export type Exception =
 // Exception's members down to their shared keys, which breaks the
 // discriminated union at the call site (see store.ts's addException).
 export type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : never;
-
-export const DAY_LABELS: Record<DayOfWeek, string> = {
-  0: "Sun",
-  1: "Mon",
-  2: "Tue",
-  3: "Wed",
-  4: "Thu",
-  5: "Fri",
-  6: "Sat",
-};

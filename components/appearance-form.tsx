@@ -14,21 +14,7 @@ import {
 } from "@/lib/accent";
 import { CustomAccentPicker } from "@/components/custom-accent-picker";
 import { isTheme, THEME_STORAGE_KEY, THEMES, type Theme } from "@/lib/theme";
-
-const THEME_LABEL: Record<Theme, string> = {
-  light: "Light",
-  dark: "Dark",
-  system: "System",
-};
-
-const ACCENT_LABEL: Record<AccentId, string> = {
-  default: "Default",
-  ocean: "Ocean",
-  forest: "Forest",
-  plum: "Plum",
-  slate: "Slate",
-  custom: "Custom",
-};
+import { useDictionary } from "@/lib/use-dictionary";
 
 // Every click only updates local state and applies it instantly to <html>
 // as a preview — nothing is persisted to localStorage until Save, so a
@@ -76,6 +62,21 @@ function readStored() {
 }
 
 export function AppearanceForm() {
+  const { t } = useDictionary();
+  const THEME_LABEL: Record<Theme, string> = {
+    light: t.settings.themeLight,
+    dark: t.settings.themeDark,
+    system: t.settings.themeSystem,
+  };
+  const ACCENT_LABEL: Record<AccentId, string> = {
+    default: t.settings.accentDefault,
+    ocean: t.settings.accentOcean,
+    forest: t.settings.accentForest,
+    plum: t.settings.accentPlum,
+    slate: t.settings.accentSlate,
+    custom: t.settings.accentCustom,
+  };
+
   // Server-rendered HTML has no localStorage to read, so the real saved
   // values only exist after mount — until then, treat nothing as dirty.
   const [mounted, setMounted] = useState(false);
@@ -141,28 +142,28 @@ export function AppearanceForm() {
   return (
     <>
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-medium text-foreground/60">Theme</h2>
+        <h2 className="text-sm font-medium text-foreground/60">{t.settings.theme}</h2>
         <div className="flex gap-2">
-          {THEMES.map((t) => (
+          {THEMES.map((option) => (
             <button
-              key={t}
+              key={option}
               type="button"
-              onClick={() => setThemeLocal(t)}
-              aria-pressed={mounted && theme === t}
+              onClick={() => setThemeLocal(option)}
+              aria-pressed={mounted && theme === option}
               className={
-                mounted && theme === t
+                mounted && theme === option
                   ? "cursor-pointer rounded-full bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition-colors active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   : "cursor-pointer rounded-full border border-border px-4 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               }
             >
-              {THEME_LABEL[t]}
+              {THEME_LABEL[option]}
             </button>
           ))}
         </div>
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-medium text-foreground/60">Header &amp; sidebar color</h2>
+        <h2 className="text-sm font-medium text-foreground/60">{t.settings.accent}</h2>
         <div className="flex flex-wrap items-center gap-3">
           {ACCENTS.map((a) => (
             <button
@@ -190,20 +191,20 @@ export function AppearanceForm() {
 
       {dirty && (
         <div className="flex items-center gap-3 rounded-2xl border border-border bg-muted/40 p-3">
-          <p className="flex-1 text-xs text-foreground/60">You have unsaved appearance changes.</p>
+          <p className="flex-1 text-xs text-foreground/60">{t.settings.unsavedChanges}</p>
           <button
             type="button"
             onClick={handleDiscard}
             className="cursor-pointer rounded-full border border-border px-4 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
-            Cancel
+            {t.settings.cancel}
           </button>
           <button
             type="button"
             onClick={handleSave}
             className="cursor-pointer rounded-full bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
-            Save
+            {t.settings.save}
           </button>
         </div>
       )}

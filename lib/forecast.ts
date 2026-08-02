@@ -33,11 +33,13 @@ export function hourlyForecast(routeId: string): HourForecast[] {
   });
 }
 
-export function crowdLabel(level: number): string {
-  if (level >= 70) return "Usually packed";
-  if (level >= 40) return "Usually busy";
-  if (level >= 15) return "Usually comfortable";
-  return "Usually quiet";
+// Returns a dictionary key rather than English text directly — callers
+// pick the translated string via dict.forecast[crowdLevelKey(level)].
+export function crowdLevelKey(level: number): "packed" | "busy" | "comfortable" | "quiet" {
+  if (level >= 70) return "packed";
+  if (level >= 40) return "busy";
+  if (level >= 15) return "comfortable";
+  return "quiet";
 }
 
 export function forecastForTime(routeId: string, time: string): HourForecast {

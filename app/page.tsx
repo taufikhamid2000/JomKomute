@@ -5,21 +5,23 @@ import { EmptyState } from "@/components/empty-state";
 import { RouteCard } from "@/components/route-card";
 import { Shell } from "@/components/shell";
 import { useSavedRoutes } from "@/lib/store";
+import { useDictionary } from "@/lib/use-dictionary";
 
 export default function RoutesPage() {
+  const { t } = useDictionary();
   const { routes } = useSavedRoutes();
 
   return (
     <Shell>
       <div className="animate-page-in mx-auto flex w-full max-w-3xl flex-col gap-4 p-4 md:p-8">
         <div className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-foreground">Your routes</h1>
+          <h1 className="text-lg font-semibold text-foreground">{t.routesPage.title}</h1>
           {routes.length > 0 && (
             <Link
               href="/new"
               className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
             >
-              Add route
+              {t.routesPage.addRoute}
             </Link>
           )}
         </div>

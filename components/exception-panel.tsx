@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { useExceptions } from "@/lib/store";
-import { DAY_LABELS, type DayOfWeek } from "@/lib/types";
+import type { DayOfWeek } from "@/lib/types";
+import { useDictionary } from "@/lib/use-dictionary";
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
 export function ExceptionPanel({ routeId, routeDays }: { routeId: string; routeDays: DayOfWeek[] }) {
+  const { t } = useDictionary();
   const { exceptions, addException, removeException } = useExceptions(routeId);
   const [eventDate, setEventDate] = useState("");
   const [eventNote, setEventNote] = useState("");
@@ -45,8 +47,8 @@ export function ExceptionPanel({ routeId, routeDays }: { routeId: string; routeD
     <div className="flex flex-col gap-6 rounded-2xl border border-border bg-background p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-foreground">Not commuting today?</p>
-          <p className="text-xs text-foreground/50">Skips just today — doesn&apos;t change the regular schedule.</p>
+          <p className="text-sm font-medium text-foreground">{t.exceptionPanel.skipTodayTitle}</p>
+          <p className="text-xs text-foreground/50">{t.exceptionPanel.skipTodayDescription}</p>
         </div>
         <button
           type="button"
@@ -56,12 +58,12 @@ export function ExceptionPanel({ routeId, routeDays }: { routeId: string; routeD
             skippedToday ? "bg-destructive text-destructive-foreground" : "bg-muted text-foreground/70 hover:text-foreground"
           }`}
         >
-          {skippedToday ? "Skipping today" : "Skip today"}
+          {skippedToday ? t.exceptionPanel.skippingToday : t.exceptionPanel.skipToday}
         </button>
       </div>
 
       <div className="flex flex-col gap-2">
-        <p className="text-sm font-medium text-foreground">Recurring day off (e.g. WFH)</p>
+        <p className="text-sm font-medium text-foreground">{t.exceptionPanel.recurringTitle}</p>
         <div className="flex flex-wrap gap-2">
           {routeDays.map((day) => {
             const isSkipped = recurringSkips.some((e) => e.dayOfWeek === day);
@@ -75,7 +77,7 @@ export function ExceptionPanel({ routeId, routeDays }: { routeId: string; routeD
                   isSkipped ? "bg-destructive text-destructive-foreground" : "bg-muted text-foreground/60 hover:text-foreground"
                 }`}
               >
-                {DAY_LABELS[day]}
+                {t.days[day]}
               </button>
             );
           })}
@@ -83,10 +85,8 @@ export function ExceptionPanel({ routeId, routeDays }: { routeId: string; routeD
       </div>
 
       <div className="flex flex-col gap-2 border-t border-border pt-4">
-        <p className="text-sm font-medium text-foreground">Flag an event day</p>
-        <p className="text-xs text-foreground/50">
-          E.g. a match or concert near this route that&apos;s likely to add crowding.
-        </p>
+        <p className="text-sm font-medium text-foreground">{t.exceptionPanel.eventTitle}</p>
+        <p className="text-xs text-foreground/50">{t.exceptionPanel.eventDescription}</p>
         <form onSubmit={addEvent} className="flex flex-col gap-2 sm:flex-row">
           <input
             type="date"
@@ -99,7 +99,7 @@ export function ExceptionPanel({ routeId, routeDays }: { routeId: string; routeD
             type="text"
             value={eventNote}
             onChange={(e) => setEventNote(e.target.value)}
-            placeholder="e.g. Bukit Jalil match"
+            placeholder={t.exceptionPanel.eventPlaceholder}
             required
             className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
@@ -107,7 +107,7 @@ export function ExceptionPanel({ routeId, routeDays }: { routeId: string; routeD
             type="submit"
             className="cursor-pointer rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
           >
-            Add
+            {t.exceptionPanel.add}
           </button>
         </form>
         {events.length > 0 && (
@@ -122,7 +122,7 @@ export function ExceptionPanel({ routeId, routeDays }: { routeId: string; routeD
                   onClick={() => removeException(e.id)}
                   className="cursor-pointer text-xs text-foreground/40 underline-offset-4 hover:text-destructive hover:underline"
                 >
-                  Remove
+                  {t.exceptionPanel.remove}
                 </button>
               </li>
             ))}
