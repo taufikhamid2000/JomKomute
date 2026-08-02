@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 const NAV_LINKS = [
   { href: "/", label: "Routes" },
   { href: "/new", label: "Add route" },
+  { href: "/settings", label: "Settings" },
 ];
 
 export function Shell({ children }: { children: React.ReactNode }) {

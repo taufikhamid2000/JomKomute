@@ -2,10 +2,11 @@
 
 /*
  * Design tokens carried over from DuitDuit (taufikhamid2000/duitduit) for a
- * consistent look — trust blue + profit green, Fira Sans/Fira Code. Dropped
- * the cookie-driven theme/accent override system since a static export has
- * no server to read cookies at request time; light/dark here is purely
- * `prefers-color-scheme`.
+ * consistent look — trust blue + profit green, Fira Sans/Fira Code. The
+ * theme override is localStorage + a `data-theme` attribute instead of
+ * DuitDuit's cookie (see lib/theme.ts) since a static export has no server
+ * to read a cookie from at request time — same end result (an explicit
+ * pick beats the OS preference), different plumbing to get there.
  */
 :root {
   --background: #ffffff;
@@ -50,7 +51,10 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  /* :not([data-theme="light"]) lets an explicit light pick override the
+   * OS preference despite this block's later source order — otherwise a
+   * user on a dark-mode OS could never see the light theme they picked. */
+  :root:not([data-theme="light"]) {
     --background: #0f172a;
     --foreground: #ffffff;
     --muted: #101a34;
@@ -67,6 +71,43 @@
     --chart-series-1: #3987e5;
     --chart-muted: #898781;
   }
+}
+
+/* Explicit overrides (set via /settings) win over the OS preference above. */
+:root[data-theme="dark"] {
+  --background: #0f172a;
+  --foreground: #ffffff;
+  --muted: #101a34;
+  --border: rgba(255, 255, 255, 0.08);
+  --primary: #1e40af;
+  --primary-foreground: #ffffff;
+  --secondary: #3b82f6;
+  --accent: #059669;
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --ring: #3b82f6;
+
+  --chart-series-1: #3987e5;
+  --chart-muted: #898781;
+}
+
+:root[data-theme="light"] {
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --muted: #f1f5f9;
+  --border: rgba(15, 23, 42, 0.08);
+  --primary: #1e40af;
+  --primary-foreground: #ffffff;
+  --secondary: #3b82f6;
+  --accent: #059669;
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --ring: #1e40af;
+
+  --chart-series-1: #2a78d6;
+  --chart-muted: #898781;
 }
 
 body {
