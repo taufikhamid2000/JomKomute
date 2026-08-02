@@ -8,6 +8,7 @@ import { ForecastBars } from "@/components/forecast-bars";
 import { LegSummary } from "@/components/leg-summary";
 import { Shell } from "@/components/shell";
 import { crowdLevelKey, forecastForTime } from "@/lib/forecast";
+import { estimatedArrival, legArrivalTimes } from "@/lib/schedule";
 import { useSavedRoutes } from "@/lib/store";
 import { useDictionary } from "@/lib/use-dictionary";
 
@@ -46,6 +47,11 @@ function RouteDetail() {
   }
 
   const { hour, crowdLevel } = forecastForTime(route.id, route.departureTime);
+  const arrival = estimatedArrival(route.departureTime, route.legs);
+  const legArrivals = legArrivalTimes(route.departureTime, route.legs);
+  const alternateArrivals = route.alternateLegs
+    ? legArrivalTimes(route.departureTime, route.alternateLegs)
+    : undefined;
 
   function handleDelete() {
     if (!route) return;
@@ -60,7 +66,9 @@ function RouteDetail() {
           <div className="flex flex-col gap-1">
             <h1 className="text-lg font-semibold text-foreground">{route.label}</h1>
             <p className="text-xs text-foreground/50">
-              {route.departureTime} · {route.days.map((d) => t.days[d]).join(", ")}
+              {route.departureTime}
+              {arrival && ` · ${t.routeDetail.expectedArrival(arrival)}`} ·{" "}
+              {route.days.map((d) => t.days[d]).join(", ")}
             </p>
           </div>
           <Link
@@ -70,13 +78,13 @@ function RouteDetail() {
             {t.routeDetail.addReturnTrip}
           </Link>
         </div>
-        <LegSummary legs={route.legs} />
+        <LegSummary legs={route.legs} arrivalTimes={legArrivals} />
       </div>
 
       {route.alternateLegs && (
         <div className="flex flex-col gap-2 rounded-2xl border border-dashed border-border p-3">
           <p className="text-xs font-medium text-foreground/50">{t.routeDetail.backupRoute}</p>
-          <LegSummary legs={route.alternateLegs} />
+          <LegSummary legs={route.alternateLegs} arrivalTimes={alternateArrivals} />
         </div>
       )}
 

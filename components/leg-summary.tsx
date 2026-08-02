@@ -1,7 +1,10 @@
 import { lineById } from "@/lib/lines";
 import type { RouteLeg } from "@/lib/types";
+import { useDictionary } from "@/lib/use-dictionary";
 
-export function LegSummary({ legs }: { legs: RouteLeg[] }) {
+export function LegSummary({ legs, arrivalTimes }: { legs: RouteLeg[]; arrivalTimes?: string[] }) {
+  const { t } = useDictionary();
+
   return (
     <div className="flex flex-col gap-2">
       {legs.map((leg, index) => {
@@ -17,6 +20,9 @@ export function LegSummary({ legs }: { legs: RouteLeg[] }) {
               {leg.originStation} <span aria-hidden="true">→</span> {leg.destinationStation}
             </span>
             <span className="text-xs text-foreground/40">{line?.name ?? leg.line}</span>
+            {arrivalTimes?.[index] && (
+              <span className="text-xs text-foreground/40">· {t.schedule.arrival(arrivalTimes[index])}</span>
+            )}
           </div>
         );
       })}

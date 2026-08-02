@@ -97,6 +97,14 @@ function titleCase(name) {
   return name.trim().replace(/\s+/g, " ").replace(/\S+/g, titleCaseWord);
 }
 
+// GTFS times are "H:MM:SS" (or "HH:MM:SS"), and can exceed 24:00:00 for a
+// trip that runs past midnight — plain Date parsing chokes on both, so
+// just split and sum.
+function parseGtfsTime(hms) {
+  const [h, m, s] = hms.split(":").map(Number);
+  return h * 3600 + m * 60 + s;
+}
+
 const tmp = mkdtempSync(join(tmpdir(), "gtfs-"));
 try {
   execSync(`curl -sfL "${GTFS_URL}" -o feed.zip && unzip -oq feed.zip -x "__MACOSX/*"`, { cwd: tmp });
@@ -122,21 +130,35 @@ try {
     const tripId = tripIdByRoute.get(route.route_id);
     if (!tripId) continue;
 
-    const orderedStops = stopTimes
+    // Built from the same sorted+filtered rows in one pass so `stations`
+    // and `arrivalOffsetMinutes` stay index-aligned — computing them
+    // separately risks the two arrays silently drifting out of sync if a
+    // stop gets filtered differently on one side.
+    const rows = stopTimes
       .filter((st) => st.trip_id === tripId)
       .sort((a, b) => Number(a.stop_sequence) - Number(b.stop_sequence))
-      .map((st) => stopById.get(st.stop_id)?.stop_name)
-      .filter((name) => !!name)
-      .map(titleCase)
-      .map((name) => KNOWN_NAME_FIXES[name] ?? name);
+      .map((st) => {
+        const stop = stopById.get(st.stop_id);
+        if (!stop || !st.arrival_time) return null;
+        const name = titleCase(stop.stop_name);
+        return { name: KNOWN_NAME_FIXES[name] ?? name, arrivalSeconds: parseGtfsTime(st.arrival_time) };
+      })
+      .filter((row) => row !== null);
 
-    if (orderedStops.length === 0) continue;
+    if (rows.length === 0) continue;
+
+    // Minutes from this trip's first stop to each station — real
+    // scheduled timetable data, not estimated. A leg's travel time is
+    // just the difference between its two stations' offsets (lib/schedule.ts).
+    const baseSeconds = rows[0].arrivalSeconds;
+    const arrivalOffsetMinutes = rows.map((row) => Math.round((row.arrivalSeconds - baseSeconds) / 60));
 
     lines.push({
       id: LINE_ID_SLUG[route.route_id] ?? route.route_id.toLowerCase(),
       name: route.route_long_name,
       color: route.route_color ? `#${route.route_color}` : "#64748b",
-      stations: orderedStops,
+      stations: rows.map((row) => row.name),
+      arrivalOffsetMinutes,
     });
   }
 
@@ -144,6 +166,11 @@ try {
 // (https://developer.data.gov.my/realtime-api/gtfs-static, category=rapid-rail-kl)
 // via scripts/generate-stations.mjs — covers LRT, MRT, KL Monorail, and
 // BRT Sunway. Don't hand-edit; re-run the script if the source changes.
+//
+// arrivalOffsetMinutes[i] is minutes from stations[0]'s departure to
+// stations[i]'s arrival, per one representative weekday trip — real
+// scheduled timetable data, used for expected-arrival estimates
+// (lib/schedule.ts), not live tracking.
 `;
 
   const body = `export const LINES = ${JSON.stringify(lines, null, 2)} as const;

@@ -58,11 +58,15 @@ export const en = {
     removeTransfer: "Remove last transfer",
     noOtherLine: (station: string) => `${station} isn't served by another line in this feed`,
   },
+  schedule: {
+    arrival: (time: string) => `arr. ${time}`,
+  },
   routeDetail: {
     notFound: "Route not found.",
     backToRoutes: "Back to your routes",
     addReturnTrip: "Add return trip",
     backupRoute: "Backup route",
+    expectedArrival: (time: string) => `Expected arrival ${time}`,
     crowdingTitle: "Typical crowding by hour",
     crowdingAt: (time: string, label: string, level: number) => `At ${time}: ${label} (${level}%)`,
     crowdingNote: "Placeholder model based on typical rush-hour patterns — not yet backed by real ridership data.",

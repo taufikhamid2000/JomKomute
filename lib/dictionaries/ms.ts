@@ -60,11 +60,15 @@ export const ms: Dictionary = {
     removeTransfer: "Buang pertukaran terakhir",
     noOtherLine: (station: string) => `${station} tidak dilalui oleh laluan lain dalam data ini`,
   },
+  schedule: {
+    arrival: (time: string) => `tiba ${time}`,
+  },
   routeDetail: {
     notFound: "Laluan tidak dijumpai.",
     backToRoutes: "Kembali ke laluan anda",
     addReturnTrip: "Tambah perjalanan pulang",
     backupRoute: "Laluan sandaran",
+    expectedArrival: (time: string) => `Anggaran tiba ${time}`,
     crowdingTitle: "Kesesakan biasa mengikut jam",
     crowdingAt: (time: string, label: string, level: number) => `Pada ${time}: ${label} (${level}%)`,
     crowdingNote: "Model sementara berdasarkan corak waktu puncak biasa — belum menggunakan data penumpang sebenar.",

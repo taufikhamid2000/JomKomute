@@ -2,6 +2,11 @@
 // (https://developer.data.gov.my/realtime-api/gtfs-static, category=rapid-rail-kl)
 // via scripts/generate-stations.mjs — covers LRT, MRT, KL Monorail, and
 // BRT Sunway. Don't hand-edit; re-run the script if the source changes.
+//
+// arrivalOffsetMinutes[i] is minutes from stations[0]'s departure to
+// stations[i]'s arrival, per one representative weekday trip — real
+// scheduled timetable data, used for expected-arrival estimates
+// (lib/schedule.ts), not live tracking.
 
 export const LINES = [
   {
@@ -27,6 +32,26 @@ export const LINES = [
       "Titiwangsa",
       "Sentul",
       "Sentul Timur"
+    ],
+    "arrivalOffsetMinutes": [
+      0,
+      2,
+      3,
+      5,
+      6,
+      8,
+      10,
+      12,
+      14,
+      15,
+      16,
+      18,
+      20,
+      22,
+      23,
+      25,
+      26,
+      28
     ]
   },
   {
@@ -71,6 +96,45 @@ export const LINES = [
       "Wangsa Maju",
       "Taman Melati",
       "Gombak"
+    ],
+    "arrivalOffsetMinutes": [
+      0,
+      3,
+      6,
+      10,
+      12,
+      15,
+      17,
+      22,
+      24,
+      27,
+      31,
+      34,
+      36,
+      38,
+      41,
+      43,
+      46,
+      48,
+      51,
+      54,
+      56,
+      58,
+      61,
+      65,
+      68,
+      70,
+      72,
+      75,
+      77,
+      80,
+      82,
+      84,
+      86,
+      90,
+      92,
+      95,
+      98
     ]
   },
   {
@@ -107,6 +171,37 @@ export const LINES = [
       "Titiwangsa",
       "Sentul",
       "Sentul Timur"
+    ],
+    "arrivalOffsetMinutes": [
+      0,
+      4,
+      7,
+      9,
+      11,
+      13,
+      14,
+      18,
+      21,
+      24,
+      26,
+      28,
+      29,
+      32,
+      34,
+      37,
+      39,
+      41,
+      44,
+      45,
+      47,
+      48,
+      50,
+      52,
+      54,
+      55,
+      57,
+      58,
+      60
     ]
   },
   {
@@ -143,6 +238,37 @@ export const LINES = [
       "Sungai Jernih",
       "Stadium Kajang",
       "Kajang"
+    ],
+    "arrivalOffsetMinutes": [
+      0,
+      2,
+      6,
+      8,
+      11,
+      14,
+      17,
+      20,
+      24,
+      28,
+      32,
+      36,
+      39,
+      42,
+      46,
+      48,
+      51,
+      54,
+      57,
+      60,
+      64,
+      67,
+      70,
+      73,
+      76,
+      79,
+      83,
+      86,
+      88
     ]
   },
   {
@@ -186,6 +312,44 @@ export const LINES = [
       "Cyberjaya Utara",
       "Cyberjaya City Centre",
       "Putrajaya Sentral"
+    ],
+    "arrivalOffsetMinutes": [
+      0,
+      3,
+      5,
+      7,
+      9,
+      11,
+      13,
+      14,
+      16,
+      17,
+      18,
+      20,
+      22,
+      23,
+      25,
+      26,
+      28,
+      29,
+      31,
+      32,
+      33,
+      35,
+      37,
+      43,
+      44,
+      47,
+      49,
+      51,
+      52,
+      54,
+      58,
+      60,
+      62,
+      65,
+      67,
+      68
     ]
   },
   {
@@ -204,6 +368,19 @@ export const LINES = [
       "Medan Tuanku",
       "Chow Kit",
       "Titiwangsa"
+    ],
+    "arrivalOffsetMinutes": [
+      0,
+      3,
+      7,
+      9,
+      11,
+      14,
+      16,
+      18,
+      20,
+      23,
+      26
     ]
   },
   {
@@ -218,6 +395,15 @@ export const LINES = [
       "SunU-Monash",
       "South Quay-USJ 1",
       "USJ7"
+    ],
+    "arrivalOffsetMinutes": [
+      0,
+      3,
+      6,
+      8,
+      11,
+      13,
+      16
     ]
   },
   {
@@ -245,6 +431,28 @@ export const LINES = [
       "Klang Jaya",
       "Bandar Bukit Tinggi",
       "Johan Setia"
+    ],
+    "arrivalOffsetMinutes": [
+      0,
+      2,
+      5,
+      8,
+      11,
+      14,
+      20,
+      23,
+      29,
+      34,
+      37,
+      41,
+      45,
+      47,
+      49,
+      54,
+      56,
+      58,
+      61,
+      66
     ]
   }
 ] as const;

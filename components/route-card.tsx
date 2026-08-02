@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { crowdLevelKey, forecastForTime } from "@/lib/forecast";
 import { lineById } from "@/lib/lines";
+import { estimatedArrival } from "@/lib/schedule";
 import type { SavedRoute } from "@/lib/types";
 import { useDictionary } from "@/lib/use-dictionary";
 
@@ -11,6 +12,7 @@ export function RouteCard({ route }: { route: SavedRoute }) {
   const { crowdLevel } = forecastForTime(route.id, route.departureTime);
   const lineNames = route.legs.map((leg) => lineById(leg.line)?.name ?? leg.line).join(" → ");
   const transferCount = route.legs.length - 1;
+  const arrival = estimatedArrival(route.departureTime, route.legs);
 
   return (
     <Link
@@ -27,7 +29,8 @@ export function RouteCard({ route }: { route: SavedRoute }) {
           )}
         </span>
         <span className="text-xs text-foreground/50">
-          {lineNames} · {route.departureTime} · {route.days.map((d) => t.days[d]).join(", ")}
+          {lineNames} · {route.departureTime}
+          {arrival && `–${arrival}`} · {route.days.map((d) => t.days[d]).join(", ")}
           {route.alternateLegs && <span className="text-foreground/40"> · {t.routesPage.hasBackup}</span>}
         </span>
       </div>
