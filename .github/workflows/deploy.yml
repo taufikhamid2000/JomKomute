@@ -3,6 +3,10 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - ".gitignore"
+      - "LICENSE"
   workflow_dispatch:
 
 # Just a git push to gh-pages, not the Pages Deployments API — no
@@ -27,6 +31,16 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      # Next.js's own incremental-compilation cache, keyed on the
+      # lockfile (dependency changes invalidate it) and source files
+      # (falls back to the closest lockfile-only match otherwise, so a
+      # source change still reuses whatever's still valid).
+      - uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: nextjs-${{ hashFiles('package-lock.json') }}-${{ hashFiles('app/**', 'components/**', 'lib/**') }}
+          restore-keys: |
+            nextjs-${{ hashFiles('package-lock.json') }}-
       - run: npm run build
       - uses: peaceiris/actions-gh-pages@v4
         with:
