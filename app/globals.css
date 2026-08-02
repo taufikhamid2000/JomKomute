@@ -110,6 +110,35 @@
   --chart-muted: #898781;
 }
 
+/* Accent presets — header/sidebar chrome only. Fixed colors on purpose
+ * (not theme-aware): each swatch already carries its own white
+ * foreground, so it reads fine whether the page itself is light or dark.
+ * --nav-fg-muted/border/active-bg/hover-bg derive from --nav-fg at :root
+ * above, so only the two base colors need setting here.
+ *
+ * "custom" has no fixed block — its --nav-bg/--nav-fg are set inline via
+ * the no-flash script in layout.tsx (from localStorage), since those are
+ * runtime user input, not a value known at build time. */
+:root[data-accent="ocean"] {
+  --nav-bg: #0b2e59;
+  --nav-fg: #ffffff;
+}
+
+:root[data-accent="forest"] {
+  --nav-bg: #0b3d2e;
+  --nav-fg: #ffffff;
+}
+
+:root[data-accent="plum"] {
+  --nav-bg: #3b0b59;
+  --nav-fg: #ffffff;
+}
+
+:root[data-accent="slate"] {
+  --nav-bg: #1e293b;
+  --nav-fg: #ffffff;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

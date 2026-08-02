@@ -21,17 +21,28 @@ export const metadata: Metadata = {
   description: "Save your usual LRT/MRT commute and see how crowded it typically gets.",
 };
 
-// Runs before paint, so an explicit theme pick applies immediately instead
-// of flashing the OS-default theme first — the static HTML has no
-// data-theme baked in (nothing server-side to read localStorage from), so
-// this is what stands in for that. Inlined rather than imported from
-// lib/theme.ts since it must be a same-document <script>, not a module;
-// the storage key ("jomkomute.theme") must stay in sync with THEME_STORAGE_KEY there.
+// Runs before paint, so an explicit theme/accent pick applies immediately
+// instead of flashing the default first — the static HTML has no
+// data-theme/data-accent baked in (nothing server-side to read
+// localStorage from), so this is what stands in for that. Inlined rather
+// than imported from lib/theme.ts + lib/accent.ts since it must be a
+// same-document <script>, not a module; the storage keys must stay in
+// sync with THEME_STORAGE_KEY / ACCENT_STORAGE_KEY / ACCENT_CUSTOM_*_KEY there.
 const NO_FLASH_THEME_SCRIPT = `
   try {
     var t = localStorage.getItem("jomkomute.theme");
     if (t === "light" || t === "dark") {
       document.documentElement.setAttribute("data-theme", t);
+    }
+    var a = localStorage.getItem("jomkomute.accent");
+    if (a && a !== "default") {
+      document.documentElement.setAttribute("data-accent", a);
+    }
+    if (a === "custom") {
+      var bg = localStorage.getItem("jomkomute.accentCustomBg");
+      var fg = localStorage.getItem("jomkomute.accentCustomFg");
+      if (bg) document.documentElement.style.setProperty("--nav-bg", bg);
+      if (fg) document.documentElement.style.setProperty("--nav-fg", fg);
     }
   } catch (e) {}
 `;
