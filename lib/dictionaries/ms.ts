@@ -127,6 +127,16 @@ export const ms: Dictionary = {
       "Langkau hari ini, tandakan hari cuti berulang, atau tandakan acara yang akan menyesakkan platform — tanpa kehilangan rutin yang anda simpan.",
     feature4Title: "Jadual sebenar",
     feature4Body: "Susunan stesen dan anggaran ketibaan datang dari jadual rasmi RapidKL dan KTM — bukan tekaan.",
+    futureKicker: "Satu idea yang kami tak boleh bina sendiri",
+    futureHeadline: "“Berapa ramai orang merancang perjalanan ini esok?”",
+    futureBody:
+      "Bukan sejarah — kiraan langsung rancangan pengguna lain untuk stesen dan waktu itu, supaya anda boleh keluar lebih awal atau tukar laluan sebelum ia berlaku. Ini perlukan skala sebenar dan rakan kongsi seperti RapidKL untuk dijalankan secara bertanggungjawab. Ini contoh rupa bentuknya sahaja.",
+    futureBadge: "Konsep, bukan data sebenar",
+    futureStation: "Maluri · Laluan MRT Putrajaya",
+    futureTime: "Esok, 7:30 pagi",
+    futureCount: "182",
+    futureCountLabel: "orang merancang perjalanan ini",
+    futureSuggestion: "Lebih sesak daripada biasa — pertimbangkan Laluan LRT Ampang, atau keluar 15 minit awal.",
     cta: "Simpan laluan pertama anda",
   },
 };

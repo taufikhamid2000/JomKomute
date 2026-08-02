@@ -126,6 +126,16 @@ export const en = {
     feature4Title: "Real schedules",
     feature4Body:
       "Station order and arrival estimates come from RapidKL and KTM's own published timetables — not guesses.",
+    futureKicker: "One idea we can't build alone",
+    futureHeadline: "“How many people are planning this trip tomorrow?”",
+    futureBody:
+      "Not history — a live count of everyone else's saved plans for that station and time, so you can leave earlier or switch lines before it happens. That needs real scale and a partner like RapidKL to run it responsibly. This is a mock of what it could look like.",
+    futureBadge: "Concept, not real data",
+    futureStation: "Maluri · MRT Putrajaya Line",
+    futureTime: "Tomorrow, 7:30 AM",
+    futureCount: "182",
+    futureCountLabel: "people planning this trip",
+    futureSuggestion: "Busier than usual — consider the LRT Ampang Line instead, or leave 15 min earlier.",
     cta: "Save your first route",
   },
 };
