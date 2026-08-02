@@ -3,6 +3,7 @@ import type { Dictionary } from "./en";
 export const ms: Dictionary = {
   nav: {
     brand: "JomKomute",
+    dashboard: "Papan pemuka",
     routes: "Laluan",
     addRoute: "Tambah laluan",
     settings: "Tetapan",
@@ -24,6 +25,25 @@ export const ms: Dictionary = {
     busy: "Biasanya sibuk",
     comfortable: "Biasanya selesa",
     quiet: "Biasanya lengang",
+  },
+  dashboard: {
+    title: "Perjalanan seterusnya anda",
+    today: "Hari ini",
+    conceptBadge: "Konsep — perlukan skala sebenar",
+    peoplePlanning: "orang merancang perjalanan ini",
+    busierSuggestion: (altLine: string) =>
+      altLine
+        ? `Lebih sesak daripada biasa — pertimbangkan ${altLine}, atau keluar 15 minit awal.`
+        : "Lebih sesak daripada biasa — pertimbangkan keluar 15 minit awal.",
+    changePlan: "Tukar rancangan",
+  },
+  changePlanModal: {
+    title: "Apa rancangannya?",
+    description: "Ini melangkau komuting anda kedua-dua arah untuk hari itu — bukan setakat perjalanan ini sahaja.",
+    onLeave: "Bercuti",
+    wfh: "Bekerja dari rumah",
+    drive: "Memandu sendiri",
+    cancel: "Batal",
   },
   routesPage: {
     title: "Laluan anda",

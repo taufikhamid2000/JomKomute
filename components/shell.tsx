@@ -11,6 +11,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
 
   const navLinks = [
+    { href: "/dashboard", label: t.nav.dashboard },
     { href: "/", label: t.nav.routes },
     { href: "/new", label: t.nav.addRoute },
     { href: "/settings", label: t.nav.settings },

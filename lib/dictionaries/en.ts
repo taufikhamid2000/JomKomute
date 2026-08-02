@@ -1,6 +1,7 @@
 export const en = {
   nav: {
     brand: "JomKomute",
+    dashboard: "Dashboard",
     routes: "Routes",
     addRoute: "Add route",
     settings: "Settings",
@@ -22,6 +23,25 @@ export const en = {
     busy: "Usually busy",
     comfortable: "Usually comfortable",
     quiet: "Usually quiet",
+  },
+  dashboard: {
+    title: "Your next trip",
+    today: "Today",
+    conceptBadge: "Concept — needs real scale",
+    peoplePlanning: "people planning this trip",
+    busierSuggestion: (altLine: string) =>
+      altLine
+        ? `Busier than usual — consider the ${altLine} instead, or leave 15 min earlier.`
+        : "Busier than usual — consider leaving 15 min earlier.",
+    changePlan: "Change plan",
+  },
+  changePlanModal: {
+    title: "What's the plan?",
+    description: "This skips your commute both ways for that day — not just this trip.",
+    onLeave: "On leave",
+    wfh: "Working from home",
+    drive: "Driving instead",
+    cancel: "Cancel",
   },
   routesPage: {
     title: "Your routes",

@@ -106,19 +106,28 @@ export function useSavedRoutes() {
   return { routes, addRoute, removeRoute };
 }
 
-export function useExceptions(routeId: string) {
-  const all = useSyncExternalStore(
+// Not routeId-scoped — used by the dashboard's "Change plan" modal, which
+// needs to add a skip exception to every saved route at once (see
+// SkipReason in lib/types.ts for why).
+export function addExceptionRecord(exception: DistributiveOmit<Exception, "id" | "createdAt">): Exception {
+  const next = { ...exception, id: newId(), createdAt: new Date().toISOString() } as Exception;
+  setCached(EXCEPTIONS_KEY, [...getCached<Exception>(EXCEPTIONS_KEY), next]);
+  return next;
+}
+
+export function useAllExceptions() {
+  return useSyncExternalStore(
     (onChange) => subscribe(EXCEPTIONS_KEY, onChange),
     () => getCached<Exception>(EXCEPTIONS_KEY),
     () => EMPTY
   );
+}
+
+export function useExceptions(routeId: string) {
+  const all = useAllExceptions();
   const exceptions = all.filter((e) => e.routeId === routeId);
 
-  const addException = useCallback((exception: DistributiveOmit<Exception, "id" | "createdAt">) => {
-    const next = { ...exception, id: newId(), createdAt: new Date().toISOString() } as Exception;
-    setCached(EXCEPTIONS_KEY, [...getCached<Exception>(EXCEPTIONS_KEY), next]);
-    return next;
-  }, []);
+  const addException = useCallback((exception: DistributiveOmit<Exception, "id" | "createdAt">) => addExceptionRecord(exception), []);
 
   const removeException = useCallback((id: string) => {
     setCached(

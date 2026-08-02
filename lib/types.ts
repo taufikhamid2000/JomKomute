@@ -22,8 +22,14 @@ export type SavedRoute = {
   createdAt: string; // ISO timestamp
 };
 
+// "leave" | "wfh" | "drive" is only set when the skip came from the
+// dashboard's "Change plan" modal — it's applied to every saved route on
+// that date (not just the one the user was looking at), since all three
+// reasons replace the whole day's commute, both directions, not one leg.
+export type SkipReason = "leave" | "wfh" | "drive";
+
 export type Exception =
-  | { id: string; routeId: string; type: "skip"; date: string; createdAt: string }
+  | { id: string; routeId: string; type: "skip"; date: string; reason?: SkipReason; createdAt: string }
   | { id: string; routeId: string; type: "recurring-skip"; dayOfWeek: DayOfWeek; createdAt: string }
   | { id: string; routeId: string; type: "event"; date: string; note: string; createdAt: string };
 
