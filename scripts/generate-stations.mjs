@@ -135,6 +135,7 @@ try {
     lines.push({
       id: LINE_ID_SLUG[route.route_id] ?? route.route_id.toLowerCase(),
       name: route.route_long_name,
+      color: route.route_color ? `#${route.route_color}` : "#64748b",
       stations: orderedStops,
     });
   }

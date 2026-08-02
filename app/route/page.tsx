@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { ExceptionPanel } from "@/components/exception-panel";
 import { ForecastBars } from "@/components/forecast-bars";
+import { LegSummary } from "@/components/leg-summary";
 import { Shell } from "@/components/shell";
 import { crowdLabel, forecastForTime } from "@/lib/forecast";
 import { useSavedRoutes } from "@/lib/store";
@@ -53,15 +54,22 @@ function RouteDetail() {
 
   return (
     <div className="animate-page-in mx-auto flex w-full max-w-2xl flex-col gap-6 p-4 md:p-8">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-lg font-semibold text-foreground">{route.label}</h1>
-        <p className="text-sm text-foreground/70">
-          {route.originStation} <span aria-hidden="true">→</span> {route.destinationStation}
-        </p>
-        <p className="text-xs text-foreground/50">
-          {route.line} · {route.departureTime} · {route.days.map((d) => DAY_LABELS[d]).join(", ")}
-        </p>
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-lg font-semibold text-foreground">{route.label}</h1>
+          <p className="text-xs text-foreground/50">
+            {route.departureTime} · {route.days.map((d) => DAY_LABELS[d]).join(", ")}
+          </p>
+        </div>
+        <LegSummary legs={route.legs} />
       </div>
+
+      {route.alternateLegs && (
+        <div className="flex flex-col gap-2 rounded-2xl border border-dashed border-border p-3">
+          <p className="text-xs font-medium text-foreground/50">Backup route</p>
+          <LegSummary legs={route.alternateLegs} />
+        </div>
+      )}
 
       <div className="flex flex-col gap-3 rounded-2xl border border-border bg-background p-4">
         <div className="flex items-center justify-between">

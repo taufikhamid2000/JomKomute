@@ -1,11 +1,22 @@
 export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0 = Sunday
 
+// One line, boarded at one station and left at another — a journey with a
+// transfer is two or more of these back to back, where each leg's
+// destination is the next leg's origin (the interchange station).
+export type RouteLeg = {
+  line: string; // LineId, kept as a plain string so a saved route survives lib/stations.ts being regenerated
+  originStation: string;
+  destinationStation: string;
+};
+
 export type SavedRoute = {
   id: string;
   label: string;
-  line: string;
-  originStation: string;
-  destinationStation: string;
+  legs: RouteLeg[];
+  // A fallback path for the same commute — e.g. "if the Kajang line has a
+  // problem, go via Ampang and change at Chan Sow Lin instead." Same
+  // departure time and days as the primary; optional.
+  alternateLegs?: RouteLeg[];
   departureTime: string; // "HH:MM", 24h
   days: DayOfWeek[];
   createdAt: string; // ISO timestamp

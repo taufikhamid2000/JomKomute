@@ -7,6 +7,7 @@ export const LINES = [
   {
     "id": "ampang",
     "name": "LRT Ampang Line",
+    "color": "#e57200",
     "stations": [
       "Ampang",
       "Cahaya",
@@ -31,6 +32,7 @@ export const LINES = [
   {
     "id": "kelana-jaya",
     "name": "LRT Kelana Jaya Line",
+    "color": "#D50032",
     "stations": [
       "Putra Heights",
       "Subang Alam",
@@ -74,6 +76,7 @@ export const LINES = [
   {
     "id": "sri-petaling",
     "name": "LRT Sri Petaling Line",
+    "color": "#76232f",
     "stations": [
       "Putra Heights",
       "Puchong Prima",
@@ -109,6 +112,7 @@ export const LINES = [
   {
     "id": "kajang",
     "name": "MRT Kajang Line",
+    "color": "#047940",
     "stations": [
       "Kwasa Damansara",
       "Kwasa Sentral",
@@ -144,6 +148,7 @@ export const LINES = [
   {
     "id": "putrajaya",
     "name": "MRT Putrajaya Line",
+    "color": "#FFCD00",
     "stations": [
       "Kwasa Damansara",
       "Kampung Selamat",
@@ -186,6 +191,7 @@ export const LINES = [
   {
     "id": "monorail",
     "name": "KL Monorail Line",
+    "color": "#84bd00",
     "stations": [
       "KL Sentral",
       "Tun Sambanthan",
@@ -203,6 +209,7 @@ export const LINES = [
   {
     "id": "brt-sunway",
     "name": "BRT Sunway Line",
+    "color": "#115740",
     "stations": [
       "Sunway-Setia Jaya",
       "Mentari",
@@ -216,6 +223,7 @@ export const LINES = [
   {
     "id": "shah-alam",
     "name": "LRT Shah Alam Line",
+    "color": "#00A9E0",
     "stations": [
       "Bandar Utama",
       "Kayu Ara",

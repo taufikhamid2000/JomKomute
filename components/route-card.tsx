@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { crowdLabel, forecastForTime } from "@/lib/forecast";
+import { lineById } from "@/lib/lines";
 import { DAY_LABELS, type SavedRoute } from "@/lib/types";
 
 export function RouteCard({ route }: { route: SavedRoute }) {
   const { crowdLevel } = forecastForTime(route.id, route.departureTime);
+  const lineNames = route.legs.map((leg) => lineById(leg.line)?.name ?? leg.line).join(" → ");
+  const transferCount = route.legs.length - 1;
 
   return (
     <Link
@@ -13,10 +16,15 @@ export function RouteCard({ route }: { route: SavedRoute }) {
       <div className="flex flex-col gap-1">
         <span className="text-sm font-semibold text-foreground">{route.label}</span>
         <span className="text-sm text-foreground/70">
-          {route.originStation} <span aria-hidden="true">→</span> {route.destinationStation}
+          {route.legs[0].originStation} <span aria-hidden="true">→</span>{" "}
+          {route.legs[route.legs.length - 1].destinationStation}
+          {transferCount > 0 && (
+            <span className="text-foreground/50"> ({transferCount} transfer{transferCount > 1 ? "s" : ""})</span>
+          )}
         </span>
         <span className="text-xs text-foreground/50">
-          {route.line} · {route.departureTime} · {route.days.map((d) => DAY_LABELS[d]).join(", ")}
+          {lineNames} · {route.departureTime} · {route.days.map((d) => DAY_LABELS[d]).join(", ")}
+          {route.alternateLegs && <span className="text-foreground/40"> · has backup route</span>}
         </span>
       </div>
 
