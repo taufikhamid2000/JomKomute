@@ -164,6 +164,50 @@ body {
   animation: fade-in-up 250ms ease-out both;
 }
 
+/* The About page's commute diagram: a dot travels the main line, dips
+ * onto the dashed backup line around the disruption marker, then
+ * rejoins — illustrating "your routine, plus a plan for when it breaks"
+ * without needing a paragraph to say so. The translateY offset here
+ * must match CommuteDiagram's backup-line vertical offset exactly. */
+@keyframes commute-loop {
+  0% {
+    left: 0%;
+    transform: translateY(0);
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  32% {
+    left: 32%;
+    transform: translateY(0);
+  }
+  42% {
+    left: 42%;
+    transform: translateY(18px);
+  }
+  58% {
+    left: 58%;
+    transform: translateY(18px);
+  }
+  68% {
+    left: 68%;
+    transform: translateY(0);
+  }
+  95% {
+    opacity: 1;
+  }
+  100% {
+    left: 100%;
+    transform: translateY(0);
+    opacity: 0;
+  }
+}
+
+.animate-commute-loop {
+  animation: commute-loop 6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

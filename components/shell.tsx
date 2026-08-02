@@ -14,6 +14,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     { href: "/", label: t.nav.routes },
     { href: "/new", label: t.nav.addRoute },
     { href: "/settings", label: t.nav.settings },
+    { href: "/about", label: t.nav.about },
   ];
 
   useEffect(() => {

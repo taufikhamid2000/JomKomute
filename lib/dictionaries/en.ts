@@ -4,6 +4,7 @@ export const en = {
     routes: "Routes",
     addRoute: "Add route",
     settings: "Settings",
+    about: "About",
     openMenu: "Open menu",
     closeMenu: "Close menu",
   },
@@ -106,6 +107,26 @@ export const en = {
     unsavedChanges: "You have unsaved appearance changes.",
     cancel: "Cancel",
     save: "Save",
+  },
+  about: {
+    kicker: "Why this exists",
+    headline: "Every transit app can plan a trip. None of them remember your routine.",
+    subheadline:
+      "JomKomute isn't a journey planner — it's where your daily commute actually lives: your stations, your transfers, your backup route, and the exceptions real life throws at it.",
+    diagramUsualRoute: "Your usual route",
+    diagramDisruption: "Line has a problem",
+    diagramBackupRoute: "Your backup route",
+    feature1Title: "Save it once",
+    feature1Body: "Stations, transfers, and days — set up for the commute you take every day, not just today.",
+    feature2Title: "Have a plan B",
+    feature2Body: "Add a backup route tied to the same commute, ready for when your usual line has a problem.",
+    feature3Title: "Life happens",
+    feature3Body:
+      "Skip today, mark a recurring day off, or flag an event that'll pack the platform — without losing the routine you saved.",
+    feature4Title: "Real schedules",
+    feature4Body:
+      "Station order and arrival estimates come from RapidKL and KTM's own published timetables — not guesses.",
+    cta: "Save your first route",
   },
 };
 

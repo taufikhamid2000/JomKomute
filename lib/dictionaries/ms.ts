@@ -6,6 +6,7 @@ export const ms: Dictionary = {
     routes: "Laluan",
     addRoute: "Tambah laluan",
     settings: "Tetapan",
+    about: "Perihal",
     openMenu: "Buka menu",
     closeMenu: "Tutup menu",
   },
@@ -108,5 +109,24 @@ export const ms: Dictionary = {
     unsavedChanges: "Anda mempunyai perubahan rupa yang belum disimpan.",
     cancel: "Batal",
     save: "Simpan",
+  },
+  about: {
+    kicker: "Kenapa aplikasi ini wujud",
+    headline: "Semua apl transit boleh rancang perjalanan. Tiada satu pun ingat rutin anda.",
+    subheadline:
+      "JomKomute bukan perancang perjalanan — ia tempat komuting harian anda sebenarnya disimpan: stesen anda, pertukaran anda, laluan sandaran anda, dan pengecualian yang dibawa oleh kehidupan sebenar.",
+    diagramUsualRoute: "Laluan biasa anda",
+    diagramDisruption: "Laluan bermasalah",
+    diagramBackupRoute: "Laluan sandaran anda",
+    feature1Title: "Simpan sekali",
+    feature1Body: "Stesen, pertukaran, dan hari — disediakan untuk komuting harian anda, bukan hari ini sahaja.",
+    feature2Title: "Ada pelan B",
+    feature2Body: "Tambah laluan sandaran untuk komuting yang sama, sedia digunakan bila laluan biasa anda bermasalah.",
+    feature3Title: "Kehidupan berlaku",
+    feature3Body:
+      "Langkau hari ini, tandakan hari cuti berulang, atau tandakan acara yang akan menyesakkan platform — tanpa kehilangan rutin yang anda simpan.",
+    feature4Title: "Jadual sebenar",
+    feature4Body: "Susunan stesen dan anggaran ketibaan datang dari jadual rasmi RapidKL dan KTM — bukan tekaan.",
+    cta: "Simpan laluan pertama anda",
   },
 };
