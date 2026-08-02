@@ -1,6 +1,6 @@
 "use client";
 
-import { LINES, lineById, linesServing, type LineId } from "@/lib/lines";
+import { LINES, lineById, linesServing, stationNameOnLine, type LineId } from "@/lib/lines";
 import type { RouteLeg } from "@/lib/types";
 import { useDictionary } from "@/lib/use-dictionary";
 
@@ -13,7 +13,11 @@ export function LegsEditor({ legs, onChange }: { legs: RouteLeg[]; onChange: (le
 
   function setLegLine(index: number, lineId: LineId) {
     const leg = legs[index];
-    const updated: RouteLeg = { ...leg, line: lineId, destinationStation: "" };
+    // A transfer leg's origin is the interchange station — but the new
+    // line might call it something else (Glenmarie vs. Glenmarie 2), so
+    // resolve to whatever name that line actually uses.
+    const origin = index === 0 ? leg.originStation : (stationNameOnLine(leg.originStation, lineId) ?? leg.originStation);
+    const updated: RouteLeg = { ...leg, line: lineId, originStation: origin, destinationStation: "" };
     onChange([...legs.slice(0, index), updated]);
   }
 
@@ -30,7 +34,9 @@ export function LegsEditor({ legs, onChange }: { legs: RouteLeg[]; onChange: (le
     if (!last.destinationStation) return;
     const options = linesServing(last.destinationStation, last.line);
     if (options.length === 0) return;
-    onChange([...legs, { line: options[0].id, originStation: last.destinationStation, destinationStation: "" }]);
+    const nextLine = options[0];
+    const origin = stationNameOnLine(last.destinationStation, nextLine.id) ?? last.destinationStation;
+    onChange([...legs, { line: nextLine.id, originStation: origin, destinationStation: "" }]);
   }
 
   function removeLastTransfer() {
