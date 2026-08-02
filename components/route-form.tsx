@@ -1,8 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { LegsEditor } from "@/components/legs-editor";
+import { legsComplete, reverseLegs } from "@/lib/legs";
 import { LINES } from "@/lib/lines";
 import { useSavedRoutes } from "@/lib/store";
 import { DAY_LABELS, type DayOfWeek, type RouteLeg } from "@/lib/types";
@@ -13,13 +14,13 @@ function blankLeg(): RouteLeg {
   return { line: LINES[0].id, originStation: "", destinationStation: "" };
 }
 
-function legsComplete(legs: RouteLeg[]): boolean {
-  return legs.every((l) => l.originStation && l.destinationStation);
-}
-
 export function RouteForm() {
   const router = useRouter();
-  const { addRoute } = useSavedRoutes();
+  const { routes, addRoute } = useSavedRoutes();
+  // ?reverseOf=<id> — "Add return trip" on the route detail page links
+  // here so the form starts pre-filled with that route's legs reversed,
+  // instead of making you rebuild the same commute from scratch.
+  const reverseOfId = useSearchParams().get("reverseOf");
 
   const [legs, setLegs] = useState<RouteLeg[]>([blankLeg()]);
   const [hasAlternate, setHasAlternate] = useState(false);
@@ -27,6 +28,21 @@ export function RouteForm() {
   const [time, setTime] = useState("07:15");
   const [days, setDays] = useState<Set<DayOfWeek>>(new Set(WEEKDAYS));
   const [label, setLabel] = useState("");
+  const [prefilled, setPrefilled] = useState(false);
+
+  useEffect(() => {
+    if (!reverseOfId || prefilled) return;
+    const source = routes.find((r) => r.id === reverseOfId);
+    if (!source) return; // routes hasn't loaded from localStorage yet — retry next render
+
+    setLegs(reverseLegs(source.legs));
+    if (source.alternateLegs) {
+      setAlternateLegs(reverseLegs(source.alternateLegs));
+      setHasAlternate(true);
+    }
+    setDays(new Set(source.days));
+    setPrefilled(true);
+  }, [routes, reverseOfId, prefilled]);
 
   function toggleDay(day: DayOfWeek) {
     setDays((prev) => {
@@ -55,6 +71,14 @@ export function RouteForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      {reverseOfId && (
+        <p className="rounded-lg bg-muted/60 px-3 py-2 text-xs text-foreground/60">
+          {prefilled
+            ? "Pre-filled with the return trip — reversed legs and days, same departure time to adjust below."
+            : "Loading the route to reverse…"}
+        </p>
+      )}
+
       <div className="flex flex-col gap-1.5">
         <label htmlFor="label" className="text-sm font-medium text-foreground">
           Route name <span className="font-normal text-foreground/50">(optional)</span>

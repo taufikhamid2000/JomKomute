@@ -55,11 +55,19 @@ function RouteDetail() {
   return (
     <div className="animate-page-in mx-auto flex w-full max-w-2xl flex-col gap-6 p-4 md:p-8">
       <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-lg font-semibold text-foreground">{route.label}</h1>
-          <p className="text-xs text-foreground/50">
-            {route.departureTime} · {route.days.map((d) => DAY_LABELS[d]).join(", ")}
-          </p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-lg font-semibold text-foreground">{route.label}</h1>
+            <p className="text-xs text-foreground/50">
+              {route.departureTime} · {route.days.map((d) => DAY_LABELS[d]).join(", ")}
+            </p>
+          </div>
+          <Link
+            href={`/new?reverseOf=${route.id}`}
+            className="shrink-0 whitespace-nowrap rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+          >
+            Add return trip
+          </Link>
         </div>
         <LegSummary legs={route.legs} />
       </div>
