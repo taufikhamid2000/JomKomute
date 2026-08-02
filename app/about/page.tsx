@@ -74,6 +74,45 @@ export default function AboutPage() {
           <p className="max-w-lg text-sm text-foreground/60">{t.about.subheadline}</p>
         </section>
 
+        <div className="relative mx-auto w-full max-w-sm rounded-2xl border border-border bg-background p-5">
+          <span
+            className="absolute top-3 right-3 rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase"
+            style={{ backgroundColor: "color-mix(in srgb, var(--destructive) 12%, transparent)", color: "var(--destructive)" }}
+          >
+            {t.about.futureBadge}
+          </span>
+
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm font-semibold text-foreground">{t.about.futureStation}</span>
+            <span className="text-xs text-foreground/60">{t.about.futureTime}</span>
+          </div>
+
+          <div className="mt-4 flex items-center gap-3">
+            <span className="relative flex h-3 w-3 shrink-0" aria-hidden="true">
+              <span
+                className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
+                style={{ backgroundColor: "var(--primary)" }}
+              />
+              <span className="relative inline-flex h-3 w-3 rounded-full" style={{ backgroundColor: "var(--primary)" }} />
+            </span>
+            <span className="text-3xl font-semibold text-foreground">{t.about.futureCount}</span>
+            <span className="text-sm text-foreground/60">{t.about.futureCountLabel}</span>
+          </div>
+
+          <p
+            className="mt-4 rounded-lg px-3 py-2 text-xs text-foreground"
+            style={{ backgroundColor: "color-mix(in srgb, var(--accent) 12%, transparent)" }}
+          >
+            {t.about.futureSuggestion}
+          </p>
+        </div>
+
+        <section className="flex flex-col items-center gap-2 pt-2 text-center">
+          <span className="text-xs font-semibold tracking-wide text-primary uppercase">{t.about.secondKicker}</span>
+          <h2 className="text-lg leading-snug font-semibold text-balance text-foreground">{t.about.secondHeadline}</h2>
+          <p className="max-w-md text-sm text-foreground/60">{t.about.secondBody}</p>
+        </section>
+
         <div className="rounded-2xl border border-border bg-background p-6">
           <CommuteDiagram />
         </div>
@@ -92,47 +131,6 @@ export default function AboutPage() {
             </div>
           ))}
         </div>
-
-        <section className="flex flex-col gap-4 rounded-2xl border border-dashed border-border p-6">
-          <div className="flex flex-col items-center gap-2 text-center">
-            <span className="text-xs font-semibold tracking-wide text-primary uppercase">{t.about.futureKicker}</span>
-            <h2 className="text-lg leading-snug font-semibold text-balance text-foreground">{t.about.futureHeadline}</h2>
-            <p className="max-w-md text-sm text-foreground/60">{t.about.futureBody}</p>
-          </div>
-
-          <div className="relative mx-auto w-full max-w-sm rounded-2xl border border-border bg-background p-5">
-            <span
-              className="absolute top-3 right-3 rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase"
-              style={{ backgroundColor: "color-mix(in srgb, var(--destructive) 12%, transparent)", color: "var(--destructive)" }}
-            >
-              {t.about.futureBadge}
-            </span>
-
-            <div className="flex flex-col gap-0.5">
-              <span className="text-sm font-semibold text-foreground">{t.about.futureStation}</span>
-              <span className="text-xs text-foreground/60">{t.about.futureTime}</span>
-            </div>
-
-            <div className="mt-4 flex items-center gap-3">
-              <span className="relative flex h-3 w-3 shrink-0" aria-hidden="true">
-                <span
-                  className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
-                  style={{ backgroundColor: "var(--primary)" }}
-                />
-                <span className="relative inline-flex h-3 w-3 rounded-full" style={{ backgroundColor: "var(--primary)" }} />
-              </span>
-              <span className="text-3xl font-semibold text-foreground">{t.about.futureCount}</span>
-              <span className="text-sm text-foreground/60">{t.about.futureCountLabel}</span>
-            </div>
-
-            <p
-              className="mt-4 rounded-lg px-3 py-2 text-xs text-foreground"
-              style={{ backgroundColor: "color-mix(in srgb, var(--accent) 12%, transparent)" }}
-            >
-              {t.about.futureSuggestion}
-            </p>
-          </div>
-        </section>
 
         <Link
           href="/new"

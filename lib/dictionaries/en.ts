@@ -109,10 +109,20 @@ export const en = {
     save: "Save",
   },
   about: {
-    kicker: "Why this exists",
-    headline: "Every transit app can plan a trip. None of them remember your routine.",
+    kicker: "The idea",
+    headline: "“How many people are planning this trip tomorrow?”",
     subheadline:
-      "JomKomute isn't a journey planner — it's where your daily commute actually lives: your stations, your transfers, your backup route, and the exceptions real life throws at it.",
+      "Not history — a live count of everyone else's planned trips for your station and time, so you know before you leave whether to go early or take another line. That needs real scale to mean anything, which is why this is a pitch for a partner like RapidKL to run — not a backend we'd build ourselves.",
+    futureBadge: "Concept — needs real scale to work",
+    futureStation: "Maluri · MRT Putrajaya Line",
+    futureTime: "Tomorrow, 7:30 AM",
+    futureCount: "182",
+    futureCountLabel: "people planning this trip",
+    futureSuggestion: "Busier than usual — consider the LRT Ampang Line instead, or leave 15 min earlier.",
+    secondKicker: "It starts with saving your route",
+    secondHeadline: "Every saved commute is a signal",
+    secondBody:
+      "Your stations, your transfers, your backup route — none of this is just convenience. It's the exact plan that, aggregated across everyone using it, is what the count above would be built from.",
     diagramUsualRoute: "Your usual route",
     diagramDisruption: "Line has a problem",
     diagramBackupRoute: "Your backup route",
@@ -126,16 +136,6 @@ export const en = {
     feature4Title: "Real schedules",
     feature4Body:
       "Station order and arrival estimates come from RapidKL and KTM's own published timetables — not guesses.",
-    futureKicker: "One idea we can't build alone",
-    futureHeadline: "“How many people are planning this trip tomorrow?”",
-    futureBody:
-      "Not history — a live count of everyone else's saved plans for that station and time, so you can leave earlier or switch lines before it happens. That needs real scale and a partner like RapidKL to run it responsibly. This is a mock of what it could look like.",
-    futureBadge: "Concept, not real data",
-    futureStation: "Maluri · MRT Putrajaya Line",
-    futureTime: "Tomorrow, 7:30 AM",
-    futureCount: "182",
-    futureCountLabel: "people planning this trip",
-    futureSuggestion: "Busier than usual — consider the LRT Ampang Line instead, or leave 15 min earlier.",
     cta: "Save your first route",
   },
 };
