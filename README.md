@@ -15,9 +15,21 @@ npm install
 npm run dev
 ```
 
+## Station data
+
+`lib/stations.ts` is generated, not hand-written — it comes from RapidKL's
+official GTFS static feed (data.gov.my, category `rapid-rail-kl`), covering
+LRT, MRT, KL Monorail, and BRT Sunway with real station order per line.
+Regenerate it if the source data changes:
+
+```bash
+node scripts/generate-stations.mjs
+```
+
 ## Deploy
 
-Static-exported (`output: "export"` in `next.config.ts`) and deployed to
-GitHub Pages via `.github/workflows/deploy.yml` on every push to `main`.
-First-time setup: in the repo's Settings → Pages, set **Source** to
-**GitHub Actions**.
+Static-exported (`output: "export"` in `next.config.ts`). The workflow in
+`.github/workflows/deploy.yml` builds on every push to `main` and pushes
+the output to the `gh-pages` branch; GitHub Pages (Settings → Pages →
+Source → **Deploy from a branch** → `gh-pages`, `/root`) just serves
+whatever's there.
