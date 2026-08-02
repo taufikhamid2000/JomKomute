@@ -2,9 +2,11 @@
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Combobox } from "@/components/combobox";
 import { LegsEditor } from "@/components/legs-editor";
 import { legsComplete, reverseLegs } from "@/lib/legs";
 import { LINES } from "@/lib/lines";
+import { allStationNames, findRoute } from "@/lib/route-finder";
 import { useSavedRoutes } from "@/lib/store";
 import { type DayOfWeek, type RouteLeg } from "@/lib/types";
 import { useDictionary } from "@/lib/use-dictionary";
@@ -32,6 +34,22 @@ export function RouteForm() {
   const [days, setDays] = useState<Set<DayOfWeek>>(new Set(WEEKDAYS));
   const [label, setLabel] = useState("");
   const [prefilled, setPrefilled] = useState(false);
+
+  const [findOrigin, setFindOrigin] = useState("");
+  const [findDestination, setFindDestination] = useState("");
+  const [findNotFound, setFindNotFound] = useState(false);
+  const stationNames = allStationNames();
+
+  function handleFindRoute() {
+    if (!findOrigin || !findDestination) return;
+    const result = findRoute(findOrigin, findDestination);
+    if (result) {
+      setLegs(result);
+      setFindNotFound(false);
+    } else {
+      setFindNotFound(true);
+    }
+  }
 
   useEffect(() => {
     if (!reverseOfId || prefilled) return;
@@ -91,6 +109,50 @@ export function RouteForm() {
           placeholder={t.routeForm.namePlaceholder}
           className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
+      </div>
+
+      <div className="flex flex-col gap-3 rounded-2xl border border-border p-3">
+        <div>
+          <p className="text-sm font-medium text-foreground">{t.routeForm.findTitle}</p>
+          <p className="text-xs text-foreground/50">{t.routeForm.findDescription}</p>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-foreground">{t.legsEditor.from}</label>
+            <Combobox
+              value={findOrigin}
+              onChange={(station) => {
+                setFindOrigin(station);
+                setFindNotFound(false);
+              }}
+              options={stationNames}
+              placeholder={t.legsEditor.selectStation}
+              noResultsLabel={t.legsEditor.noStationsFound}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-foreground">{t.legsEditor.to}</label>
+            <Combobox
+              value={findDestination}
+              onChange={(station) => {
+                setFindDestination(station);
+                setFindNotFound(false);
+              }}
+              options={stationNames}
+              placeholder={t.legsEditor.selectStation}
+              noResultsLabel={t.legsEditor.noStationsFound}
+            />
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={handleFindRoute}
+          disabled={!findOrigin || !findDestination}
+          className="w-fit cursor-pointer rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {t.routeForm.findButton}
+        </button>
+        {findNotFound && <p className="text-xs text-destructive">{t.routeForm.findNotFound}</p>}
       </div>
 
       <div className="flex flex-col gap-2">
