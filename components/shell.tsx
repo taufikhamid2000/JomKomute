@@ -96,6 +96,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
+function normalizePath(path: string): string {
+  return path.length > 1 && path.endsWith("/") ? path.slice(0, -1) : path;
+}
+
 function NavLinks({
   links,
   pathname,
@@ -108,7 +112,11 @@ function NavLinks({
   return (
     <>
       {links.map((link) => {
-        const isActive = pathname === link.href;
+        // The production build sets trailingSlash: true (see
+        // next.config.ts) so usePathname() returns e.g. "/dashboard/"
+        // there but "/dashboard" in dev — normalize both sides so the
+        // active link doesn't only work in one of the two environments.
+        const isActive = normalizePath(pathname) === normalizePath(link.href);
         return (
           <Link
             key={link.href}
