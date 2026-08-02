@@ -25,6 +25,15 @@ function readFromStorage<T>(key: string): T[] {
   }
 }
 
+// SavedRoute's shape changed (single line/origin/destination -> a legs
+// array) — a route saved before that change would crash the routes list
+// (e.g. `route.legs[0]` on undefined) rather than just look wrong, so drop
+// anything that doesn't match the current shape instead of rendering it.
+function isValidRoute(value: unknown): value is SavedRoute {
+  const route = value as Partial<SavedRoute> | null | undefined;
+  return !!route && Array.isArray(route.legs) && route.legs.length > 0;
+}
+
 // Mirrors localStorage in memory so getSnapshot can return a stable
 // reference — useSyncExternalStore compares snapshots with Object.is, and
 // a fresh JSON.parse on every call would never be equal to the last one.
@@ -34,7 +43,10 @@ const EMPTY: never[] = [];
 
 function getCached<T>(key: string): T[] {
   if (typeof window === "undefined") return EMPTY;
-  if (!cache.has(key)) cache.set(key, readFromStorage<T>(key));
+  if (!cache.has(key)) {
+    const value = readFromStorage<T>(key);
+    cache.set(key, key === ROUTES_KEY ? (value as unknown[]).filter(isValidRoute) : value);
+  }
   return cache.get(key) as T[];
 }
 
