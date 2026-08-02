@@ -1,8 +1,12 @@
 #!/usr/bin/env node
-// Regenerates lib/stations.ts from RapidKL's official GTFS static feed
-// (https://developer.data.gov.my/realtime-api/gtfs-static, category=
-// rapid-rail-kl) — covers LRT, MRT, KL Monorail, and BRT Sunway in one
-// feed. Re-run this if the source data changes; don't hand-edit the
+// Regenerates lib/stations.ts from two official GTFS static feeds on
+// data.gov.my (https://developer.data.gov.my/realtime-api/gtfs-static):
+//   - Prasarana, category=rapid-rail-kl — LRT, MRT, KL Monorail, BRT Sunway
+//   - KTMB — filtered to just the two Klang Valley Komuter lines (route_type
+//     "0"); the same feed also bundles Intercity/ETS long-distance routes
+//     (route_type "2"), which aren't relevant to daily commuting and are
+//     dropped
+// Re-run this if either source's data changes; don't hand-edit the
 // generated file.
 //
 // Usage: node scripts/generate-stations.mjs
@@ -12,9 +16,10 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const GTFS_URL = "https://api.data.gov.my/gtfs-static/prasarana?category=rapid-rail-kl";
+const RAPID_RAIL_URL = "https://api.data.gov.my/gtfs-static/prasarana?category=rapid-rail-kl";
+const KTMB_URL = "https://api.data.gov.my/gtfs-static/ktmb";
 
-const LINE_ID_SLUG = {
+const RAPID_LINE_ID_SLUG = {
   AG: "ampang",
   KJ: "kelana-jaya",
   PH: "sri-petaling",
@@ -25,9 +30,14 @@ const LINE_ID_SLUG = {
   SA: "shah-alam",
 };
 
-// Real abbreviations in the feed's ALL-CAPS station names that shouldn't
+const KTMB_LINE_ID_SLUG = {
+  KA15_KD19: "komuter-port-klang",
+  KC05_KB18: "komuter-seremban",
+};
+
+// Real abbreviations in the feeds' ALL-CAPS station names that shouldn't
 // be title-cased into e.g. "Klcc" or "Uitm".
-const KEEP_UPPERCASE = new Set(["KL", "KLCC", "PWTC", "UOB", "IOI", "USJ", "UITM", "UPM", "CBP", "SS", "SA"]);
+const KEEP_UPPERCASE = new Set(["KL", "KLCC", "PWTC", "UOB", "IOI", "USJ", "UITM", "UPM", "UKM", "CBP", "SS", "SA"]);
 
 // The upstream feed has "KL SENTRAL - REDONE" for stop KJ15 — an obvious
 // leftover from a Prasarana-side data edit, not a real station name.
@@ -76,6 +86,24 @@ function parseCsv(text) {
   });
 }
 
+// Capitalizes the first *letter*, not just the first character — a plain
+// `charAt(0).toUpperCase()` leaves the "S" lowercase in a token like
+// "(S)" (a KTM suffix marker) since the first character is "(", not a
+// letter at all.
+function capitalizeFirstLetter(token) {
+  let result = "";
+  let capitalized = false;
+  for (const ch of token) {
+    if (/[a-zA-Z]/.test(ch)) {
+      result += capitalized ? ch.toLowerCase() : ch.toUpperCase();
+      capitalized = true;
+    } else {
+      result += ch;
+    }
+  }
+  return result;
+}
+
 function caseToken(token) {
   if (token === "") return token;
   if (/^[0-9]+$/.test(token)) return token;
@@ -84,7 +112,7 @@ function caseToken(token) {
   if (token !== token.toUpperCase() && token !== token.toLowerCase()) return token;
   if (/^[A-Z]{1,4}[0-9]+$/i.test(token)) return token.toUpperCase(); // e.g. USJ7, SS15
   if (KEEP_UPPERCASE.has(token.toUpperCase())) return token.toUpperCase();
-  return token.charAt(0).toUpperCase() + token.slice(1).toLowerCase();
+  return capitalizeFirstLetter(token);
 }
 
 function titleCaseWord(word) {
@@ -105,67 +133,141 @@ function parseGtfsTime(hms) {
   return h * 3600 + m * 60 + s;
 }
 
+function fetchGtfsFeed(url, destDir) {
+  execSync(`curl -sfL "${url}" -o feed.zip && unzip -oq feed.zip -x "__MACOSX/*"`, { cwd: destDir });
+  return {
+    read: (file) => readFileSync(join(destDir, file), "utf8"),
+  };
+}
+
+// Shared by both feeds: one line's station order + real scheduled travel
+// times, from whichever trip is the best representative of the whole
+// line. stops.txt's own row order isn't guaranteed to match the line's
+// actual station order, so this always derives it from stop_times.txt
+// instead.
+function buildLine({ id, name, color, trips, stopTimes, stopById, matchesTrip }) {
+  const candidateTripIds = new Set(trips.filter(matchesTrip).map((t) => t.trip_id));
+  if (candidateTripIds.size === 0) return null;
+
+  // A route commonly has multiple trip patterns sharing the same
+  // direction/service — full-length runs plus short-turn variants that
+  // stop partway (e.g. KTM Seremban Line trips that turn back at KL
+  // Sentral instead of continuing to Pulau Sebang). Picking the first
+  // match risked grabbing a short-turn trip and mistaking it for the
+  // whole line, so instead: count stops per candidate trip and take
+  // whichever one actually covers the most.
+  const stopCountByTrip = new Map();
+  for (const st of stopTimes) {
+    if (!candidateTripIds.has(st.trip_id)) continue;
+    stopCountByTrip.set(st.trip_id, (stopCountByTrip.get(st.trip_id) ?? 0) + 1);
+  }
+  let tripId;
+  let maxStops = 0;
+  for (const [candidateId, count] of stopCountByTrip) {
+    if (count > maxStops) {
+      maxStops = count;
+      tripId = candidateId;
+    }
+  }
+  if (!tripId) return null;
+
+  // Built from the same sorted+filtered rows in one pass so `stations`
+  // and `arrivalOffsetMinutes` stay index-aligned — computing them
+  // separately risks the two arrays silently drifting out of sync if a
+  // stop gets filtered differently on one side.
+  const rows = stopTimes
+    .filter((st) => st.trip_id === tripId)
+    .sort((a, b) => Number(a.stop_sequence) - Number(b.stop_sequence))
+    .map((st) => {
+      const stop = stopById.get(st.stop_id);
+      if (!stop || !st.arrival_time) return null;
+      const stopName = titleCase(stop.stop_name);
+      return { name: KNOWN_NAME_FIXES[stopName] ?? stopName, arrivalSeconds: parseGtfsTime(st.arrival_time) };
+    })
+    .filter((row) => row !== null);
+
+  if (rows.length === 0) return null;
+
+  // Minutes from this trip's first stop to each station — real scheduled
+  // timetable data, not estimated. A leg's travel time is just the
+  // difference between its two stations' offsets (lib/schedule.ts).
+  const baseSeconds = rows[0].arrivalSeconds;
+  return {
+    id,
+    name,
+    color,
+    stations: rows.map((row) => row.name),
+    arrivalOffsetMinutes: rows.map((row) => Math.round((row.arrivalSeconds - baseSeconds) / 60)),
+  };
+}
+
 const tmp = mkdtempSync(join(tmpdir(), "gtfs-"));
 try {
-  execSync(`curl -sfL "${GTFS_URL}" -o feed.zip && unzip -oq feed.zip -x "__MACOSX/*"`, { cwd: tmp });
+  const lines = [];
 
-  const routes = parseCsv(readFileSync(join(tmp, "routes.txt"), "utf8")).filter((r) => r.status === "valid");
-  const trips = parseCsv(readFileSync(join(tmp, "trips.txt"), "utf8"));
-  const stopTimes = parseCsv(readFileSync(join(tmp, "stop_times.txt"), "utf8"));
-  const stops = parseCsv(readFileSync(join(tmp, "stops.txt"), "utf8")).filter((s) => s.status === "valid");
-  const stopById = new Map(stops.map((s) => [s.stop_id, s]));
+  // --- Prasarana: LRT/MRT/Monorail/BRT ---
+  {
+    const dir = join(tmp, "rapid-rail");
+    execSync(`mkdir -p "${dir}"`);
+    const feed = fetchGtfsFeed(RAPID_RAIL_URL, dir);
+    const routes = parseCsv(feed.read("routes.txt")).filter((r) => r.status === "valid");
+    const trips = parseCsv(feed.read("trips.txt"));
+    const stopTimes = parseCsv(feed.read("stop_times.txt"));
+    const stops = parseCsv(feed.read("stops.txt")).filter((s) => s.status === "valid");
+    const stopById = new Map(stops.map((s) => [s.stop_id, s]));
 
-  // One representative trip per route (direction_id "0") to read a real
-  // stop_sequence from — stops.txt's own row order isn't guaranteed to
-  // match the line's actual station order.
-  const tripIdByRoute = new Map();
-  for (const t of trips) {
-    if (!tripIdByRoute.has(t.route_id) && t.direction_id === "0") {
-      tripIdByRoute.set(t.route_id, t.trip_id);
+    for (const route of routes) {
+      const line = buildLine({
+        id: RAPID_LINE_ID_SLUG[route.route_id] ?? route.route_id.toLowerCase(),
+        name: route.route_long_name,
+        color: route.route_color ? `#${route.route_color}` : "#64748b",
+        trips,
+        stopTimes,
+        stopById,
+        matchesTrip: (t) => t.route_id === route.route_id && t.direction_id === "0",
+      });
+      if (line) lines.push(line);
     }
   }
 
-  const lines = [];
-  for (const route of routes) {
-    const tripId = tripIdByRoute.get(route.route_id);
-    if (!tripId) continue;
+  // --- KTMB: Komuter only (route_type "0"); Intercity/ETS (route_type
+  // "2") shares this same feed but isn't relevant to daily commuting ---
+  {
+    const dir = join(tmp, "ktmb");
+    execSync(`mkdir -p "${dir}"`);
+    const feed = fetchGtfsFeed(KTMB_URL, dir);
+    const routes = parseCsv(feed.read("routes.txt")).filter((r) => r.route_type === "0");
+    const trips = parseCsv(feed.read("trips.txt"));
+    const stopTimes = parseCsv(feed.read("stop_times.txt"));
+    // No `status` column in this feed, unlike Prasarana's — nothing to filter on.
+    const stops = parseCsv(feed.read("stops.txt"));
+    const stopById = new Map(stops.map((s) => [s.stop_id, s]));
 
-    // Built from the same sorted+filtered rows in one pass so `stations`
-    // and `arrivalOffsetMinutes` stay index-aligned — computing them
-    // separately risks the two arrays silently drifting out of sync if a
-    // stop gets filtered differently on one side.
-    const rows = stopTimes
-      .filter((st) => st.trip_id === tripId)
-      .sort((a, b) => Number(a.stop_sequence) - Number(b.stop_sequence))
-      .map((st) => {
-        const stop = stopById.get(st.stop_id);
-        if (!stop || !st.arrival_time) return null;
-        const name = titleCase(stop.stop_name);
-        return { name: KNOWN_NAME_FIXES[name] ?? name, arrivalSeconds: parseGtfsTime(st.arrival_time) };
-      })
-      .filter((row) => row !== null);
-
-    if (rows.length === 0) continue;
-
-    // Minutes from this trip's first stop to each station — real
-    // scheduled timetable data, not estimated. A leg's travel time is
-    // just the difference between its two stations' offsets (lib/schedule.ts).
-    const baseSeconds = rows[0].arrivalSeconds;
-    const arrivalOffsetMinutes = rows.map((row) => Math.round((row.arrivalSeconds - baseSeconds) / 60));
-
-    lines.push({
-      id: LINE_ID_SLUG[route.route_id] ?? route.route_id.toLowerCase(),
-      name: route.route_long_name,
-      color: route.route_color ? `#${route.route_color}` : "#64748b",
-      stations: rows.map((row) => row.name),
-      arrivalOffsetMinutes,
-    });
+    for (const route of routes) {
+      const line = buildLine({
+        id: KTMB_LINE_ID_SLUG[route.route_id] ?? route.route_id.toLowerCase(),
+        name: `KTM ${route.route_short_name}`,
+        color: route.route_color ? `#${route.route_color}` : "#64748b",
+        trips,
+        stopTimes,
+        stopById,
+        // Restrict candidates to an explicit weekday service too
+        // (calendar.txt has separate komuter_weekday/komuter_weekend
+        // service_ids) so a weekend-only schedule quirk can't sneak in.
+        matchesTrip: (t) =>
+          t.route_id === route.route_id && t.direction_id === "0" && t.service_id === "komuter_weekday",
+      });
+      if (line) lines.push(line);
+    }
   }
 
-  const header = `// Generated from RapidKL's official GTFS static feed
-// (https://developer.data.gov.my/realtime-api/gtfs-static, category=rapid-rail-kl)
-// via scripts/generate-stations.mjs — covers LRT, MRT, KL Monorail, and
-// BRT Sunway. Don't hand-edit; re-run the script if the source changes.
+  const header = `// Generated from two official GTFS static feeds on data.gov.my
+// (https://developer.data.gov.my/realtime-api/gtfs-static) via
+// scripts/generate-stations.mjs — don't hand-edit, re-run the script
+// instead if the source data changes:
+//   - Prasarana (category=rapid-rail-kl): LRT, MRT, KL Monorail, BRT Sunway
+//   - KTMB: the two Klang Valley Komuter lines only (route_type "0") —
+//     Intercity/ETS long-distance routes in the same feed are excluded
 //
 // arrivalOffsetMinutes[i] is minutes from stations[0]'s departure to
 // stations[i]'s arrival, per one representative weekday trip — real

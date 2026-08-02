@@ -1,7 +1,10 @@
-// Generated from RapidKL's official GTFS static feed
-// (https://developer.data.gov.my/realtime-api/gtfs-static, category=rapid-rail-kl)
-// via scripts/generate-stations.mjs — covers LRT, MRT, KL Monorail, and
-// BRT Sunway. Don't hand-edit; re-run the script if the source changes.
+// Generated from two official GTFS static feeds on data.gov.my
+// (https://developer.data.gov.my/realtime-api/gtfs-static) via
+// scripts/generate-stations.mjs — don't hand-edit, re-run the script
+// instead if the source data changes:
+//   - Prasarana (category=rapid-rail-kl): LRT, MRT, KL Monorail, BRT Sunway
+//   - KTMB: the two Klang Valley Komuter lines only (route_type "0") —
+//     Intercity/ETS long-distance routes in the same feed are excluded
 //
 // arrivalOffsetMinutes[i] is minutes from stations[0]'s departure to
 // stations[i]'s arrival, per one representative weekday trip — real
@@ -453,6 +456,148 @@ export const LINES = [
       58,
       61,
       66
+    ]
+  },
+  {
+    "id": "komuter-seremban",
+    "name": "KTM Seremban Line",
+    "color": "#3C5A9F",
+    "stations": [
+      "Batu Caves",
+      "Taman Wahyu",
+      "Kampung Batu",
+      "Batu Kentonmen",
+      "Sentul",
+      "Putra",
+      "Bank Negara",
+      "Kuala Lumpur",
+      "KL Sentral",
+      "Midvalley",
+      "Seputih",
+      "Salak Selatan",
+      "Bandar Tasek (S)",
+      "Serdang",
+      "Kajang",
+      "Kajang 2",
+      "UKM",
+      "Bangi",
+      "Batang Benar",
+      "Nilai",
+      "Labu",
+      "Tiroi",
+      "Seremban",
+      "Senawang",
+      "Sungai Gadut",
+      "Rembau",
+      "Pulau Sebang (Tampin)"
+    ],
+    "arrivalOffsetMinutes": [
+      0,
+      3,
+      6,
+      8,
+      12,
+      18,
+      21,
+      25,
+      29,
+      37,
+      39,
+      45,
+      51,
+      59,
+      75,
+      79,
+      82,
+      88,
+      100,
+      111,
+      118,
+      124,
+      131,
+      137,
+      143,
+      156,
+      173
+    ]
+  },
+  {
+    "id": "komuter-port-klang",
+    "name": "KTM Port Klang Line",
+    "color": "#DC2420",
+    "stations": [
+      "Tanjung Malim",
+      "Kalumpang",
+      "Kuala Kubu Baru",
+      "Rasa",
+      "Batang Kali",
+      "Serendah",
+      "Rawang",
+      "Kuang",
+      "Sungai Buluh",
+      "Kepong Sentral",
+      "Kepong",
+      "Segambut",
+      "Putra",
+      "Bank Negara",
+      "Kuala Lumpur",
+      "KL Sentral",
+      "Abdullah Hukum",
+      "Angkasapuri",
+      "Pantai Dalam",
+      "Petaling",
+      "Jalan Templer",
+      "Kg.Datuk Harun",
+      "Seri Setia",
+      "Setia Jaya",
+      "Subang Jaya",
+      "Batu Tiga",
+      "Shah Alam",
+      "Padang Jawa",
+      "Bukit Badak",
+      "Klang",
+      "Teluk Pulai",
+      "Teluk Gadong",
+      "Kampung Raja Uda",
+      "Jalan Kastam",
+      "Pel. Klang (S)"
+    ],
+    "arrivalOffsetMinutes": [
+      0,
+      3,
+      13,
+      18,
+      21,
+      29,
+      38,
+      46,
+      53,
+      61,
+      64,
+      69,
+      74,
+      77,
+      81,
+      85,
+      99,
+      101,
+      105,
+      107,
+      110,
+      115,
+      117,
+      120,
+      124,
+      130,
+      137,
+      143,
+      148,
+      153,
+      166,
+      169,
+      172,
+      174,
+      180
     ]
   }
 ] as const;

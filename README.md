@@ -17,10 +17,16 @@ npm run dev
 
 ## Station data
 
-`lib/stations.ts` is generated, not hand-written — it comes from RapidKL's
-official GTFS static feed (data.gov.my, category `rapid-rail-kl`), covering
-LRT, MRT, KL Monorail, and BRT Sunway with real station order per line.
-Regenerate it if the source data changes:
+`lib/stations.ts` is generated, not hand-written — it comes from two
+official GTFS static feeds on data.gov.my: Prasarana (category
+`rapid-rail-kl`, covering LRT, MRT, KL Monorail, and BRT Sunway) and KTMB
+(filtered to just the two Klang Valley Komuter lines — the same feed also
+bundles Intercity/ETS long-distance routes, which are dropped). Station
+order and expected-arrival times both come from real GTFS scheduled
+timetables, not estimates. A handful of real interchanges that don't share
+an exact GTFS stop name (e.g. walkway-connected stations) are curated by
+hand in `lib/lines.ts`'s `WALKWAY_LINKS`. Regenerate the station data if
+either source changes:
 
 ```bash
 node scripts/generate-stations.mjs
