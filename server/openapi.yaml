@@ -1,0 +1,118 @@
+# Design stub for a future backend — see schema.sql and the "why" note
+# there. Nothing here is implemented or deployed; the app is a static
+# export today (next.config.ts's `output: "export"`) with no server.
+# This is the API surface that feature would need if it's ever built.
+openapi: 3.0.3
+info:
+  title: JomKomute planned-trip pings (design stub, not implemented)
+  version: "0.0.0"
+  description: >
+    No auth, no accounts. Each ping is keyed by a client-generated
+    ping_key (see schema.sql) so a device can manage its own ping
+    without the server learning a stable cross-day identity.
+
+paths:
+  /pings/{pingKey}:
+    put:
+      summary: Create or replace a ping (idempotent).
+      description: >
+        Called when a route is saved/edited, or once per day the app is
+        opened, for whichever occurrence computeNextRoute (lib/next-route.ts)
+        says is coming up next.
+      parameters:
+        - name: pingKey
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [station, tripDate, timeBucket]
+              properties:
+                station:
+                  type: string
+                  example: Maluri
+                lineId:
+                  type: string
+                  example: putrajaya
+                tripDate:
+                  type: string
+                  format: date
+                  example: "2026-08-04"
+                timeBucket:
+                  type: integer
+                  description: minutes since midnight, rounded to nearest 15
+                  example: 450
+      responses:
+        "204":
+          description: Stored.
+
+    delete:
+      summary: Remove a ping. No-op if it doesn't exist.
+      description: >
+        Called when a saved route is deleted, or when the dashboard's
+        "Change plan" modal (components/change-plan-modal.tsx) adds a
+        skip exception for that date — mirrors the existing whole-day
+        skip logic so the count drops immediately, not just the UI.
+      parameters:
+        - name: pingKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted, or didn't exist.
+
+  /pings/counts:
+    get:
+      summary: Count of pings near a station and time.
+      description: >
+        What the dashboard (app/dashboard/page.tsx) would call instead
+        of lib/crowd-mock.ts's mockCrowdFor once this is real.
+      parameters:
+        - name: station
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: bucket
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: minutes since midnight
+        - name: window
+          in: query
+          schema:
+            type: integer
+            default: 30
+          description: +/- minutes around bucket to include
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    example: 182
+
+# Explicitly out of scope for this stub, and unsolved by the schema or
+# routes above: nothing here stops a scripted client from PUTting
+# fabricated ping_keys to inflate or deflate a count. There's no
+# identity to rate-limit against beyond IP, which is trivial to rotate.
+# Real anti-abuse (e.g. a lightweight per-device attestation) is the
+# actual hard part of this feature, not the API surface.
