@@ -87,6 +87,11 @@ components:
         status:
           type: string
           enum: [active, resolved]
+          description: >
+            Set by the promotion/resolution rule in issues-schema.sql —
+            promoted on >= 3 independent 'report' posts within 30
+            minutes, resolved either by 45 minutes of silence, 1-2
+            'resolved_report' posts, or a 4-hour safety cap.
         startedAt:
           type: string
           format: date-time
@@ -114,4 +119,5 @@ components:
 
 # Deliberately not exposed here: creating/classifying/promoting posts.
 # That's the scheduled job's job, running against ingested_posts and
-# service_incidents directly — see issues-schema.sql.
+# service_incidents directly per the promotion/resolution rule at the
+# end of issues-schema.sql, not through this API.
