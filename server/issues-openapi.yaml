@@ -1,0 +1,117 @@
+# Design stub for a future Issues backend — see issues-schema.sql for
+# the "why" and how it differs from the pings design (schema.sql /
+# openapi.yaml). Nothing here is implemented or deployed.
+openapi: 3.0.3
+info:
+  title: JomKomute service incidents (design stub, not implemented)
+  version: "0.0.0"
+  description: >
+    Read-only from the client's perspective — deliberately no public
+    write endpoint. Ingestion (polling RapidKL's X/Threads posts and
+    open keyword search, classifying them, promoting confirmed reports
+    to an incident) happens entirely in a server-side scheduled job that
+    writes to the database directly, not through this API. That avoids
+    the whole "client can PUT whatever it wants" abuse surface that
+    schema.sql's pings design has to accept as a tradeoff.
+
+paths:
+  /incidents:
+    get:
+      summary: Active (or all) incidents, optionally filtered by line.
+      description: >
+        What app/issues/page.tsx would call instead of
+        lib/mock-issues.ts's MOCK_ISSUES once this is real.
+      parameters:
+        - name: lineId
+          in: query
+          schema:
+            type: string
+          example: kelana-jaya
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, resolved]
+          description: omit for both
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Incident"
+
+  /incidents/{id}:
+    get:
+      summary: One incident with its supporting posts.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Incident"
+                  - type: object
+                    properties:
+                      evidence:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/EvidencePost"
+        "404":
+          description: Not found
+
+components:
+  schemas:
+    Incident:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        lineId:
+          type: string
+          example: kelana-jaya
+        headline:
+          type: string
+          example: Delays on the Kelana Jaya Line
+        status:
+          type: string
+          enum: [active, resolved]
+        startedAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    EvidencePost:
+      type: object
+      description: >
+        Mirrors lib/mock-issues.ts's MockIssue.quote/source/minutesAgo
+        fields — the raw posts an incident was promoted from, not the
+        full ingested_posts row (classification/matching internals stay
+        server-side).
+      properties:
+        source:
+          type: string
+          enum: [x, threads]
+        quote:
+          type: string
+        postedAt:
+          type: string
+          format: date-time
+
+# Deliberately not exposed here: creating/classifying/promoting posts.
+# That's the scheduled job's job, running against ingested_posts and
+# service_incidents directly — see issues-schema.sql.
