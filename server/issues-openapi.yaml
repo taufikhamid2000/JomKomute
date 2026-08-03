@@ -99,6 +99,15 @@ components:
           type: string
           format: date-time
           nullable: true
+        verification:
+          type: string
+          enum: [unverified, confirmed, denied]
+          description: >
+            Separate from status — see issues-schema.sql's anti-abuse
+            layer 5. Auto-promoted incidents start 'unverified'; the
+            client should display these with less authority (e.g.
+            "reported by commuters, unconfirmed") than a 'confirmed'
+            one, not with equal weight.
 
     EvidencePost:
       type: object
