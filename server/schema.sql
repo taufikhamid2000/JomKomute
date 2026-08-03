@@ -35,3 +35,41 @@ create index planned_trip_pings_station_date_bucket
 -- should never hold more than ~2 days of data — nothing to leak even if
 -- the database were compromised, and no long-lived per-device history.
 -- e.g.: delete from planned_trip_pings where trip_date < current_date;
+
+-- Anti-abuse. No account system exists (see the header above), so
+-- nothing here fully stops a determined, resourced attacker — that's
+-- the fundamental tradeoff of staying account-free, not a gap unique to
+-- this schema. What these layers do is make casual/single-actor
+-- inflation or deflation of a count impractical:
+--
+--   1. Per-IP rate limiting on writes, enforced at the edge/gateway
+--      (Cloudflare, API gateway middleware — not this database).
+--      Counters live in short-TTL storage (a few hours), so this
+--      doesn't reintroduce the persistent-identity problem ping_key was
+--      designed to avoid. Generous enough for a household behind one
+--      NAT (~20/day); blunts a single naive script, not a rotating-IP
+--      attacker.
+--
+--   2. Suppression floor at read time (see openapi.yaml's GET
+--      /pings/counts): counts below a minimum (e.g. 20) are never
+--      returned, just "not enough data yet". This is application/query
+--      logic, not a column here, but it changes the incentive — a
+--      spammer has to cross a real threshold to move the number at
+--      all, instead of nudging 3 to 4 unnoticed. Doubles as privacy
+--      protection (never surfacing a small, near-identifiable group).
+--
+--   3. Baseline sanity check against real historical ridership (the
+--      ridership_od_rapidrail_daily dataset from data.gov.my, not
+--      modeled as a table in this file) — a count wildly outside a
+--      station's normal range for that time of day gets held for
+--      delayed publication instead of shown instantly. Trades a little
+--      real-time-ness for resistance to a sudden fake spike.
+--
+--   4. App attestation (Play Integrity / iOS DeviceCheck) would be the
+--      strongest lever — proving a write came from a real installed
+--      app, not a bare script — but it requires native app-store
+--      distribution. Explicitly not adopted here: this project is a
+--      static website (see the header above), and bringing in
+--      attestation would mean committing to native packaging just to
+--      support anti-abuse, a bigger scope change than this feature
+--      justifies.

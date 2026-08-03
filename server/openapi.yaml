@@ -9,7 +9,10 @@ info:
   description: >
     No auth, no accounts. Each ping is keyed by a client-generated
     ping_key (see schema.sql) so a device can manage its own ping
-    without the server learning a stable cross-day identity.
+    without the server learning a stable cross-day identity. See
+    schema.sql's "Anti-abuse" section for the full threat-model
+    writeup; the rate-limit header and suppressed counts below are
+    layers 1 and 2 of that design.
 
 paths:
   /pings/{pingKey}:
@@ -50,6 +53,11 @@ paths:
       responses:
         "204":
           description: Stored.
+        "429":
+          description: >
+            Per-IP rate limit exceeded (schema.sql anti-abuse layer 1,
+            enforced at the edge/gateway — short-TTL counters, not this
+            API's own state).
 
     delete:
       summary: Remove a ping. No-op if it doesn't exist.
@@ -100,7 +108,14 @@ paths:
           description: +/- minutes around bucket to include
       responses:
         "200":
-          description: OK
+          description: >
+            count is null and suppressed is true below the publication
+            floor (schema.sql anti-abuse layer 2, e.g. fewer than 20
+            pings) — the dashboard should render "not enough data yet"
+            rather than a real number in that case. A count that's a
+            statistical outlier against the historical ridership
+            baseline (layer 3) may also come back suppressed pending
+            review rather than shown immediately.
           content:
             application/json:
               schema:
@@ -108,11 +123,12 @@ paths:
                 properties:
                   count:
                     type: integer
+                    nullable: true
                     example: 182
+                  suppressed:
+                    type: boolean
+                    description: true if count is null because it's below the floor or held for review
 
-# Explicitly out of scope for this stub, and unsolved by the schema or
-# routes above: nothing here stops a scripted client from PUTting
-# fabricated ping_keys to inflate or deflate a count. There's no
-# identity to rate-limit against beyond IP, which is trivial to rotate.
-# Real anti-abuse (e.g. a lightweight per-device attestation) is the
-# actual hard part of this feature, not the API surface.
+# Full anti-abuse threat model, including what's explicitly NOT solved
+# by any of this (a resourced, patient, rotating-IP attacker), lives in
+# schema.sql's "Anti-abuse" section rather than duplicated here.
