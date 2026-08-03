@@ -58,12 +58,15 @@ create index planned_trip_pings_station_date_bucket
 --      all, instead of nudging 3 to 4 unnoticed. Doubles as privacy
 --      protection (never surfacing a small, near-identifiable group).
 --
---   3. Baseline sanity check against real historical ridership (the
---      ridership_od_rapidrail_daily dataset from data.gov.my, not
---      modeled as a table in this file) — a count wildly outside a
---      station's normal range for that time of day gets held for
---      delayed publication instead of shown instantly. Trades a little
---      real-time-ness for resistance to a sudden fake spike.
+--   3. Baseline sanity check against real historical ridership — see
+--      ridership-schema.sql's station_ridership_baseline table. Loose,
+--      not precise: that dataset is daily totals only, no time-of-day
+--      breakdown, so this is a plausibility ceiling (a bucket's count
+--      shouldn't exceed some fraction of the station's typical full-day
+--      total) rather than a real time-bucket comparison. A count that
+--      fails even this loose check gets held for delayed publication
+--      instead of shown instantly. Trades a little real-time-ness for
+--      resistance to a sudden fake spike.
 --
 --   4. App attestation (Play Integrity / iOS DeviceCheck) would be the
 --      strongest lever — proving a write came from a real installed
