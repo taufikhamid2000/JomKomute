@@ -34,8 +34,5 @@ node scripts/generate-stations.mjs
 
 ## Deploy
 
-Static-exported (`output: "export"` in `next.config.ts`). The workflow in
-`.github/workflows/deploy.yml` builds on every push to `main` and pushes
-the output to the `gh-pages` branch; GitHub Pages (Settings → Pages →
-Source → **Deploy from a branch** → `gh-pages`, `/root`) just serves
-whatever's there.
+Live at [jomkomute.vercel.app](https://jomkomute.vercel.app). Deploys
+automatically on every push to `main` via Vercel's GitHub integration.
