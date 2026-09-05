@@ -17,6 +17,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
     { href: "/new", label: t.nav.addRoute },
     { href: "/settings", label: t.nav.settings },
     { href: "/about", label: t.nav.about },
+    // No dictionary entry — this is a plain, un-translated entry point to
+    // the (optional, ungated) account pages, same as the other apps'
+    // login link. See app/login, app/signup.
+    { href: "/login", label: "Log in" },
   ];
 
   useEffect(() => {
