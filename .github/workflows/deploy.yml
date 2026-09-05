@@ -41,7 +41,16 @@ jobs:
           key: nextjs-${{ hashFiles('package-lock.json') }}-${{ hashFiles('app/**', 'components/**', 'lib/**') }}
           restore-keys: |
             nextjs-${{ hashFiles('package-lock.json') }}-
+      # app/api/* (app/api/pings/*, the Vercel-only backend slice) can't
+      # be part of a static export — a dynamic route handler has no
+      # generateStaticParams and Next's exporter hard-errors on it. GitHub
+      # Pages can't run a server anyway, so it's moved out of the tree for
+      # this build rather than made to satisfy the exporter.
+      - run: mv app/api /tmp/jomkomute-api-excluded-from-export
       - run: npm run build
+        env:
+          STATIC_EXPORT: "true"
+      - run: mv /tmp/jomkomute-api-excluded-from-export app/api
       - uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

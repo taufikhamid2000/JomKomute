@@ -1,14 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChangePlanModal } from "@/components/change-plan-modal";
 import { EmptyState } from "@/components/empty-state";
 import { Shell } from "@/components/shell";
-import { mockCrowdFor } from "@/lib/crowd-mock";
+import { mockCrowdFor, type CrowdMock } from "@/lib/crowd-mock";
 import { lineById } from "@/lib/lines";
 import { computeNextRoute } from "@/lib/next-route";
+import { getPingCounts, putPing } from "@/lib/pings-client";
 import { useAllExceptions, useSavedRoutes } from "@/lib/store";
 import { useDictionary } from "@/lib/use-dictionary";
+
+function timeToMinutes(hhmm: string): number {
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + m;
+}
 
 export default function DashboardPage() {
   const { t } = useDictionary();
@@ -22,7 +28,51 @@ export default function DashboardPage() {
   const next = useMemo(() => computeNextRoute(routes, exceptions, new Date()), [routes, exceptions]);
 
   const lineNames = next?.route.legs.map((leg) => lineById(leg.line)?.name ?? leg.line).join(" → ");
-  const crowd = next ? mockCrowdFor(next.route.id, next.date) : null;
+
+  // Real crowd count from app/api/pings/counts (server/openapi.yaml)
+  // where a backend exists; falls back to lib/crowd-mock.ts's illustrative
+  // mock everywhere else (e.g. the GitHub Pages static export, or if the
+  // fetch just fails) — same shape either way so the UI below doesn't care
+  // which one it got.
+  const [crowd, setCrowd] = useState<CrowdMock | null>(null);
+
+  useEffect(() => {
+    if (!next) {
+      setCrowd(null);
+      return;
+    }
+
+    const station = next.route.legs[0].originStation;
+    const timeBucket = timeToMinutes(next.route.departureTime);
+    const fallback = mockCrowdFor(next.route.id, next.date);
+    setCrowd(fallback);
+
+    let cancelled = false;
+
+    // Fire-and-forget: register that this device is planning this trip.
+    // No-op-on-failure, since a static export or an unreachable API
+    // shouldn't block rendering the dashboard.
+    putPing({
+      routeId: next.route.id,
+      station,
+      lineId: next.route.legs[0].line,
+      tripDate: next.date,
+      timeBucket,
+    }).catch(() => {});
+
+    getPingCounts(station, next.date, timeBucket)
+      .then(({ count, suppressed }) => {
+        if (cancelled || suppressed || count === null) return;
+        setCrowd({ count, busier: count > 150 });
+      })
+      .catch(() => {
+        // Keep the mock fallback already set above.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [next]);
   const dateLabel = next
     ? next.date === new Date().toISOString().slice(0, 10)
       ? t.dashboard.today
