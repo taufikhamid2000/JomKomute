@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { AuthBrandingPanel } from "@/components/auth-branding-panel";
+import { DemoButton } from "@/components/demo-button";
 import { LogoMark } from "@/components/logo-mark";
 import { PasswordInput } from "@/components/password-input";
 import { Spinner } from "@/components/spinner";
@@ -95,6 +96,14 @@ export function LoginForm() {
               {pending ? "Logging in…" : "Log in"}
             </button>
           </form>
+
+          <div className="my-4 flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs text-foreground/40">or</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+
+          <DemoButton />
 
           <p className="mt-6 text-center text-sm text-foreground/60">
             Don&apos;t have an account?{" "}

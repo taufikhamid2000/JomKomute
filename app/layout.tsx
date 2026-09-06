@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fira_Sans, Fira_Code } from "next/font/google";
+import { AuthGate } from "@/components/auth-gate";
 import "./globals.css";
 
 const firaSans = Fira_Sans({
@@ -61,7 +62,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <head>
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH_THEME_SCRIPT }} />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <AuthGate>{children}</AuthGate>
+      </body>
     </html>
   );
 }
