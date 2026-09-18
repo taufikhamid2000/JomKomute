@@ -3,9 +3,11 @@
 -- Supabase project's shared-project convention (master_db,
 -- hmkjszolqnpcsoatrgcu, hosts multiple portfolio apps' tables).
 --
--- File-only migration: written for review/history, not applied live by
--- this change. Apply it manually (Supabase SQL editor or `supabase db
--- push`) before the API routes in app/api/pings/* will work.
+-- Applied automatically by .github/workflows/supabase-migrations.yml on
+-- every push to main that touches this directory (`supabase db push`) —
+-- no manual SQL-editor step needed anymore. Still written for
+-- review/history like any migration; just don't expect to have to run
+-- it by hand.
 
 create extension if not exists pgcrypto;
 

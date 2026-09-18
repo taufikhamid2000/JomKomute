@@ -32,6 +32,15 @@ either source changes:
 node scripts/generate-stations.mjs
 ```
 
+## Database migrations
+
+`supabase/migrations/*.sql` apply automatically — `.github/workflows/supabase-migrations.yml`
+runs `supabase db push` against the project on every push to `main` that
+touches that directory, same idea as EF Core running pending migrations on
+deploy. No manual step in the Supabase SQL editor. The workflow needs
+three repo secrets set once (Settings > Secrets and variables > Actions):
+`SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`, `SUPABASE_DB_PASSWORD`.
+
 ## Deploy
 
 Live at [jomkomute.vercel.app](https://jomkomute.vercel.app). Deploys

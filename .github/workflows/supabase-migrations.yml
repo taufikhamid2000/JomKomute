@@ -1,0 +1,39 @@
+name: Apply Supabase migrations
+
+# Closest equivalent here to EF Core running pending migrations on
+# deploy: whenever a push to main touches supabase/migrations/, link to
+# the project and push any migration that isn't applied yet. Runs
+# alongside Vercel's own build (triggered by the same push), not before
+# it — fine for additive changes like this project's migrations so far,
+# but a migration a running deploy depends on isn't guaranteed to land
+# first. Revisit (e.g. gate the Vercel deploy on this job) if that ever
+# matters.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+  workflow_dispatch: {}
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # Requires three repo secrets (Settings > Secrets and variables >
+      # Actions): SUPABASE_ACCESS_TOKEN (personal access token from
+      # supabase.com/dashboard/account/tokens), SUPABASE_PROJECT_REF (the
+      # project id — see supabase/migrations' own header comment for this
+      # project's shared master_db), and SUPABASE_DB_PASSWORD (the
+      # Postgres password from Project Settings > Database).
+      - name: Apply pending migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --password "${{ secrets.SUPABASE_DB_PASSWORD }}"
+          supabase db push
