@@ -4,10 +4,11 @@
 -- hmkjszolqnpcsoatrgcu, hosts multiple portfolio apps' tables).
 --
 -- Applied automatically by .github/workflows/supabase-migrations.yml on
--- every push to main that touches this directory (`supabase db push`) —
--- no manual SQL-editor step needed anymore. Still written for
--- review/history like any migration; just don't expect to have to run
--- it by hand.
+-- every push to main that touches this directory, via `supabase db
+-- query -f` (same convention as duitduit's migrate.yml — never `db
+-- push`, since master_db is shared across repos with separate migration
+-- histories). No manual SQL-editor step needed. Written idempotent
+-- (create table/index if not exists) so re-applying it is harmless.
 
 create extension if not exists pgcrypto;
 

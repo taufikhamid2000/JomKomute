@@ -35,11 +35,23 @@ node scripts/generate-stations.mjs
 ## Database migrations
 
 `supabase/migrations/*.sql` apply automatically — `.github/workflows/supabase-migrations.yml`
-runs `supabase db push` against the project on every push to `main` that
-touches that directory, same idea as EF Core running pending migrations on
-deploy. No manual step in the Supabase SQL editor. The workflow needs
-three repo secrets set once (Settings > Secrets and variables > Actions):
-`SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`, `SUPABASE_DB_PASSWORD`.
+runs every migration file against the project (`supabase db query -f`,
+one file at a time) on every push to `main` that touches that directory,
+same idea as EF Core running pending migrations on deploy. No manual
+step in the Supabase SQL editor.
+
+This project's Supabase project (`master_db`) is shared with
+[duitduit](https://github.com/taufikhamid2000/duitduit) and
+taufik-portfolio, each with their own migration history — so this
+workflow deliberately uses `db query -f` per file instead of `db push`,
+which reconciles migration history and could mark another repo's
+migrations as reverted. Same convention as duitduit's own
+`.github/workflows/migrate.yml`. Migrations here are written idempotent
+(`create table/index if not exists`) so re-running every file on every
+push is safe.
+
+Needs two repo secrets set once (Settings > Secrets and variables >
+Actions): `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`.
 
 ## Deploy
 
