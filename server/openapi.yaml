@@ -129,6 +129,52 @@ paths:
                     type: boolean
                     description: true if count is null because it's below the floor or held for review
 
+  /pings/hourly:
+    get:
+      summary: Per-hour ping counts for a station and date.
+      description: >
+        What lib/forecast.ts's useForecast calls to upgrade its
+        synthetic 24-hour curve (ForecastBars, RouteCard) with real
+        data — one row per hour of the day, same publication floor as
+        GET /pings/counts but applied per hour rather than to a single
+        queried bucket. A hour's absence of qualifying data (suppressed)
+        leaves that hour's synthetic value standing rather than showing
+        a gap.
+      parameters:
+        - name: station
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: OK — always 24 entries, hour 0 through 23.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hours:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        hour:
+                          type: integer
+                          example: 8
+                        count:
+                          type: integer
+                          nullable: true
+                          example: 74
+                        suppressed:
+                          type: boolean
+
 # Full anti-abuse threat model, including what's explicitly NOT solved
 # by any of this (a resourced, patient, rotating-IP attacker), lives in
 # schema.sql's "Anti-abuse" section rather than duplicated here.

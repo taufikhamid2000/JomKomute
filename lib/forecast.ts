@@ -1,7 +1,14 @@
-// Placeholder forecast model — deterministic, not real data. Once actual
-// historical crowd/schedule data is wired in (see the OD ridership +
-// GTFS-static sources), this is the module that gets replaced; the UI
-// only depends on `hourlyForecast`'s shape, not how it's computed.
+"use client";
+
+import { useEffect, useState } from "react";
+import { getHourlyPingCounts, type HourlyPingCount } from "@/lib/pings-client";
+
+// Synthetic baseline — deterministic, not real data. Still the whole
+// story wherever real pings don't exist yet for an hour (no backend, a
+// fetch failure, or just not enough people pinged that hour): see
+// mergePingForecast/useForecast below for how real data, where it
+// exists, replaces this hour by hour rather than switching the whole
+// chart over at once.
 
 // Small string hash so the same route always renders the same "typical"
 // pattern instead of reshuffling on every reload.
@@ -45,4 +52,70 @@ export function crowdLevelKey(level: number): "packed" | "busy" | "comfortable" 
 export function forecastForTime(routeId: string, time: string): HourForecast {
   const hour = Number(time.split(":")[0] ?? 0);
   return hourlyForecast(routeId)[hour] ?? { hour, crowdLevel: 0 };
+}
+
+// Same lookup as forecastForTime, but against an already-fetched (and
+// possibly ping-upgraded) forecast array instead of recomputing the
+// synthetic one — what useForecast's callers use to read a single hour
+// out of the merged curve.
+export function forecastEntryForTime(forecast: HourForecast[], time: string): HourForecast {
+  const hour = Number(time.split(":")[0] ?? 0);
+  return forecast[hour] ?? { hour, crowdLevel: 0 };
+}
+
+// A real hourly ping count doesn't come pre-scaled to the synthetic
+// curve's 0-100 "typical crowding" range, so it needs a reference point.
+// 250 pings in one station/hour is treated as "packed" (100) — the same
+// order of magnitude as lib/crowd-mock.ts's `busier` threshold (a count
+// over 150 for a single route+time). Not calibrated against real
+// ridership (see server/ridership-schema.sql's baseline table, not wired
+// in yet) — a loose stand-in, same honesty as the rest of this module.
+const PING_SATURATION_COUNT = 250;
+
+function levelFromPingCount(count: number): number {
+  return Math.max(0, Math.min(100, Math.round((count / PING_SATURATION_COUNT) * 100)));
+}
+
+// Replaces the synthetic baseline's hour with a real, count-derived
+// level wherever pings cleared the publication floor for that hour;
+// every other hour keeps the synthetic value, so the chart never has a
+// gap — just a mix of "typical" and "what's actually happening today"
+// bars, same fail-soft shape as the dashboard's ping count.
+export function mergePingForecast(base: HourForecast[], pings: HourlyPingCount[]): HourForecast[] {
+  const byHour = new Map(pings.map((p) => [p.hour, p]));
+  return base.map((entry) => {
+    const real = byHour.get(entry.hour);
+    if (!real || real.suppressed || real.count === null) return entry;
+    return { hour: entry.hour, crowdLevel: levelFromPingCount(real.count) };
+  });
+}
+
+// Synthetic forecast immediately (so the chart never renders empty),
+// upgraded in place with real pings once (if) app/api/pings/hourly
+// answers — same fail-soft pattern as app/dashboard/page.tsx's ping
+// count: no backend, an unreachable API, or a static export all just
+// leave the synthetic curve standing.
+export function useForecast(routeId: string, station: string, date: string): HourForecast[] {
+  const [forecast, setForecast] = useState<HourForecast[]>(() => hourlyForecast(routeId));
+
+  useEffect(() => {
+    const base = hourlyForecast(routeId);
+    setForecast(base);
+
+    let cancelled = false;
+    getHourlyPingCounts(station, date)
+      .then((pings) => {
+        if (cancelled) return;
+        setForecast(mergePingForecast(base, pings));
+      })
+      .catch(() => {
+        // Keep the synthetic baseline already set above.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [routeId, station, date]);
+
+  return forecast;
 }

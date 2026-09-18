@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { crowdLevelKey, forecastForTime } from "@/lib/forecast";
+import { crowdLevelKey, forecastEntryForTime, useForecast } from "@/lib/forecast";
 import { lineById } from "@/lib/lines";
 import { estimatedArrival } from "@/lib/schedule";
 import type { SavedRoute } from "@/lib/types";
@@ -9,7 +9,12 @@ import { useDictionary } from "@/lib/use-dictionary";
 
 export function RouteCard({ route }: { route: SavedRoute }) {
   const { t } = useDictionary();
-  const { crowdLevel } = forecastForTime(route.id, route.departureTime);
+  // Today's date: a saved route recurs weekly, but the only pings that
+  // exist to upgrade the synthetic curve are for specific dates, so
+  // "today" is the best real signal available for a general route list.
+  const today = new Date().toISOString().slice(0, 10);
+  const forecast = useForecast(route.id, route.legs[0].originStation, today);
+  const { crowdLevel } = forecastEntryForTime(forecast, route.departureTime);
   const lineNames = route.legs.map((leg) => lineById(leg.line)?.name ?? leg.line).join(" → ");
   const transferCount = route.legs.length - 1;
   const arrival = estimatedArrival(route.departureTime, route.legs);

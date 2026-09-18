@@ -1,12 +1,17 @@
 "use client";
 
-import { hourlyForecast } from "@/lib/forecast";
+import type { HourForecast } from "@/lib/forecast";
 
 // 24 hourly bars, --chart-series-1 for the currently-scheduled hour so it
 // stands out against the muted rest — same token set as the finance app's
 // category charts, just applied to a bar instead of a donut slice.
-export function ForecastBars({ routeId, highlightHour }: { routeId: string; highlightHour?: number }) {
-  const data = hourlyForecast(routeId);
+//
+// `data` comes from lib/forecast.ts's useForecast — a mix of the
+// synthetic baseline and any hour where real pings cleared the
+// publication floor — rather than being computed here, so a page that
+// also needs a single hour's value (e.g. app/route/page.tsx's "crowding
+// at departure time") fetches once and shares it with this chart.
+export function ForecastBars({ data, highlightHour }: { data: HourForecast[]; highlightHour?: number }) {
   const max = Math.max(...data.map((d) => d.crowdLevel), 1);
 
   return (

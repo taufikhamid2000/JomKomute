@@ -7,7 +7,7 @@ import { ExceptionPanel } from "@/components/exception-panel";
 import { ForecastBars } from "@/components/forecast-bars";
 import { LegSummary } from "@/components/leg-summary";
 import { Shell } from "@/components/shell";
-import { crowdLevelKey, forecastForTime } from "@/lib/forecast";
+import { crowdLevelKey, forecastEntryForTime, useForecast } from "@/lib/forecast";
 import { estimatedArrival, legArrivalTimes } from "@/lib/schedule";
 import { useSavedRoutes } from "@/lib/store";
 import { useDictionary } from "@/lib/use-dictionary";
@@ -46,7 +46,12 @@ function RouteDetail() {
     );
   }
 
-  const { hour, crowdLevel } = forecastForTime(route.id, route.departureTime);
+  // Today's date: pings are per specific date, so "today" is the best
+  // real signal available to upgrade this weekly-recurring route's
+  // synthetic curve (see components/route-card.tsx's same choice).
+  const today = new Date().toISOString().slice(0, 10);
+  const forecast = useForecast(route.id, route.legs[0].originStation, today);
+  const { hour, crowdLevel } = forecastEntryForTime(forecast, route.departureTime);
   const arrival = estimatedArrival(route.departureTime, route.legs);
   const legArrivals = legArrivalTimes(route.departureTime, route.legs);
   const alternateArrivals = route.alternateLegs
@@ -95,7 +100,7 @@ function RouteDetail() {
             {t.routeDetail.crowdingAt(route.departureTime, t.forecast[crowdLevelKey(crowdLevel)], crowdLevel)}
           </span>
         </div>
-        <ForecastBars routeId={route.id} highlightHour={hour} />
+        <ForecastBars data={forecast} highlightHour={hour} />
         <p className="text-xs text-foreground/40">{t.routeDetail.crowdingNote}</p>
       </div>
 

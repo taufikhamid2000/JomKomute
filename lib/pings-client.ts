@@ -77,3 +77,17 @@ export async function getPingCounts(
   if (!res.ok) throw new Error(`GET /api/pings/counts failed: ${res.status}`);
   return res.json();
 }
+
+export type HourlyPingCount = { hour: number; count: number | null; suppressed: boolean };
+
+// What lib/forecast.ts's useForecast calls instead of a static curve
+// once real pings exist for a station/date — one row per hour (0-23),
+// count/suppressed following the same publication-floor rule as
+// getPingCounts above (see app/api/pings/hourly/route.ts).
+export async function getHourlyPingCounts(station: string, date: string): Promise<HourlyPingCount[]> {
+  const params = new URLSearchParams({ station, date });
+  const res = await fetch(`/api/pings/hourly?${params.toString()}`);
+  if (!res.ok) throw new Error(`GET /api/pings/hourly failed: ${res.status}`);
+  const body = (await res.json()) as { hours: HourlyPingCount[] };
+  return body.hours;
+}

@@ -36,3 +36,10 @@ node scripts/generate-stations.mjs
 
 Live at [jomkomute.vercel.app](https://jomkomute.vercel.app). Deploys
 automatically on every push to `main` via Vercel's GitHub integration.
+
+## Working on this repo
+
+Solo project, no collaborators — agents should commit and push straight
+to `main` rather than opening feature branches/PRs. `main` deploying
+straight to production (see Deploy above) is the intended workflow here,
+not a risk to route around.
