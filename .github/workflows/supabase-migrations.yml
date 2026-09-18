@@ -1,20 +1,12 @@
 name: Apply Supabase migrations
 
-# Runs every migration file against master_db on push to main, whenever
-# supabase/migrations/** changes. Same convention as duitduit's own
-# .github/workflows/migrate.yml — this project shares master_db with
-# duitduit and taufik-portfolio, each with a migration history this
-# repo's CLI session doesn't recognize.
-#
-# IMPORTANT: do NOT switch this to `supabase db push`. db push reconciles
-# migration *history*, and can prompt to mark another repo's already-applied
-# migrations as "reverted" since it only sees this repo's local history.
-# Applying each file directly via `db query -f` never touches migration
-# history, so it's safe to automate across repos sharing one project.
-#
-# This project's migrations are written idempotent (create table/index if
-# not exists) so re-running every file on every push, not just new ones,
-# is safe — same convention documented in duitduit's SETUP.md.
+# Trigger lives here (GitHub Actions requires that — it has to be
+# defined in the repo receiving the push), but the actual migration
+# steps live in taufikhamid2000/template's reusable workflow, shared
+# across every project with a supabase/migrations directory. See that
+# workflow's own header for why it uses `db query -f` per file rather
+# than `db push` (master_db is shared with duitduit and others, each
+# with a separate migration history `db push` would step on).
 on:
   push:
     branches: [main]
@@ -24,26 +16,5 @@ on:
 
 jobs:
   migrate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: supabase/setup-cli@v1
-        with:
-          version: latest
-
-      - name: Link project
-        run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
-
-      - name: Apply migrations (db query -f, never db push — see note above)
-        run: |
-          set -euo pipefail
-          for f in supabase/migrations/*.sql; do
-            echo "Applying $f"
-            supabase db query --linked -f "$f"
-          done
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    uses: taufikhamid2000/template/.github/workflows/supabase-migrate.yml@master
+    secrets: inherit

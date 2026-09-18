@@ -34,19 +34,20 @@ node scripts/generate-stations.mjs
 
 ## Database migrations
 
-`supabase/migrations/*.sql` apply automatically — `.github/workflows/supabase-migrations.yml`
-runs every migration file against the project (`supabase db query -f`,
-one file at a time) on every push to `main` that touches that directory,
-same idea as EF Core running pending migrations on deploy. No manual
-step in the Supabase SQL editor.
+`supabase/migrations/*.sql` apply automatically on every push to `main`
+that touches that directory — same idea as EF Core running pending
+migrations on deploy, no manual step in the Supabase SQL editor.
 
-This project's Supabase project (`master_db`) is shared with
-[duitduit](https://github.com/taufikhamid2000/duitduit) and
-taufik-portfolio, each with their own migration history — so this
-workflow deliberately uses `db query -f` per file instead of `db push`,
-which reconciles migration history and could mark another repo's
-migrations as reverted. Same convention as duitduit's own
-`.github/workflows/migrate.yml`. Migrations here are written idempotent
+The actual migration-apply logic isn't defined here: this repo's
+`.github/workflows/supabase-migrations.yml` is just a trigger that calls
+[taufikhamid2000/template](https://github.com/taufikhamid2000/template)'s
+shared `supabase-migrate.yml` reusable workflow, so every project with a
+`supabase/migrations` directory (duitduit, jomkomute, …) runs the same
+logic instead of each keeping its own copy. That workflow applies each
+file with `supabase db query -f` rather than `supabase db push`, because
+this project's Supabase project (`master_db`) is shared across repos
+with separate migration histories that `db push`'s history
+reconciliation would step on. Migrations here are written idempotent
 (`create table/index if not exists`) so re-running every file on every
 push is safe.
 
