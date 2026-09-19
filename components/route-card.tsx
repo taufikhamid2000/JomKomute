@@ -2,8 +2,6 @@
 
 import Link from "next/link";
 import { crowdLevelKey, forecastEntryForTime, useForecast } from "@/lib/forecast";
-import { lineById } from "@/lib/lines";
-import { estimatedArrival } from "@/lib/schedule";
 import type { SavedRoute } from "@/lib/types";
 import { useDictionary } from "@/lib/use-dictionary";
 
@@ -13,11 +11,8 @@ export function RouteCard({ route }: { route: SavedRoute }) {
   // exist to upgrade the synthetic curve are for specific dates, so
   // "today" is the best real signal available for a general route list.
   const today = new Date().toISOString().slice(0, 10);
-  const forecast = useForecast(route.id, route.legs[0].originStation, today);
+  const forecast = useForecast(route.id, route.originStation, today);
   const { crowdLevel } = forecastEntryForTime(forecast, route.departureTime);
-  const lineNames = route.legs.map((leg) => lineById(leg.line)?.name ?? leg.line).join(" → ");
-  const transferCount = route.legs.length - 1;
-  const arrival = estimatedArrival(route.departureTime, route.legs);
 
   return (
     <Link
@@ -45,16 +40,10 @@ export function RouteCard({ route }: { route: SavedRoute }) {
           )}
         </span>
         <span className="text-sm text-foreground/70">
-          {route.legs[0].originStation} <span aria-hidden="true">→</span>{" "}
-          {route.legs[route.legs.length - 1].destinationStation}
-          {transferCount > 0 && (
-            <span className="text-foreground/50"> ({t.routesPage.transfer(transferCount)})</span>
-          )}
+          {route.originStation} <span aria-hidden="true">→</span> {route.destinationStation}
         </span>
         <span className="text-xs text-foreground/50">
-          {lineNames} · {route.departureTime}
-          {arrival && `–${arrival}`} · {route.days.map((d) => t.days[d]).join(", ")}
-          {route.alternateLegs && <span className="text-foreground/40"> · {t.routesPage.hasBackup}</span>}
+          {route.departureTime} · {route.days.map((d) => t.days[d]).join(", ")}
         </span>
       </div>
 

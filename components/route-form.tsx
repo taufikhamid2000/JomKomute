@@ -3,50 +3,33 @@
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Combobox } from "@/components/combobox";
-import { LegsEditor } from "@/components/legs-editor";
-import { legsComplete, reverseLegs } from "@/lib/legs";
-import { LINES } from "@/lib/lines";
 import { useSavedRoutes } from "@/lib/store";
-import { type DayOfWeek, type RouteLeg } from "@/lib/types";
+import { type DayOfWeek } from "@/lib/types";
 import { useDictionary } from "@/lib/use-dictionary";
 import { useSingleRouteFinder } from "@/lib/use-route-finder";
 
 const WEEKDAYS: DayOfWeek[] = [1, 2, 3, 4, 5];
 const ALL_DAYS: DayOfWeek[] = [0, 1, 2, 3, 4, 5, 6];
 
-function blankLeg(): RouteLeg {
-  return { line: LINES[0].id, originStation: "", destinationStation: "" };
-}
-
 export function RouteForm() {
   const { t } = useDictionary();
   const router = useRouter();
   const { routes, addRoute } = useSavedRoutes();
   // ?reverseOf=<id> — "Add return trip" on the route detail page links
-  // here so the form starts pre-filled with that route's legs reversed,
-  // instead of making you rebuild the same commute from scratch.
+  // here so the form starts pre-filled with that route's origin/
+  // destination swapped, instead of making you rebuild the same commute
+  // from scratch.
   const searchParams = useSearchParams();
   const reverseOfId = searchParams.get("reverseOf");
-  // ?prefillLegs=<json> — the home screen's one-time "Where to?" finder
-  // hands off here with its ephemeral (never-saved) found legs serialized
-  // as JSON, so "Save as a regular route" doesn't make you re-enter the
-  // origin/destination it already found. Parallel to reverseOf above (a
-  // different prefill source, same idea), not a replacement for it.
-  const prefillLegsParam = searchParams.get("prefillLegs");
+  // ?prefillOrigin=<station>&prefillDestination=<station> — the home
+  // screen's one-time "Where to?" finder hands off here with its
+  // ephemeral (never-saved) origin/destination, so "Save as a regular
+  // route" doesn't make you re-enter what it already found. Parallel to
+  // reverseOf above (a different prefill source, same idea), not a
+  // replacement for it.
+  const prefillOriginParam = searchParams.get("prefillOrigin");
+  const prefillDestinationParam = searchParams.get("prefillDestination");
 
-  const [legs, setLegs] = useState<RouteLeg[]>(() => {
-    if (prefillLegsParam) {
-      try {
-        const parsed = JSON.parse(prefillLegsParam);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed as RouteLeg[];
-      } catch {
-        // fall through to a blank leg below
-      }
-    }
-    return [blankLeg()];
-  });
-  const [hasAlternate, setHasAlternate] = useState(false);
-  const [alternateLegs, setAlternateLegs] = useState<RouteLeg[]>([blankLeg()]);
   const [time, setTime] = useState("07:15");
   const [days, setDays] = useState<Set<DayOfWeek>>(new Set(WEEKDAYS));
   const [label, setLabel] = useState("");
@@ -63,12 +46,18 @@ export function RouteForm() {
   } = useSingleRouteFinder();
   const [finderCollapsed, setFinderCollapsed] = useState(false);
 
+  useEffect(() => {
+    if (prefillOriginParam) setFindOrigin(prefillOriginParam);
+    if (prefillDestinationParam) setFindDestination(prefillDestinationParam);
+    if (prefillOriginParam && prefillDestinationParam) setFinderCollapsed(true);
+    // Only meant to seed initial state from the URL once, on mount — not
+    // meant to re-run as the user edits the fields afterward.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function handleFindRoute() {
     const result = findRoute();
-    if (result) {
-      setLegs(result);
-      setFinderCollapsed(true);
-    }
+    if (result) setFinderCollapsed(true);
   }
 
   useEffect(() => {
@@ -76,13 +65,14 @@ export function RouteForm() {
     const source = routes.find((r) => r.id === reverseOfId);
     if (!source) return; // routes hasn't loaded from localStorage yet — retry next render
 
-    setLegs(reverseLegs(source.legs));
-    if (source.alternateLegs) {
-      setAlternateLegs(reverseLegs(source.alternateLegs));
-      setHasAlternate(true);
-    }
+    setFindOrigin(source.destinationStation);
+    setFindDestination(source.originStation);
+    setFinderCollapsed(true);
     setDays(new Set(source.days));
     setPrefilled(true);
+    // setFindOrigin/setFindDestination are stable from useSingleRouteFinder's
+    // local useState setters, not worth listing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routes, reverseOfId, prefilled]);
 
   function toggleDay(day: DayOfWeek) {
@@ -94,16 +84,16 @@ export function RouteForm() {
     });
   }
 
-  const canSubmit = legsComplete(legs) && days.size > 0 && (!hasAlternate || legsComplete(alternateLegs));
+  const canSubmit = !!findOrigin && !!findDestination && days.size > 0;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
 
     const route = addRoute({
-      label: label.trim() || `${legs[0].originStation} → ${legs[legs.length - 1].destinationStation}`,
-      legs,
-      alternateLegs: hasAlternate ? alternateLegs : undefined,
+      label: label.trim() || `${findOrigin} → ${findDestination}`,
+      originStation: findOrigin,
+      destinationStation: findDestination,
       departureTime: time,
       days: Array.from(days).sort(),
     });
@@ -131,7 +121,7 @@ export function RouteForm() {
         />
       </div>
 
-      {finderCollapsed ? (
+      {finderCollapsed && findOrigin && findDestination ? (
         <button
           type="button"
           onClick={() => setFinderCollapsed(false)}
@@ -183,25 +173,6 @@ export function RouteForm() {
           {findNotFound && <p className="text-xs text-destructive">{t.routeForm.findNotFound}</p>}
         </div>
       )}
-
-      <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium text-foreground">{t.routeForm.routeLabel}</span>
-        <LegsEditor legs={legs} onChange={setLegs} />
-      </div>
-
-      <div className="flex flex-col gap-2 border-t border-border pt-4">
-        <label className="flex items-center gap-2 text-sm font-medium text-foreground">
-          <input
-            type="checkbox"
-            checked={hasAlternate}
-            onChange={(e) => setHasAlternate(e.target.checked)}
-            className="h-4 w-4 cursor-pointer rounded border-border"
-          />
-          {t.routeForm.backupCheckbox}
-        </label>
-        <p className="text-xs text-foreground/50">{t.routeForm.backupDescription}</p>
-        {hasAlternate && <LegsEditor legs={alternateLegs} onChange={setAlternateLegs} />}
-      </div>
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="time" className="text-sm font-medium text-foreground">

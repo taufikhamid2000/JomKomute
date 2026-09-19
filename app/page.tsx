@@ -20,7 +20,7 @@ import {
   type LineOperatingHours,
 } from "@/lib/operating-hours-client";
 import { reportCategoryMeta } from "@/lib/report-categories";
-import type { RouteOption } from "@/lib/route-finder";
+import { findRoute, type RouteOption } from "@/lib/route-finder";
 import { STATION_COORDS } from "@/lib/stations";
 import { useSavedRoutes } from "@/lib/store";
 import type { RouteLeg, SavedRoute } from "@/lib/types";
@@ -52,7 +52,7 @@ function QuickAccessCard({
       <span className="text-[10px] font-medium tracking-wide text-foreground/50 uppercase">{label}</span>
       <span className="truncate text-sm font-semibold text-foreground">{route.label}</span>
       <span className="truncate text-xs text-foreground/60">
-        {route.legs[0].originStation} <span aria-hidden="true">→</span> {route.legs[route.legs.length - 1].destinationStation}
+        {route.originStation} <span aria-hidden="true">→</span> {route.destinationStation}
       </span>
     </button>
   );
@@ -244,11 +244,26 @@ export default function HomePage() {
   const workRoute = routes.find((r) => r.isWork);
   const recent = [...routes].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5);
 
+  // Legs are computed live from origin/destination rather than stored —
+  // see lib/types.ts's SavedRoute for why. Kept as two separate memos
+  // (rather than one "whichever route is active" memo) so the same
+  // activeRoute -> oneTimeRoute -> homeRoute priority the map prop used to
+  // read `.legs` off directly still holds — oneTimeRoute's legs are
+  // already ephemeral RouteOption legs, not something to recompute.
+  const activeLegs = useMemo(
+    () => (activeRoute ? findRoute(activeRoute.originStation, activeRoute.destinationStation) : undefined),
+    [activeRoute],
+  );
+  const homeLegs = useMemo(
+    () => (homeRoute ? findRoute(homeRoute.originStation, homeRoute.destinationStation) : undefined),
+    [homeRoute],
+  );
+
   return (
     <Shell>
       <div className="relative h-[calc(100vh-3.5rem)] w-full overflow-hidden">
         <HomeMap
-          legs={activeRoute?.legs ?? oneTimeRoute?.legs ?? homeRoute?.legs}
+          legs={activeLegs ?? oneTimeRoute?.legs ?? homeLegs}
           routeOptions={routeOptions ?? undefined}
           selectedOptionIndex={selectedOptionIndex}
           onSelectOption={setSelectedOptionIndex}
@@ -261,8 +276,7 @@ export default function HomePage() {
               <div className="flex min-w-0 flex-col gap-0.5">
                 <span className="truncate text-sm font-semibold text-foreground">{activeRoute.label}</span>
                 <span className="truncate text-xs text-foreground/60">
-                  {activeRoute.legs[0].originStation} <span aria-hidden="true">→</span>{" "}
-                  {activeRoute.legs[activeRoute.legs.length - 1].destinationStation}
+                  {activeRoute.originStation} <span aria-hidden="true">→</span> {activeRoute.destinationStation}
                 </span>
               </div>
               <Link
@@ -402,7 +416,7 @@ export default function HomePage() {
               </span>
             </div>
             <Link
-              href={`/new?prefillLegs=${encodeURIComponent(JSON.stringify(oneTimeRoute.legs))}`}
+              href={`/new?prefillOrigin=${encodeURIComponent(oneTimeRoute.origin)}&prefillDestination=${encodeURIComponent(oneTimeRoute.destination)}`}
               className="flex items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted"
             >
               {t.homePage.saveAsRegular}
@@ -501,7 +515,7 @@ export default function HomePage() {
                     >
                       <span className="truncate">{route.label}</span>
                       <span className="shrink-0 truncate text-xs text-foreground/50">
-                        {route.legs[0].originStation} → {route.legs[route.legs.length - 1].destinationStation}
+                        {route.originStation} → {route.destinationStation}
                       </span>
                     </button>
                   ))}

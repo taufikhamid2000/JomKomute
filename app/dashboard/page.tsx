@@ -10,6 +10,7 @@ import { mockCrowdFor, type CrowdMock } from "@/lib/crowd-mock";
 import { lineById } from "@/lib/lines";
 import { computeNextRoute, type NextRoute } from "@/lib/next-route";
 import { getPingCounts, putPing } from "@/lib/pings-client";
+import { findRouteOptions } from "@/lib/route-finder";
 import { useAllExceptions, useSavedRoutes } from "@/lib/store";
 import type { SavedRoute } from "@/lib/types";
 import { useDictionary } from "@/lib/use-dictionary";
@@ -48,7 +49,17 @@ export default function DashboardPage() {
   }, [homeRoute, routes, exceptions]);
   const isHomeActive = !!homeRoute && next?.route.id === homeRoute.id;
 
-  const lineNames = next?.route.legs.map((leg) => lineById(leg.line)?.name ?? leg.line).join(" → ");
+  // Legs (and a free "backup route" via the 2nd option) are computed live
+  // from origin/destination rather than stored — see lib/types.ts's
+  // SavedRoute for why.
+  const routeOptions = useMemo(
+    () => (next ? findRouteOptions(next.route.originStation, next.route.destinationStation) : undefined),
+    [next],
+  );
+  const legs = routeOptions?.[0]?.legs;
+  const alternateLegs = routeOptions?.[1]?.legs;
+
+  const lineNames = legs?.map((leg) => lineById(leg.line)?.name ?? leg.line).join(" → ");
 
   // Real crowd count from app/api/pings/counts (server/openapi.yaml)
   // where a backend exists; falls back to lib/crowd-mock.ts's illustrative
@@ -58,12 +69,12 @@ export default function DashboardPage() {
   const [crowd, setCrowd] = useState<CrowdMock | null>(null);
 
   useEffect(() => {
-    if (!next) {
+    if (!next || !legs || legs.length === 0) {
       setCrowd(null);
       return;
     }
 
-    const station = next.route.legs[0].originStation;
+    const station = next.route.originStation;
     const timeBucket = timeToMinutes(next.route.departureTime);
     const fallback = mockCrowdFor(next.route.id, next.date);
     setCrowd(fallback);
@@ -76,7 +87,7 @@ export default function DashboardPage() {
     putPing({
       routeId: next.route.id,
       station,
-      lineId: next.route.legs[0].line,
+      lineId: legs[0].line,
       tripDate: next.date,
       timeBucket,
     }).catch(() => {});
@@ -93,7 +104,7 @@ export default function DashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [next]);
+  }, [next, legs]);
   const dateLabel = next
     ? next.date === new Date().toISOString().slice(0, 10)
       ? t.dashboard.today
@@ -119,7 +130,7 @@ export default function DashboardPage() {
 
               <div className="flex flex-col gap-0.5 pr-20">
                 <span className="flex flex-wrap items-center gap-2 text-sm font-semibold text-foreground">
-                  {next.route.legs[0].originStation} · {lineNames}
+                  {next.route.originStation} · {lineNames}
                   {isHomeActive && (
                     <span
                       className="rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase"
@@ -151,14 +162,14 @@ export default function DashboardPage() {
                   className="mt-4 rounded-lg px-3 py-2 text-xs text-foreground"
                   style={{ backgroundColor: "color-mix(in srgb, var(--accent) 12%, transparent)" }}
                 >
-                  {t.dashboard.busierSuggestion(next.route.alternateLegs ? (lineById(next.route.alternateLegs[0].line)?.name ?? "") : "")}
+                  {t.dashboard.busierSuggestion(alternateLegs ? (lineById(alternateLegs[0].line)?.name ?? "") : "")}
                 </p>
               )}
             </div>
 
             <div className="flex flex-col gap-2 overflow-hidden rounded-2xl border border-border bg-background">
               <div className="h-56 w-full">
-                <RouteMap legs={next.route.legs} />
+                {legs && <RouteMap legs={legs} />}
               </div>
               <Link
                 href={`/route?id=${next.route.id}`}

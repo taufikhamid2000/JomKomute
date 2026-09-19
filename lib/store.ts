@@ -25,13 +25,39 @@ function readFromStorage<T>(key: string): T[] {
   }
 }
 
-// SavedRoute's shape changed (single line/origin/destination -> a legs
-// array) — a route saved before that change would crash the routes list
-// (e.g. `route.legs[0]` on undefined) rather than just look wrong, so drop
-// anything that doesn't match the current shape instead of rendering it.
+// SavedRoute's shape changed twice: originally a single line/origin/
+// destination, then a frozen `legs` array (+ optional `alternateLegs`),
+// and now back to just origin/destination — legs are computed live via
+// lib/route-finder.ts's findRoute() instead of being stored. A route
+// saved under the `legs`-array shape is upgraded in place: origin comes
+// from its first leg, destination from its last leg, and `legs`/
+// `alternateLegs` are dropped. Detection: has a nonempty `legs` array but
+// no top-level `originStation` string yet.
+type LegacyLegsRoute = { legs: { originStation: string; destinationStation: string }[] };
+
+function isLegacyLegsRoute(value: unknown): value is LegacyLegsRoute {
+  const route = value as { legs?: unknown; originStation?: unknown } | null | undefined;
+  return !!route && Array.isArray(route.legs) && route.legs.length > 0 && typeof route.originStation !== "string";
+}
+
+function migrateRoute(value: unknown): unknown {
+  if (!isLegacyLegsRoute(value)) return value;
+  const legs = value.legs;
+  const { legs: _legs, alternateLegs: _alternateLegs, ...rest } = value as LegacyLegsRoute & Record<string, unknown>;
+  return {
+    ...rest,
+    originStation: legs[0].originStation,
+    destinationStation: legs[legs.length - 1].destinationStation,
+  };
+}
+
+// A route saved before either shape change would crash the routes list
+// (e.g. reading `originStation` off something that has neither it nor a
+// `legs` array) rather than just look wrong, so drop anything that still
+// doesn't match the current shape after migration instead of rendering it.
 function isValidRoute(value: unknown): value is SavedRoute {
   const route = value as Partial<SavedRoute> | null | undefined;
-  return !!route && Array.isArray(route.legs) && route.legs.length > 0;
+  return !!route && typeof route.originStation === "string" && typeof route.destinationStation === "string";
 }
 
 // Mirrors localStorage in memory so getSnapshot can return a stable
@@ -45,9 +71,42 @@ function getCached<T>(key: string): T[] {
   if (typeof window === "undefined") return EMPTY;
   if (!cache.has(key)) {
     const value = readFromStorage<T>(key);
-    cache.set(key, key === ROUTES_KEY ? (value as unknown[]).filter(isValidRoute) : value);
+    if (key === ROUTES_KEY) {
+      cache.set(key, migrateRoutes(value as unknown[]) as unknown[]);
+    } else {
+      cache.set(key, value);
+    }
   }
   return cache.get(key) as T[];
+}
+
+// Upgrades any legacy-shaped routes (see migrateRoute above) and drops
+// anything still invalid afterward, then — only if migration actually
+// changed something — writes the upgraded array back to localStorage, so
+// this runs once per route rather than re-migrating on every read. Called
+// from getCached for both the initial readFromStorage path and any fresh
+// read triggered by a cross-tab storage event (subscribe's onStorage
+// deletes the cache entry, forcing the next getSnapshot back through here).
+function migrateRoutes(value: unknown[]): unknown[] {
+  let changed = false;
+  const migrated = value.map((v) => {
+    const upgraded = migrateRoute(v);
+    if (upgraded !== v) changed = true;
+    return upgraded;
+  });
+  const valid = migrated.filter(isValidRoute);
+  if (valid.length !== migrated.length) changed = true;
+
+  if (changed) {
+    try {
+      window.localStorage.setItem(ROUTES_KEY, JSON.stringify(valid));
+    } catch {
+      // Best-effort write-back — migration still applies in memory even
+      // if persisting it fails (e.g. storage quota, private mode).
+    }
+  }
+
+  return valid;
 }
 
 function setCached<T>(key: string, value: T[]) {

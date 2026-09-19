@@ -12,11 +12,15 @@ export type RouteLeg = {
 export type SavedRoute = {
   id: string;
   label: string;
-  legs: RouteLeg[];
-  // A fallback path for the same commute — e.g. "if the Kajang line has a
-  // problem, go via Ampang and change at Chan Sow Lin instead." Same
-  // departure time and days as the primary; optional.
-  alternateLegs?: RouteLeg[];
+  // Only origin/destination are stored — the actual legs (lines,
+  // transfers) are computed live via lib/route-finder.ts's findRoute()
+  // every time the route is displayed, since that search is deterministic
+  // (same origin/destination/time -> same legs), so freezing them at save
+  // time would just be a stale copy of something recomputable for free. A
+  // "backup route" is likewise free via findRouteOptions()'s 2nd option,
+  // rather than needing a separately saved alternateLegs.
+  originStation: string;
+  destinationStation: string;
   departureTime: string; // "HH:MM", 24h
   days: DayOfWeek[];
   createdAt: string; // ISO timestamp

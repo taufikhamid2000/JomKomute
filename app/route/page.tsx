@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { ExceptionPanel } from "@/components/exception-panel";
 import { ForecastBars } from "@/components/forecast-bars";
 import { LegSummary } from "@/components/leg-summary";
 import { Shell } from "@/components/shell";
 import { crowdLevelKey, forecastEntryForTime, useForecast } from "@/lib/forecast";
+import { findRouteOptions } from "@/lib/route-finder";
 import { estimatedArrival, legArrivalTimes } from "@/lib/schedule";
 import { useSavedRoutes } from "@/lib/store";
 import { useDictionary } from "@/lib/use-dictionary";
@@ -41,12 +42,27 @@ function RouteDetail() {
   // real signal available to upgrade this weekly-recurring route's
   // synthetic curve (see components/route-card.tsx's same choice).
   const today = new Date().toISOString().slice(0, 10);
+  // Legs (and a free "backup route" via the 2nd option) are computed live
+  // from origin/destination rather than stored — see lib/types.ts's
+  // SavedRoute for why. findRouteOptions is deterministic, so the same
+  // options are recomputed for the same route.id/origin/destination on
+  // every render; useMemo just avoids redoing the Dijkstra search on
+  // renders that don't change those.
+  const routeOptions = useMemo(
+    () => (route ? findRouteOptions(route.originStation, route.destinationStation) : undefined),
+    // routes.find() above returns a fresh object each render — depend on
+    // the two fields that actually determine the search, not the object
+    // reference, so this doesn't redo the Dijkstra search every render.
+    [route?.originStation, route?.destinationStation],
+  );
+  const legs = routeOptions?.[0]?.legs;
+  const alternateLegs = routeOptions?.[1]?.legs;
   // useForecast must run on every render regardless of whether `route` is
   // defined yet (rules of hooks) — it briefly goes undefined during
   // hydration and right after a delete, so this falls back to placeholder
   // args rather than being called from inside the `if (!route)` branch
   // below, which previously threw "Rendered fewer hooks than expected."
-  const forecast = useForecast(route?.id ?? "", route?.legs[0]?.originStation ?? "", today);
+  const forecast = useForecast(route?.id ?? "", route?.originStation ?? "", today);
 
   // Renders once with an empty snapshot during hydration (localStorage isn't
   // read server-side), then useSyncExternalStore corrects it on the client
@@ -64,11 +80,9 @@ function RouteDetail() {
   }
 
   const { hour, crowdLevel } = forecastEntryForTime(forecast, route.departureTime);
-  const arrival = estimatedArrival(route.departureTime, route.legs);
-  const legArrivals = legArrivalTimes(route.departureTime, route.legs);
-  const alternateArrivals = route.alternateLegs
-    ? legArrivalTimes(route.departureTime, route.alternateLegs)
-    : undefined;
+  const arrival = legs ? estimatedArrival(route.departureTime, legs) : undefined;
+  const legArrivals = legs ? legArrivalTimes(route.departureTime, legs) : undefined;
+  const alternateArrivals = alternateLegs ? legArrivalTimes(route.departureTime, alternateLegs) : undefined;
 
   function handleDelete() {
     if (!route) return;
@@ -120,13 +134,13 @@ function RouteDetail() {
             </Link>
           </div>
         </div>
-        <LegSummary legs={route.legs} arrivalTimes={legArrivals} />
+        {legs && <LegSummary legs={legs} arrivalTimes={legArrivals} />}
       </div>
 
-      {route.alternateLegs && (
+      {alternateLegs && (
         <div className="flex flex-col gap-2 rounded-2xl border border-dashed border-border p-3">
           <p className="text-xs font-medium text-foreground/50">{t.routeDetail.backupRoute}</p>
-          <LegSummary legs={route.alternateLegs} arrivalTimes={alternateArrivals} />
+          <LegSummary legs={alternateLegs} arrivalTimes={alternateArrivals} />
         </div>
       )}
 
