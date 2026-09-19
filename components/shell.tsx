@@ -23,6 +23,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     { href: "/report", label: t.nav.report },
     { href: "/routes", label: t.nav.routes },
     { href: "/new", label: t.nav.addRoute },
+    { href: "/operating-hours", label: t.nav.operatingHours },
     { href: "/settings", label: t.nav.settings },
     { href: "/about", label: t.nav.about },
   ];

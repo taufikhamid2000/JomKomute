@@ -12,6 +12,13 @@ import { Combobox } from "@/components/combobox";
 import { Shell } from "@/components/shell";
 import { distanceMeters } from "@/lib/geo-distance";
 import { lineById } from "@/lib/lines";
+import {
+  formatClockTime,
+  getLineOperatingHours,
+  isWeekend,
+  minutesUntilLastTrain,
+  type LineOperatingHours,
+} from "@/lib/operating-hours-client";
 import { reportCategoryMeta } from "@/lib/report-categories";
 import { allStationNames, findRouteOptions, type RouteOption } from "@/lib/route-finder";
 import { STATION_COORDS } from "@/lib/stations";
@@ -70,6 +77,7 @@ export default function HomePage() {
   const [routeOptions, setRouteOptions] = useState<RouteOption[] | null>(null);
   const [selectedOptionIndex, setSelectedOptionIndex] = useState(0);
   const [reports, setReports] = useState<UserReport[]>([]);
+  const [operatingHours, setOperatingHours] = useState<LineOperatingHours[]>([]);
   const [showLeaveLater, setShowLeaveLater] = useState(false);
   const [leaveLaterTime, setLeaveLaterTime] = useState("");
   const [finderOrigin, setFinderOrigin] = useState("");
@@ -94,6 +102,16 @@ export default function HomePage() {
       cancelled = true;
     };
   }, [routeOptions]);
+
+  // Fetched once, up front (unlike reports above) — this is small, rarely
+  // changing reference data, not something worth re-fetching per route
+  // selection. Best-effort: a failed/empty fetch just means no "last
+  // train" hint, not a broken screen.
+  useEffect(() => {
+    getLineOperatingHours()
+      .then(setOperatingHours)
+      .catch(() => {});
+  }, []);
 
   function handleSelectSaved(route: SavedRoute) {
     setOneTimeRoute(null);
@@ -174,6 +192,51 @@ export default function HomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routeOptions, selectedOptionIndex, reports]);
 
+  // Soonest-closing line among the selected option's legs, if any of them
+  // is due to close within the next 90 minutes — a light "last train"
+  // nudge, not a full schedule. `now` is captured once per option
+  // selection (not re-ticked live) since a rider glancing at this doesn't
+  // need second-by-second accuracy.
+  const lastTrainHintForSelected = useMemo(() => {
+    if (!routeOptions || routeOptions.length === 0 || operatingHours.length === 0) return null;
+    const option = routeOptions[selectedOptionIndex];
+    if (!option) return null;
+    const now = new Date();
+    let best: { lineName: string; minutes: number; time: string } | null = null;
+    for (const leg of option.legs) {
+      const hours = operatingHours.find((h) => h.lineId === leg.line);
+      if (!hours) continue;
+      const minutes = minutesUntilLastTrain(hours, now);
+      if (minutes === null || minutes > 90) continue;
+      const last = now.getDay() === 0 || now.getDay() === 6 ? hours.weekendLast : hours.weekdayLast;
+      if (!last) continue;
+      if (!best || minutes < best.minutes) {
+        best = { lineName: hours.lineName ?? lineById(leg.line)?.name ?? leg.line, minutes, time: formatClockTime(last) };
+      }
+    }
+    return best;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeOptions, selectedOptionIndex, operatingHours]);
+
+  // "Last train ~11:45pm on the X Line" — only surfaced when the selected
+  // option's last leg's line has a last departure within ~90 minutes of
+  // now, so this doesn't clutter the sheet for a mid-afternoon trip.
+  const lastTrainHint = useMemo(() => {
+    if (!routeOptions || routeOptions.length === 0 || operatingHours.length === 0) return null;
+    const option = routeOptions[selectedOptionIndex];
+    if (!option || option.legs.length === 0) return null;
+    const lastLeg = option.legs[option.legs.length - 1];
+    const hours = operatingHours.find((h) => h.lineId === lastLeg.line);
+    if (!hours) return null;
+    const minutesLeft = minutesUntilLastTrain(hours, new Date());
+    if (minutesLeft === null || minutesLeft > 90) return null;
+    const time = isWeekend(new Date()) ? hours.weekendLast : hours.weekdayLast;
+    if (!time) return null;
+    const line = lineById(lastLeg.line);
+    return { time: formatClockTime(time), lineName: line?.name ?? lastLeg.line };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeOptions, selectedOptionIndex, operatingHours]);
+
   const homeRoute = routes.find((r) => r.isHome);
   const workRoute = routes.find((r) => r.isWork);
   const recent = [...routes].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5);
@@ -236,6 +299,20 @@ export default function HomePage() {
                     <div className="flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium" style={{ backgroundColor: `${hazardMeta.color}1a`, color: hazardMeta.color }}>
                       {hazardMeta.icon}
                       {t.homePage.hazardNearby(hazardMeta.label)}
+                    </div>
+                  )}
+                  {lastTrainHintForSelected && (
+                    <div className="flex w-fit items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+                      <svg width="13" height="13" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                        <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.6" />
+                        <path d="M10 5.5V10l3 2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      {t.homePage.lastTrainSoon(lastTrainHintForSelected.time, lastTrainHintForSelected.lineName)}
+                    </div>
+                  )}
+                  {lastTrainHint && (
+                    <div className="flex w-fit items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+                      {t.homePage.lastTrainSoon(lastTrainHint.time, lastTrainHint.lineName)}
                     </div>
                   )}
                 </>
