@@ -8,10 +8,13 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { ChangePlanModal } from "@/components/change-plan-modal";
 import { Combobox } from "@/components/combobox";
 import { Shell } from "@/components/shell";
+import { mockCrowdFor, type CrowdMock } from "@/lib/crowd-mock";
 import { distanceMeters } from "@/lib/geo-distance";
 import { lineById } from "@/lib/lines";
+import { computeNextRoute, type NextRoute } from "@/lib/next-route";
 import {
   formatClockTime,
   getLineOperatingHours,
@@ -19,14 +22,20 @@ import {
   minutesUntilLastTrain,
   type LineOperatingHours,
 } from "@/lib/operating-hours-client";
+import { getPingCounts, putPing } from "@/lib/pings-client";
 import { reportCategoryMeta } from "@/lib/report-categories";
-import { findRoute, type RouteOption } from "@/lib/route-finder";
+import { findRoute, findRouteOptions as findRouteOptionsFor, type RouteOption } from "@/lib/route-finder";
 import { STATION_COORDS } from "@/lib/stations";
-import { useSavedRoutes } from "@/lib/store";
+import { useAllExceptions, useSavedRoutes } from "@/lib/store";
 import type { RouteLeg, SavedRoute } from "@/lib/types";
 import { useDictionary } from "@/lib/use-dictionary";
 import { useRouteFinderOptions } from "@/lib/use-route-finder";
 import { getRecentUserReports, type UserReport } from "@/lib/user-reports-client";
+
+function timeToMinutes(hhmm: string): number {
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + m;
+}
 
 // react-leaflet touches window/document at module load — dynamic-import
 // with ssr:false so next.config.ts's static export (prerendered with no
@@ -81,6 +90,11 @@ export default function HomePage() {
   const [operatingHours, setOperatingHours] = useState<LineOperatingHours[]>([]);
   const [showLeaveLater, setShowLeaveLater] = useState(false);
   const [leaveLaterTime, setLeaveLaterTime] = useState("");
+  // "Change plan" (skip today / WFH / driving) — ported from the old
+  // app/dashboard/page.tsx, only meaningful for a saved (Home/Work/recent)
+  // route, not a one-off finder lookup.
+  const [changePlanOpen, setChangePlanOpen] = useState(false);
+  const exceptions = useAllExceptions();
   const {
     origin: finderOrigin,
     destination: finderDestination,
@@ -259,6 +273,67 @@ export default function HomePage() {
     [homeRoute],
   );
 
+  // "Next trip" info (departure date/time, crowd count, busier-alternate
+  // suggestion) for the currently active saved route — ported from the old
+  // app/dashboard/page.tsx, which showed exactly this for whichever route
+  // was "next" across every saved route. Here it's scoped to just the
+  // route the rider tapped (Home/Work/recent), since Home no longer picks
+  // a route on its own the way the old dashboard did.
+  const activeNext: NextRoute | null = useMemo(
+    () => (activeRoute ? computeNextRoute([activeRoute], exceptions, new Date()) : null),
+    [activeRoute, exceptions],
+  );
+  const activeRouteOptions = useMemo(
+    () => (activeRoute ? findRouteOptionsFor(activeRoute.originStation, activeRoute.destinationStation) : undefined),
+    [activeRoute],
+  );
+  const activeAlternateLegs = activeRouteOptions?.[1]?.legs;
+
+  const [activeCrowd, setActiveCrowd] = useState<CrowdMock | null>(null);
+
+  useEffect(() => {
+    if (!activeNext || !activeLegs || activeLegs.length === 0) {
+      setActiveCrowd(null);
+      return;
+    }
+
+    const station = activeNext.route.originStation;
+    const timeBucket = timeToMinutes(activeNext.route.departureTime);
+    const fallback = mockCrowdFor(activeNext.route.id, activeNext.date);
+    setActiveCrowd(fallback);
+
+    let cancelled = false;
+
+    // Fire-and-forget: register that this device is planning this trip. See
+    // lib/pings-client.ts's header for why a failed call is a no-op.
+    putPing({
+      routeId: activeNext.route.id,
+      station,
+      lineId: activeLegs[0].line,
+      tripDate: activeNext.date,
+      timeBucket,
+    }).catch(() => {});
+
+    getPingCounts(station, activeNext.date, timeBucket)
+      .then(({ count, suppressed }) => {
+        if (cancelled || suppressed || count === null) return;
+        setActiveCrowd({ count, busier: count > 150 });
+      })
+      .catch(() => {
+        // Keep the mock fallback already set above.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeNext, activeLegs]);
+
+  const activeDateLabel = activeNext
+    ? activeNext.date === new Date().toISOString().slice(0, 10)
+      ? t.dashboard.today
+      : activeNext.departureAt.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })
+    : "";
+
   return (
     <Shell>
       <div className="relative h-[calc(100vh-3.5rem)] w-full overflow-hidden">
@@ -299,6 +374,11 @@ export default function HomePage() {
                 <span className="truncate text-xs text-foreground/60">
                   {activeRoute.originStation} <span aria-hidden="true">→</span> {activeRoute.destinationStation}
                 </span>
+                {activeNext && (
+                  <span className="truncate text-xs text-foreground/60">
+                    {activeDateLabel}, {activeNext.route.departureTime}
+                  </span>
+                )}
               </div>
               <Link
                 href={`/route?id=${activeRoute.id}`}
@@ -307,16 +387,54 @@ export default function HomePage() {
                 {t.dashboard.viewDetails}
               </Link>
             </div>
-            <button
-              type="button"
-              onClick={resetToOverview}
-              className="flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-foreground/60 transition-colors hover:bg-muted hover:text-foreground"
-            >
-              <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                <path d="M12 4L6 10L12 16" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              {t.homePage.changeRoute}
-            </button>
+
+            {activeNext && (
+              <div className="flex items-center gap-2 rounded-xl border border-border p-2.5">
+                <span className="relative flex h-2.5 w-2.5 shrink-0" aria-hidden="true">
+                  <span
+                    className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
+                    style={{ backgroundColor: "var(--primary)" }}
+                  />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full" style={{ backgroundColor: "var(--primary)" }} />
+                </span>
+                <span className="text-xl font-semibold text-foreground">{activeCrowd?.count}</span>
+                <span className="text-xs text-foreground/60">{t.dashboard.peoplePlanning}</span>
+                <span
+                  className="ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase"
+                  style={{ backgroundColor: "color-mix(in srgb, var(--destructive) 12%, transparent)", color: "var(--destructive)" }}
+                >
+                  {t.dashboard.conceptBadge}
+                </span>
+              </div>
+            )}
+            {activeCrowd?.busier && (
+              <p
+                className="rounded-lg px-3 py-2 text-xs text-foreground"
+                style={{ backgroundColor: "color-mix(in srgb, var(--accent) 12%, transparent)" }}
+              >
+                {t.dashboard.busierSuggestion(activeAlternateLegs ? (lineById(activeAlternateLegs[0].line)?.name ?? "") : "")}
+              </p>
+            )}
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setChangePlanOpen(true)}
+                className="flex-1 cursor-pointer rounded-lg border border-border px-3 py-2 text-xs font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-muted"
+              >
+                {t.dashboard.changePlan}
+              </button>
+              <button
+                type="button"
+                onClick={resetToOverview}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-foreground/60 transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M12 4L6 10L12 16" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                {t.homePage.changeRoute}
+              </button>
+            </div>
           </div>
         ) : routeOptions ? (
           <div className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-3 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4">
@@ -549,6 +667,10 @@ export default function HomePage() {
           </div>
         )}
       </div>
+
+      {changePlanOpen && activeNext && (
+        <ChangePlanModal date={activeNext.date} routes={routes} onClose={() => setChangePlanOpen(false)} />
+      )}
     </Shell>
   );
 }

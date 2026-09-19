@@ -1,7 +1,7 @@
 export const en = {
   nav: {
     brand: "JomKomute",
-    dashboard: "Dashboard",
+    myRoutes: "My Routes",
     routes: "Routes",
     addRoute: "Add route",
     operatingHours: "Operating hours",
@@ -50,7 +50,6 @@ export const en = {
     },
   },
   dashboard: {
-    title: "Your next trip",
     today: "Today",
     conceptBadge: "Concept — needs real scale",
     peoplePlanning: "people planning this trip",
@@ -61,7 +60,6 @@ export const en = {
     changePlan: "Change plan",
     homeBadge: "Home",
     viewDetails: "View details",
-    mapUnavailable: "No station coordinates available for this route yet.",
   },
   changePlanModal: {
     title: "What's the plan?",

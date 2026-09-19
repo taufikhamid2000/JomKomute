@@ -160,22 +160,49 @@ function legsToSegments(legs: RouteLeg[]): LegSegment[] {
   });
 }
 
+// A multi-route overview pin: just origin/destination, no legs — used by
+// app/routes/page.tsx's mini-map to show where every saved route goes at a
+// glance, rather than plotting any one route's full line-by-line path.
+export type RoutePin = { originStation: string; destinationStation: string; color?: string };
+
+const ORIGIN_PIN_COLOR = "#2563eb";
+const DESTINATION_PIN_COLOR = "#0f172a";
+
 export function HomeMap({
   legs,
   routeOptions,
   selectedOptionIndex,
   onSelectOption,
   reports,
+  routePins,
 }: {
   legs?: RouteLeg[];
   routeOptions?: RouteOption[];
   selectedOptionIndex?: number;
   onSelectOption?: (index: number) => void;
   reports?: UserReport[];
+  routePins?: RoutePin[];
 }) {
   const networkSegments = useMemo(() => NETWORK_SEGMENTS, []);
   const hasOptions = !!routeOptions && routeOptions.length > 0;
   const selectedIndex = selectedOptionIndex ?? 0;
+
+  // Each pin resolves to up to two markers (origin/destination) — stations
+  // missing from STATION_COORDS are silently skipped, same "don't draw
+  // something we don't have coordinates for" rule the rest of this file
+  // follows (see stationsForLeg/buildNetworkSegments).
+  const pinMarkers = useMemo(() => {
+    if (!routePins || routePins.length === 0) return [];
+    return routePins.flatMap((pin, i) => {
+      const markers: { key: string; coord: [number, number]; color: string }[] = [];
+      const origin = STATION_COORDS[pin.originStation];
+      const destination = STATION_COORDS[pin.destinationStation];
+      if (origin) markers.push({ key: `pin-${i}-origin`, coord: origin, color: pin.color ?? ORIGIN_PIN_COLOR });
+      if (destination) markers.push({ key: `pin-${i}-dest`, coord: destination, color: pin.color ?? DESTINATION_PIN_COLOR });
+      return markers;
+    });
+  }, [routePins]);
+  const pinPoints = useMemo(() => pinMarkers.map((m) => m.coord), [pinMarkers]);
 
   const segments = useMemo(() => {
     if (!legs || legs.length === 0) return [];
@@ -195,7 +222,7 @@ export function HomeMap({
     [optionSegments],
   );
 
-  const fitPoints = hasOptions ? optionsAllPoints : singlePoints;
+  const fitPoints = hasOptions ? optionsAllPoints : pinPoints.length > 0 ? pinPoints : singlePoints;
   const center = fitPoints.length > 0 ? fitPoints[Math.floor(fitPoints.length / 2)] : DEFAULT_CENTER;
 
   // The route currently relevant for the "nearby reports" corridor check:
@@ -279,6 +306,10 @@ export function HomeMap({
 
       {nearbyReports.map((report) => (
         <Marker key={`report-${report.id}`} position={[report.lat, report.lng]} icon={reportIcon(report.category)} />
+      ))}
+
+      {pinMarkers.map((marker) => (
+        <Marker key={marker.key} position={marker.coord} icon={stationIcon(marker.color)} />
       ))}
     </MapContainer>
   );

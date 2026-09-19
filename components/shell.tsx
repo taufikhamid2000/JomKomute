@@ -17,10 +17,14 @@ export function Shell({ children }: { children: React.ReactNode }) {
   // kept showing even once "Try the demo" signed the user in anonymously.
   const [authed, setAuthed] = useState<boolean | null>(null);
 
-  const navLinks = [
-    { href: "/dashboard", label: t.nav.dashboard },
-    { href: "/routes", label: t.nav.routes },
-    { href: "/new", label: t.nav.addRoute },
+  const navLinks: NavItem[] = [
+    {
+      label: t.nav.myRoutes,
+      children: [
+        { href: "/routes", label: t.nav.routes },
+        { href: "/new", label: t.nav.addRoute },
+      ],
+    },
     { href: "/operating-hours", label: t.nav.operatingHours },
     { href: "/settings", label: t.nav.settings },
     { href: "/about", label: t.nav.about },
@@ -153,6 +157,17 @@ export function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
+// A flat leaf link (e.g. Operating hours) or a one-level-deep group (e.g.
+// "My Routes" containing Routes/Add route) — intentionally just enough
+// nesting for that one group, not a generic multi-level nav tree.
+type NavLeaf = { href: string; label: string };
+type NavGroup = { label: string; children: NavLeaf[] };
+type NavItem = NavLeaf | NavGroup;
+
+function isNavGroup(item: NavItem): item is NavGroup {
+  return "children" in item;
+}
+
 function normalizePath(path: string): string {
   return path.length > 1 && path.endsWith("/") ? path.slice(0, -1) : path;
 }
@@ -162,34 +177,73 @@ function NavLinks({
   pathname,
   onNavigate,
 }: {
-  links: { href: string; label: string }[];
+  links: NavItem[];
   pathname: string;
   onNavigate?: () => void;
 }) {
   return (
     <>
-      {links.map((link) => {
-        // The production build sets trailingSlash: true (see
-        // next.config.ts) so usePathname() returns e.g. "/dashboard/"
-        // there but "/dashboard" in dev — normalize both sides so the
-        // active link doesn't only work in one of the two environments.
-        const isActive = normalizePath(pathname) === normalizePath(link.href);
-        return (
-          <Link
-            key={link.href}
-            href={link.href}
-            onClick={onNavigate}
-            aria-current={isActive ? "page" : undefined}
-            className={
-              isActive
-                ? "flex min-h-11 items-center rounded-lg bg-[var(--nav-active-bg)] px-3 text-sm font-medium text-[var(--nav-fg)]"
-                : "flex min-h-11 items-center rounded-lg px-3 text-sm text-[var(--nav-fg-muted)] transition-colors hover:bg-[var(--nav-hover-bg)] hover:text-[var(--nav-fg)]"
-            }
-          >
-            {link.label}
-          </Link>
-        );
-      })}
+      {links.map((item) =>
+        isNavGroup(item) ? (
+          <NavGroupLinks key={item.label} group={item} pathname={pathname} onNavigate={onNavigate} />
+        ) : (
+          <NavLeafLink key={item.href} link={item} pathname={pathname} onNavigate={onNavigate} />
+        ),
+      )}
     </>
+  );
+}
+
+function NavLeafLink({
+  link,
+  pathname,
+  onNavigate,
+  indented,
+}: {
+  link: NavLeaf;
+  pathname: string;
+  onNavigate?: () => void;
+  indented?: boolean;
+}) {
+  // The production build sets trailingSlash: true (see next.config.ts) so
+  // usePathname() returns e.g. "/routes/" there but "/routes" in dev —
+  // normalize both sides so the active link doesn't only work in one of
+  // the two environments.
+  const isActive = normalizePath(pathname) === normalizePath(link.href);
+  return (
+    <Link
+      href={link.href}
+      onClick={onNavigate}
+      aria-current={isActive ? "page" : undefined}
+      className={
+        isActive
+          ? `flex min-h-11 items-center rounded-lg bg-[var(--nav-active-bg)] px-3 text-sm font-medium text-[var(--nav-fg)] ${indented ? "ml-3" : ""}`
+          : `flex min-h-11 items-center rounded-lg px-3 text-sm text-[var(--nav-fg-muted)] transition-colors hover:bg-[var(--nav-hover-bg)] hover:text-[var(--nav-fg)] ${indented ? "ml-3" : ""}`
+      }
+    >
+      {link.label}
+    </Link>
+  );
+}
+
+// Always expanded (no collapse/expand state) — there are only two children,
+// so hiding them behind a toggle would cost a click for no real space
+// saving. The group label is just a heading, not a link/button.
+function NavGroupLinks({
+  group,
+  pathname,
+  onNavigate,
+}: {
+  group: NavGroup;
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="px-3 pt-2 text-[11px] font-medium tracking-wide text-[var(--nav-fg-muted)] uppercase">{group.label}</span>
+      {group.children.map((link) => (
+        <NavLeafLink key={link.href} link={link} pathname={pathname} onNavigate={onNavigate} indented />
+      ))}
+    </div>
   );
 }

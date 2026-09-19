@@ -3,7 +3,7 @@ import type { Dictionary } from "./en";
 export const ms: Dictionary = {
   nav: {
     brand: "JomKomute",
-    dashboard: "Papan pemuka",
+    myRoutes: "Laluan Saya",
     routes: "Laluan",
     addRoute: "Tambah laluan",
     operatingHours: "Waktu operasi",
@@ -52,7 +52,6 @@ export const ms: Dictionary = {
     },
   },
   dashboard: {
-    title: "Perjalanan seterusnya anda",
     today: "Hari ini",
     conceptBadge: "Konsep — perlukan skala sebenar",
     peoplePlanning: "orang merancang perjalanan ini",
@@ -63,7 +62,6 @@ export const ms: Dictionary = {
     changePlan: "Tukar rancangan",
     homeBadge: "Utama",
     viewDetails: "Lihat butiran",
-    mapUnavailable: "Tiada koordinat stesen untuk laluan ini lagi.",
   },
   changePlanModal: {
     title: "Apa rancangannya?",
