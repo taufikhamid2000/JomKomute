@@ -35,6 +35,14 @@ export function RouteCard({ route }: { route: SavedRoute }) {
               {t.routesPage.homeBadge}
             </span>
           )}
+          {route.isWork && (
+            <span
+              className="rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase"
+              style={{ backgroundColor: "color-mix(in srgb, var(--accent) 12%, transparent)", color: "var(--accent)" }}
+            >
+              {t.routesPage.workBadge}
+            </span>
+          )}
         </span>
         <span className="text-sm text-foreground/70">
           {route.legs[0].originStation} <span aria-hidden="true">→</span>{" "}

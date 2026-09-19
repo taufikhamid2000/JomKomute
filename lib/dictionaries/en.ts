@@ -89,6 +89,18 @@ export const en = {
     transfer: (count: number) => (count === 1 ? "1 transfer" : `${count} transfers`),
     hasBackup: "has backup route",
     homeBadge: "Home",
+    workBadge: "Work",
+  },
+  homePage: {
+    whereTo: "Where to?",
+    homeQuickAccess: "Home",
+    workQuickAccess: "Work",
+    setHomePrompt: "Set your Home route",
+    setWorkPrompt: "Set your Work route",
+    noQuickAccessTitle: "Set your Home and Work routes",
+    noQuickAccessDescription: "Save a commute and mark it Home or Work for one-tap access here.",
+    recentTitle: "Your routes",
+    viewAllRoutes: "View all routes",
   },
   routeForm: {
     title: "Add a route",
@@ -136,6 +148,9 @@ export const en = {
     setHome: "Set as Home",
     unsetHome: "Remove as Home",
     isHome: "Home route",
+    setWork: "Set as Work",
+    unsetWork: "Remove as Work",
+    isWork: "Work route",
   },
   exceptionPanel: {
     skipTodayTitle: "Not commuting today?",

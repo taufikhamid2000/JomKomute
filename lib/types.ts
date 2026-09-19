@@ -24,6 +24,10 @@ export type SavedRoute = {
   // setHomeRoute enforces it) — a one-tap shortcut/favorite, not a literal
   // home address.
   isHome?: boolean;
+  // Same one-at-a-time pattern as isHome (lib/store.ts's setWorkRoute), but
+  // an independent slot — a route can be both Home and Work at once (e.g.
+  // the only saved commute so far serves as both quick-access shortcuts).
+  isWork?: boolean;
 };
 
 // "leave" | "wfh" | "drive" is only set when the skip came from the

@@ -29,7 +29,7 @@ function RouteDetail() {
   const { t } = useDictionary();
   const id = useSearchParams().get("id");
   const router = useRouter();
-  const { routes, removeRoute, setHomeRoute, clearHomeRoute } = useSavedRoutes();
+  const { routes, removeRoute, setHomeRoute, clearHomeRoute, setWorkRoute, clearWorkRoute } = useSavedRoutes();
   const route = routes.find((r) => r.id === id);
 
   // Renders once with an empty snapshot during hydration (localStorage isn't
@@ -39,7 +39,7 @@ function RouteDetail() {
     return (
       <div className="animate-page-in mx-auto flex w-full max-w-2xl flex-col gap-3 p-4 md:p-8">
         <p className="text-sm text-foreground/60">{t.routeDetail.notFound}</p>
-        <Link href="/" className="w-fit text-sm text-primary underline-offset-4 hover:underline">
+        <Link href="/routes" className="w-fit text-sm text-primary underline-offset-4 hover:underline">
           {t.routeDetail.backToRoutes}
         </Link>
       </div>
@@ -61,7 +61,7 @@ function RouteDetail() {
   function handleDelete() {
     if (!route) return;
     removeRoute(route.id);
-    router.push("/");
+    router.push("/routes");
   }
 
   return (
@@ -87,6 +87,17 @@ function RouteDetail() {
               }
             >
               {route.isHome ? `★ ${t.routeDetail.isHome}` : t.routeDetail.setHome}
+            </button>
+            <button
+              type="button"
+              onClick={() => (route.isWork ? clearWorkRoute(route.id) : setWorkRoute(route.id))}
+              className={
+                route.isWork
+                  ? "whitespace-nowrap rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                  : "whitespace-nowrap rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+              }
+            >
+              {route.isWork ? `★ ${t.routeDetail.isWork}` : t.routeDetail.setWork}
             </button>
             <Link
               href={`/new?reverseOf=${route.id}`}

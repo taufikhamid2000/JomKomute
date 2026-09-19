@@ -91,6 +91,18 @@ export const ms: Dictionary = {
     transfer: (count: number) => (count === 1 ? "1 pertukaran" : `${count} pertukaran`),
     hasBackup: "ada laluan sandaran",
     homeBadge: "Utama",
+    workBadge: "Kerja",
+  },
+  homePage: {
+    whereTo: "Hendak ke mana?",
+    homeQuickAccess: "Rumah",
+    workQuickAccess: "Kerja",
+    setHomePrompt: "Tetapkan laluan Rumah anda",
+    setWorkPrompt: "Tetapkan laluan Kerja anda",
+    noQuickAccessTitle: "Tetapkan laluan Rumah dan Kerja anda",
+    noQuickAccessDescription: "Simpan komuting dan tandakan sebagai Rumah atau Kerja untuk akses satu ketikan di sini.",
+    recentTitle: "Laluan anda",
+    viewAllRoutes: "Lihat semua laluan",
   },
   routeForm: {
     title: "Tambah laluan",
@@ -138,6 +150,9 @@ export const ms: Dictionary = {
     setHome: "Jadikan Utama",
     unsetHome: "Buang sebagai Utama",
     isHome: "Laluan utama",
+    setWork: "Jadikan Kerja",
+    unsetWork: "Buang sebagai Kerja",
+    isWork: "Laluan kerja",
   },
   exceptionPanel: {
     skipTodayTitle: "Tidak komuting hari ini?",

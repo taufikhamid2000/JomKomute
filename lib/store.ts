@@ -120,7 +120,24 @@ export function useSavedRoutes() {
     );
   }, []);
 
-  return { routes, addRoute, removeRoute, setHomeRoute, clearHomeRoute };
+  // Only one route can be Work at a time — same pattern as setHomeRoute,
+  // but an independent slot: a route can be Home and Work simultaneously.
+  const setWorkRoute = useCallback((id: string) => {
+    setCached(
+      ROUTES_KEY,
+      getCached<SavedRoute>(ROUTES_KEY).map((r) => (r.id === id ? { ...r, isWork: true } : r.isWork ? { ...r, isWork: false } : r))
+    );
+  }, []);
+
+  // Unsets Work without picking a new one.
+  const clearWorkRoute = useCallback((id: string) => {
+    setCached(
+      ROUTES_KEY,
+      getCached<SavedRoute>(ROUTES_KEY).map((r) => (r.id === id ? { ...r, isWork: false } : r))
+    );
+  }, []);
+
+  return { routes, addRoute, removeRoute, setHomeRoute, clearHomeRoute, setWorkRoute, clearWorkRoute };
 }
 
 // Not routeId-scoped — used by the dashboard's "Change plan" modal, which

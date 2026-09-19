@@ -14,7 +14,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     { href: "/dashboard", label: t.nav.dashboard },
     { href: "/issues", label: t.nav.issues },
     { href: "/report", label: t.nav.report },
-    { href: "/", label: t.nav.routes },
+    { href: "/routes", label: t.nav.routes },
     { href: "/new", label: t.nav.addRoute },
     { href: "/settings", label: t.nav.settings },
     { href: "/about", label: t.nav.about },
