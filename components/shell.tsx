@@ -1,14 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { supabaseBrowser } from "@/lib/supabase-client";
 import { useDictionary } from "@/lib/use-dictionary";
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const { t } = useDictionary();
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  // Same session check as components/auth-gate.tsx (getSession on mount +
+  // onAuthStateChange subscription) — the sidebar used to hardcode a
+  // static "Log in" link that never looked at auth state at all, so it
+  // kept showing even once "Try the demo" signed the user in anonymously.
+  const [authed, setAuthed] = useState<boolean | null>(null);
 
   const navLinks = [
     { href: "/dashboard", label: t.nav.dashboard },
@@ -18,11 +25,29 @@ export function Shell({ children }: { children: React.ReactNode }) {
     { href: "/new", label: t.nav.addRoute },
     { href: "/settings", label: t.nav.settings },
     { href: "/about", label: t.nav.about },
-    // No dictionary entry — this is a plain, un-translated entry point to
-    // the (optional, ungated) account pages, same as the other apps'
-    // login link. See app/login, app/signup.
-    { href: "/login", label: "Log in" },
   ];
+
+  useEffect(() => {
+    let cancelled = false;
+    const supabase = supabaseBrowser();
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled) return;
+      setAuthed(!!session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (cancelled) return;
+      setAuthed(!!session);
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -40,6 +65,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
       mql.removeEventListener("change", onMqlChange);
     };
   }, [open]);
+
+  async function handleLogOut() {
+    await supabaseBrowser().auth.signOut();
+    router.push("/login");
+  }
 
   return (
     <div className="flex min-h-screen flex-1 flex-col">
@@ -67,6 +97,28 @@ export function Shell({ children }: { children: React.ReactNode }) {
             {t.nav.brand}
           </Link>
         </div>
+
+        {/* Auth control lives in the header now, not the sidebar — matches
+            the usual top-right placement instead of being buried in the
+            hamburger menu. Renders nothing until the session check
+            resolves (authed === null) to avoid a login/logout flash. */}
+        {authed === true && (
+          <button
+            type="button"
+            onClick={handleLogOut}
+            className="flex h-9 cursor-pointer items-center rounded-lg px-3 text-sm font-medium text-[var(--nav-fg-muted)] transition-colors hover:bg-[var(--nav-hover-bg)] hover:text-[var(--nav-fg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            {t.nav.logOut}
+          </button>
+        )}
+        {authed === false && (
+          <Link
+            href="/login"
+            className="flex h-9 items-center rounded-lg px-3 text-sm font-medium text-[var(--nav-fg-muted)] transition-colors hover:bg-[var(--nav-hover-bg)] hover:text-[var(--nav-fg)]"
+          >
+            {t.nav.logIn}
+          </Link>
+        )}
       </header>
 
       <div className="flex flex-1 flex-col md:flex-row">

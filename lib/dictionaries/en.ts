@@ -10,6 +10,8 @@ export const en = {
     about: "About",
     openMenu: "Open menu",
     closeMenu: "Close menu",
+    logIn: "Log in",
+    logOut: "Log out",
   },
   days: {
     0: "Sun",
@@ -101,6 +103,8 @@ export const en = {
     noQuickAccessDescription: "Save a commute and mark it Home or Work for one-tap access here.",
     recentTitle: "Your routes",
     viewAllRoutes: "View all routes",
+    changeRoute: "Change route",
+    backToOverview: "Back to overview",
   },
   routeForm: {
     title: "Add a route",

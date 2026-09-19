@@ -12,6 +12,8 @@ export const ms: Dictionary = {
     about: "Perihal",
     openMenu: "Buka menu",
     closeMenu: "Tutup menu",
+    logIn: "Log masuk",
+    logOut: "Log keluar",
   },
   days: {
     0: "Ahd",
@@ -103,6 +105,8 @@ export const ms: Dictionary = {
     noQuickAccessDescription: "Simpan komuting dan tandakan sebagai Rumah atau Kerja untuk akses satu ketikan di sini.",
     recentTitle: "Laluan anda",
     viewAllRoutes: "Lihat semua laluan",
+    changeRoute: "Tukar laluan",
+    backToOverview: "Kembali ke gambaran keseluruhan",
   },
   routeForm: {
     title: "Tambah laluan",

@@ -11,9 +11,9 @@
 // user's Home route (if any) is drawn on top as a bonus, not a requirement.
 
 import "leaflet/dist/leaflet.css";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import L from "leaflet";
-import { MapContainer, Marker, Polyline, TileLayer } from "react-leaflet";
+import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
 import { lineById } from "@/lib/lines";
 import { STATION_COORDS } from "@/lib/stations";
 import type { RouteLeg } from "@/lib/types";
@@ -46,6 +46,22 @@ function stationsForLeg(leg: RouteLeg): string[] {
   return [...slice];
 }
 
+// Fits the map to the active route's stations when it's set/changed —
+// gives Home/Work tapping the "route just started" feel (polyline drawn
+// and framed) instead of leaving the map sitting on its default view.
+function FitToPoints({ points }: { points: [number, number][] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (points.length === 0) return;
+    if (points.length === 1) {
+      map.setView(points[0], DEFAULT_ZOOM);
+      return;
+    }
+    map.fitBounds(L.latLngBounds(points), { padding: [32, 32] });
+  }, [map, points]);
+  return null;
+}
+
 export function HomeMap({ legs }: { legs?: RouteLeg[] }) {
   const segments = useMemo(() => {
     if (!legs || legs.length === 0) return [];
@@ -61,6 +77,7 @@ export function HomeMap({ legs }: { legs?: RouteLeg[] }) {
 
   const allPoints = segments.flatMap((s) => s.points);
   const center = allPoints.length > 0 ? allPoints[Math.floor(allPoints.length / 2)].coord : DEFAULT_CENTER;
+  const allCoords = useMemo(() => allPoints.map((p) => p.coord), [segments]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <MapContainer center={center} zoom={DEFAULT_ZOOM} scrollWheelZoom className="h-full w-full">
@@ -68,6 +85,7 @@ export function HomeMap({ legs }: { legs?: RouteLeg[] }) {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+      {allCoords.length > 0 && <FitToPoints points={allCoords} />}
       {segments.map((segment, i) =>
         segment.points.length > 1 ? (
           <Polyline key={i} positions={segment.points.map((p) => p.coord)} pathOptions={{ color: segment.color, weight: 4 }} />
