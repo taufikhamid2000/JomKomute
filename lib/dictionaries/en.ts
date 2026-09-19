@@ -2,7 +2,6 @@ export const en = {
   nav: {
     brand: "JomKomute",
     dashboard: "Dashboard",
-    issues: "Issues",
     report: "Report",
     routes: "Routes",
     addRoute: "Add route",
@@ -28,15 +27,6 @@ export const en = {
     busy: "Usually busy",
     comfortable: "Usually comfortable",
     quiet: "Usually quiet",
-  },
-  issuesPage: {
-    title: "Service issues",
-    description:
-      "What automatically catching RapidKL's own X/Threads posts about disruptions could look like — a trespasser incident, a signal fault, anything that'll delay your line. Nothing here is live yet.",
-    conceptBadge: "Concept — no live feed yet",
-    minutesAgo: (n: number) => (n === 1 ? "1 min ago" : `${n} min ago`),
-    seenOn: (source: string) => `Seen on ${source}`,
-    empty: "No issues to show in this mock right now.",
   },
   reportPage: {
     title: "Report an issue",
