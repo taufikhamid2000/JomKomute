@@ -20,11 +20,12 @@ import {
   type LineOperatingHours,
 } from "@/lib/operating-hours-client";
 import { reportCategoryMeta } from "@/lib/report-categories";
-import { allStationNames, findRouteOptions, type RouteOption } from "@/lib/route-finder";
+import type { RouteOption } from "@/lib/route-finder";
 import { STATION_COORDS } from "@/lib/stations";
 import { useSavedRoutes } from "@/lib/store";
 import type { RouteLeg, SavedRoute } from "@/lib/types";
 import { useDictionary } from "@/lib/use-dictionary";
+import { useRouteFinderOptions } from "@/lib/use-route-finder";
 import { getRecentUserReports, type UserReport } from "@/lib/user-reports-client";
 
 // react-leaflet touches window/document at module load — dynamic-import
@@ -80,10 +81,16 @@ export default function HomePage() {
   const [operatingHours, setOperatingHours] = useState<LineOperatingHours[]>([]);
   const [showLeaveLater, setShowLeaveLater] = useState(false);
   const [leaveLaterTime, setLeaveLaterTime] = useState("");
-  const [finderOrigin, setFinderOrigin] = useState("");
-  const [finderDestination, setFinderDestination] = useState("");
-  const [finderNotFound, setFinderNotFound] = useState(false);
-  const stationNames = allStationNames();
+  const {
+    origin: finderOrigin,
+    destination: finderDestination,
+    notFound: finderNotFound,
+    setNotFound: setFinderNotFound,
+    setOrigin: setFinderOrigin,
+    setDestination: setFinderDestination,
+    stationNames,
+    find: findRouteOptions,
+  } = useRouteFinderOptions();
 
   // Fetch nearby reports once route options become available — same
   // "last 24h" scope getRecentUserReports already implements for
@@ -120,17 +127,13 @@ export default function HomePage() {
   }
 
   function handleFindRoute() {
-    if (!finderOrigin || !finderDestination) return;
-    const options = findRouteOptions(finderOrigin, finderDestination);
+    const options = findRouteOptions();
     if (options) {
-      setFinderNotFound(false);
       setActiveRoute(null);
       setOneTimeRoute(null);
       setSelectedOptionIndex(0);
       setShowLeaveLater(false);
       setRouteOptions(options);
-    } else {
-      setFinderNotFound(true);
     }
   }
 
@@ -428,20 +431,14 @@ export default function HomePage() {
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <Combobox
                   value={finderOrigin}
-                  onChange={(station) => {
-                    setFinderOrigin(station);
-                    setFinderNotFound(false);
-                  }}
+                  onChange={setFinderOrigin}
                   options={stationNames}
                   placeholder={t.legsEditor.from}
                   noResultsLabel={t.legsEditor.noStationsFound}
                 />
                 <Combobox
                   value={finderDestination}
-                  onChange={(station) => {
-                    setFinderDestination(station);
-                    setFinderNotFound(false);
-                  }}
+                  onChange={setFinderDestination}
                   options={stationNames}
                   placeholder={t.legsEditor.to}
                   noResultsLabel={t.legsEditor.noStationsFound}

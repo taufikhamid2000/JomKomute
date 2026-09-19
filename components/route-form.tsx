@@ -6,10 +6,10 @@ import { Combobox } from "@/components/combobox";
 import { LegsEditor } from "@/components/legs-editor";
 import { legsComplete, reverseLegs } from "@/lib/legs";
 import { LINES } from "@/lib/lines";
-import { allStationNames, findRoute } from "@/lib/route-finder";
 import { useSavedRoutes } from "@/lib/store";
 import { type DayOfWeek, type RouteLeg } from "@/lib/types";
 import { useDictionary } from "@/lib/use-dictionary";
+import { useSingleRouteFinder } from "@/lib/use-route-finder";
 
 const WEEKDAYS: DayOfWeek[] = [1, 2, 3, 4, 5];
 const ALL_DAYS: DayOfWeek[] = [0, 1, 2, 3, 4, 5, 6];
@@ -52,21 +52,22 @@ export function RouteForm() {
   const [label, setLabel] = useState("");
   const [prefilled, setPrefilled] = useState(false);
 
-  const [findOrigin, setFindOrigin] = useState("");
-  const [findDestination, setFindDestination] = useState("");
-  const [findNotFound, setFindNotFound] = useState(false);
+  const {
+    origin: findOrigin,
+    destination: findDestination,
+    notFound: findNotFound,
+    setOrigin: setFindOrigin,
+    setDestination: setFindDestination,
+    stationNames,
+    find: findRoute,
+  } = useSingleRouteFinder();
   const [finderCollapsed, setFinderCollapsed] = useState(false);
-  const stationNames = allStationNames();
 
   function handleFindRoute() {
-    if (!findOrigin || !findDestination) return;
-    const result = findRoute(findOrigin, findDestination);
+    const result = findRoute();
     if (result) {
       setLegs(result);
-      setFindNotFound(false);
       setFinderCollapsed(true);
-    } else {
-      setFindNotFound(true);
     }
   }
 
@@ -154,10 +155,7 @@ export function RouteForm() {
               <label className="text-sm font-medium text-foreground">{t.legsEditor.from}</label>
               <Combobox
                 value={findOrigin}
-                onChange={(station) => {
-                  setFindOrigin(station);
-                  setFindNotFound(false);
-                }}
+                onChange={setFindOrigin}
                 options={stationNames}
                 placeholder={t.legsEditor.selectStation}
                 noResultsLabel={t.legsEditor.noStationsFound}
@@ -167,10 +165,7 @@ export function RouteForm() {
               <label className="text-sm font-medium text-foreground">{t.legsEditor.to}</label>
               <Combobox
                 value={findDestination}
-                onChange={(station) => {
-                  setFindDestination(station);
-                  setFindNotFound(false);
-                }}
+                onChange={setFindDestination}
                 options={stationNames}
                 placeholder={t.legsEditor.selectStation}
                 noResultsLabel={t.legsEditor.noStationsFound}
