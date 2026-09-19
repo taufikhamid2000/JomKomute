@@ -12,7 +12,7 @@
 // Usage: node scripts/generate-stations.mjs
 
 import { execSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -134,7 +134,14 @@ function parseGtfsTime(hms) {
 }
 
 function fetchGtfsFeed(url, destDir) {
-  execSync(`curl -sfL "${url}" -o feed.zip && unzip -oq feed.zip -x "__MACOSX/*"`, { cwd: destDir });
+  // Explicit bash: on Windows, execSync's default shell is cmd.exe, which
+  // understands neither `&&` chaining the way we want here nor `curl`
+  // piped straight into `unzip`'s expectations — bash (from Git for
+  // Windows) is already relied on elsewhere in this repo's tooling.
+  execSync(`curl -sfL "${url}" -o feed.zip && unzip -oq feed.zip -x "__MACOSX/*"`, {
+    cwd: destDir,
+    shell: "bash",
+  });
   return {
     read: (file) => readFileSync(join(destDir, file), "utf8"),
   };
@@ -182,7 +189,14 @@ function buildLine({ id, name, color, trips, stopTimes, stopById, matchesTrip })
       const stop = stopById.get(st.stop_id);
       if (!stop || !st.arrival_time) return null;
       const stopName = titleCase(stop.stop_name);
-      return { name: KNOWN_NAME_FIXES[stopName] ?? stopName, arrivalSeconds: parseGtfsTime(st.arrival_time) };
+      const lat = Number(stop.stop_lat);
+      const lng = Number(stop.stop_lon);
+      return {
+        name: KNOWN_NAME_FIXES[stopName] ?? stopName,
+        arrivalSeconds: parseGtfsTime(st.arrival_time),
+        lat: Number.isFinite(lat) ? lat : null,
+        lng: Number.isFinite(lng) ? lng : null,
+      };
     })
     .filter((row) => row !== null);
 
@@ -198,17 +212,32 @@ function buildLine({ id, name, color, trips, stopTimes, stopById, matchesTrip })
     color,
     stations: rows.map((row) => row.name),
     arrivalOffsetMinutes: rows.map((row) => Math.round((row.arrivalSeconds - baseSeconds) / 60)),
+    // Not part of the returned line object on purpose — kept alongside it
+    // here only so the caller can fold station coordinates into the
+    // shared STATION_COORDS map below without a second pass over stops.txt.
+    _rowsForCoords: rows,
   };
 }
 
 const tmp = mkdtempSync(join(tmpdir(), "gtfs-"));
 try {
   const lines = [];
+  const stationCoords = new Map(); // name -> [lat, lng], first occurrence wins
+
+  function collectCoords(line) {
+    if (!line) return;
+    for (const row of line._rowsForCoords) {
+      if (row.lat !== null && row.lng !== null && !stationCoords.has(row.name)) {
+        stationCoords.set(row.name, [row.lat, row.lng]);
+      }
+    }
+    delete line._rowsForCoords;
+  }
 
   // --- Prasarana: LRT/MRT/Monorail/BRT ---
   {
     const dir = join(tmp, "rapid-rail");
-    execSync(`mkdir -p "${dir}"`);
+    mkdirSync(dir, { recursive: true });
     const feed = fetchGtfsFeed(RAPID_RAIL_URL, dir);
     const routes = parseCsv(feed.read("routes.txt")).filter((r) => r.status === "valid");
     const trips = parseCsv(feed.read("trips.txt"));
@@ -226,6 +255,7 @@ try {
         stopById,
         matchesTrip: (t) => t.route_id === route.route_id && t.direction_id === "0",
       });
+      collectCoords(line);
       if (line) lines.push(line);
     }
   }
@@ -234,7 +264,7 @@ try {
   // "2") shares this same feed but isn't relevant to daily commuting ---
   {
     const dir = join(tmp, "ktmb");
-    execSync(`mkdir -p "${dir}"`);
+    mkdirSync(dir, { recursive: true });
     const feed = fetchGtfsFeed(KTMB_URL, dir);
     const routes = parseCsv(feed.read("routes.txt")).filter((r) => r.route_type === "0");
     const trips = parseCsv(feed.read("trips.txt"));
@@ -257,6 +287,7 @@ try {
         matchesTrip: (t) =>
           t.route_id === route.route_id && t.direction_id === "0" && t.service_id === "komuter_weekday",
       });
+      collectCoords(line);
       if (line) lines.push(line);
     }
   }
@@ -273,17 +304,28 @@ try {
 // stations[i]'s arrival, per one representative weekday trip — real
 // scheduled timetable data, used for expected-arrival estimates
 // (lib/schedule.ts), not live tracking.
+//
+// STATION_COORDS is a separate name -> [lat, lng] lookup (from the same
+// feeds' stops.txt) so existing readers of LINES[].stations (plain
+// strings) keep working unchanged; look a station name up here to plot
+// it on a map. Not every station is guaranteed a coordinate (a stop
+// missing stop_lat/stop_lon in a feed is simply absent from this map).
 `;
 
+  const coordsObj = Object.fromEntries(stationCoords);
   const body = `export const LINES = ${JSON.stringify(lines, null, 2)} as const;
 
 export type LineId = (typeof LINES)[number]["id"];
+
+export const STATION_COORDS: Record<string, [number, number]> = ${JSON.stringify(coordsObj, null, 2)};
 `;
 
   writeFileSync(join(process.cwd(), "lib", "stations.ts"), header + "\n" + body);
 
   const totalStations = lines.reduce((sum, l) => sum + l.stations.length, 0);
-  console.log(`Generated lib/stations.ts: ${lines.length} lines, ${totalStations} station entries.`);
+  console.log(
+    `Generated lib/stations.ts: ${lines.length} lines, ${totalStations} station entries, ${stationCoords.size} coordinates.`
+  );
 } finally {
   rmSync(tmp, { recursive: true, force: true });
 }

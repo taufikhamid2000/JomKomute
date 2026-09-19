@@ -29,7 +29,7 @@ function RouteDetail() {
   const { t } = useDictionary();
   const id = useSearchParams().get("id");
   const router = useRouter();
-  const { routes, removeRoute } = useSavedRoutes();
+  const { routes, removeRoute, setHomeRoute, clearHomeRoute } = useSavedRoutes();
   const route = routes.find((r) => r.id === id);
 
   // Renders once with an empty snapshot during hydration (localStorage isn't
@@ -76,12 +76,25 @@ function RouteDetail() {
               {route.days.map((d) => t.days[d]).join(", ")}
             </p>
           </div>
-          <Link
-            href={`/new?reverseOf=${route.id}`}
-            className="shrink-0 whitespace-nowrap rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
-          >
-            {t.routeDetail.addReturnTrip}
-          </Link>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => (route.isHome ? clearHomeRoute(route.id) : setHomeRoute(route.id))}
+              className={
+                route.isHome
+                  ? "whitespace-nowrap rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                  : "whitespace-nowrap rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+              }
+            >
+              {route.isHome ? `★ ${t.routeDetail.isHome}` : t.routeDetail.setHome}
+            </button>
+            <Link
+              href={`/new?reverseOf=${route.id}`}
+              className="whitespace-nowrap rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+            >
+              {t.routeDetail.addReturnTrip}
+            </Link>
+          </div>
         </div>
         <LegSummary legs={route.legs} arrivalTimes={legArrivals} />
       </div>

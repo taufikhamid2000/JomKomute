@@ -69,6 +69,9 @@ export const ms: Dictionary = {
         ? `Lebih sesak daripada biasa — pertimbangkan ${altLine}, atau keluar 15 minit awal.`
         : "Lebih sesak daripada biasa — pertimbangkan keluar 15 minit awal.",
     changePlan: "Tukar rancangan",
+    homeBadge: "Utama",
+    viewDetails: "Lihat butiran",
+    mapUnavailable: "Tiada koordinat stesen untuk laluan ini lagi.",
   },
   changePlanModal: {
     title: "Apa rancangannya?",
@@ -87,6 +90,7 @@ export const ms: Dictionary = {
     emptyCta: "Tambah laluan pertama anda",
     transfer: (count: number) => (count === 1 ? "1 pertukaran" : `${count} pertukaran`),
     hasBackup: "ada laluan sandaran",
+    homeBadge: "Utama",
   },
   routeForm: {
     title: "Tambah laluan",
@@ -131,6 +135,9 @@ export const ms: Dictionary = {
     crowdingAt: (time: string, label: string, level: number) => `Pada ${time}: ${label} (${level}%)`,
     crowdingNote: "Model sementara berdasarkan corak waktu puncak biasa — belum menggunakan data penumpang sebenar.",
     delete: "Padam laluan ini",
+    setHome: "Jadikan Utama",
+    unsetHome: "Buang sebagai Utama",
+    isHome: "Laluan utama",
   },
   exceptionPanel: {
     skipTodayTitle: "Tidak komuting hari ini?",

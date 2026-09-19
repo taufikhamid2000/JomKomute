@@ -20,6 +20,10 @@ export type SavedRoute = {
   departureTime: string; // "HH:MM", 24h
   days: DayOfWeek[];
   createdAt: string; // ISO timestamp
+  // At most one saved route has this set at a time (lib/store.ts's
+  // setHomeRoute enforces it) — a one-tap shortcut/favorite, not a literal
+  // home address.
+  isHome?: boolean;
 };
 
 // "leave" | "wfh" | "drive" is only set when the skip came from the

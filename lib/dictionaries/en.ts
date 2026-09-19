@@ -67,6 +67,9 @@ export const en = {
         ? `Busier than usual — consider the ${altLine} instead, or leave 15 min earlier.`
         : "Busier than usual — consider leaving 15 min earlier.",
     changePlan: "Change plan",
+    homeBadge: "Home",
+    viewDetails: "View details",
+    mapUnavailable: "No station coordinates available for this route yet.",
   },
   changePlanModal: {
     title: "What's the plan?",
@@ -85,6 +88,7 @@ export const en = {
     emptyCta: "Add your first route",
     transfer: (count: number) => (count === 1 ? "1 transfer" : `${count} transfers`),
     hasBackup: "has backup route",
+    homeBadge: "Home",
   },
   routeForm: {
     title: "Add a route",
@@ -129,6 +133,9 @@ export const en = {
     crowdingAt: (time: string, label: string, level: number) => `At ${time}: ${label} (${level}%)`,
     crowdingNote: "Placeholder model based on typical rush-hour patterns — not yet backed by real ridership data.",
     delete: "Delete this route",
+    setHome: "Set as Home",
+    unsetHome: "Remove as Home",
+    isHome: "Home route",
   },
   exceptionPanel: {
     skipTodayTitle: "Not commuting today?",

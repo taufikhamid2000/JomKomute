@@ -25,7 +25,17 @@ export function RouteCard({ route }: { route: SavedRoute }) {
       className="animate-row-in flex flex-col gap-3 rounded-2xl border border-border bg-background p-4 transition-colors hover:border-primary/40 sm:flex-row sm:items-center sm:justify-between"
     >
       <div className="flex flex-col gap-1">
-        <span className="text-sm font-semibold text-foreground">{route.label}</span>
+        <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          {route.label}
+          {route.isHome && (
+            <span
+              className="rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase"
+              style={{ backgroundColor: "color-mix(in srgb, var(--primary) 12%, transparent)", color: "var(--primary)" }}
+            >
+              {t.routesPage.homeBadge}
+            </span>
+          )}
+        </span>
         <span className="text-sm text-foreground/70">
           {route.legs[0].originStation} <span aria-hidden="true">→</span>{" "}
           {route.legs[route.legs.length - 1].destinationStation}

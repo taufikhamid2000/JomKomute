@@ -103,7 +103,24 @@ export function useSavedRoutes() {
     );
   }, []);
 
-  return { routes, addRoute, removeRoute };
+  // Only one route can be Home at a time — setting it on one clears it
+  // from every other saved route in the same write.
+  const setHomeRoute = useCallback((id: string) => {
+    setCached(
+      ROUTES_KEY,
+      getCached<SavedRoute>(ROUTES_KEY).map((r) => (r.id === id ? { ...r, isHome: true } : r.isHome ? { ...r, isHome: false } : r))
+    );
+  }, []);
+
+  // Unsets Home without picking a new one.
+  const clearHomeRoute = useCallback((id: string) => {
+    setCached(
+      ROUTES_KEY,
+      getCached<SavedRoute>(ROUTES_KEY).map((r) => (r.id === id ? { ...r, isHome: false } : r))
+    );
+  }, []);
+
+  return { routes, addRoute, removeRoute, setHomeRoute, clearHomeRoute };
 }
 
 // Not routeId-scoped — used by the dashboard's "Change plan" modal, which

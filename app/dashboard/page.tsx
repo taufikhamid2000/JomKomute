@@ -1,15 +1,24 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ChangePlanModal } from "@/components/change-plan-modal";
 import { EmptyState } from "@/components/empty-state";
 import { Shell } from "@/components/shell";
 import { mockCrowdFor, type CrowdMock } from "@/lib/crowd-mock";
 import { lineById } from "@/lib/lines";
-import { computeNextRoute } from "@/lib/next-route";
+import { computeNextRoute, type NextRoute } from "@/lib/next-route";
 import { getPingCounts, putPing } from "@/lib/pings-client";
 import { useAllExceptions, useSavedRoutes } from "@/lib/store";
+import type { SavedRoute } from "@/lib/types";
 import { useDictionary } from "@/lib/use-dictionary";
+
+// react-leaflet touches window/document at module load — dynamic-import
+// with ssr:false so next.config.ts's static export (prerendered with no
+// browser present) doesn't break on this route (same pattern as
+// app/report/page.tsx's ReportMap).
+const RouteMap = dynamic(() => import("@/components/route-map").then((m) => m.RouteMap), { ssr: false });
 
 function timeToMinutes(hhmm: string): number {
   const [h, m] = hhmm.split(":").map(Number);
@@ -22,10 +31,22 @@ export default function DashboardPage() {
   const exceptions = useAllExceptions();
   const [modalOpen, setModalOpen] = useState(false);
 
+  const homeRoute = routes.find((r) => r.isHome);
+
   // Re-evaluated on every render rather than memoized against a ticking
   // clock — good enough for a dashboard glance, and avoids a setInterval
-  // just to keep "next route" accurate to the minute.
-  const next = useMemo(() => computeNextRoute(routes, exceptions, new Date()), [routes, exceptions]);
+  // just to keep "next route" accurate to the minute. Prefer the user's
+  // Home route (if set) over whichever route happens to depart soonest —
+  // computeNextRoute still picks the actual upcoming occurrence for it
+  // (day/exceptions aware), just restricted to that one route.
+  const next: NextRoute | null = useMemo(() => {
+    // Restrict to the Home route first; if it has no upcoming occurrence
+    // in the lookahead window (e.g. every day off this fortnight), fall
+    // back to whichever saved route departs soonest instead of going blank.
+    const homeNext = homeRoute ? computeNextRoute([homeRoute], exceptions, new Date()) : null;
+    return homeNext ?? computeNextRoute(routes, exceptions, new Date());
+  }, [homeRoute, routes, exceptions]);
+  const isHomeActive = !!homeRoute && next?.route.id === homeRoute.id;
 
   const lineNames = next?.route.legs.map((leg) => lineById(leg.line)?.name ?? leg.line).join(" → ");
 
@@ -96,9 +117,17 @@ export default function DashboardPage() {
                 {t.dashboard.conceptBadge}
               </span>
 
-              <div className="flex flex-col gap-0.5">
-                <span className="text-sm font-semibold text-foreground">
+              <div className="flex flex-col gap-0.5 pr-20">
+                <span className="flex flex-wrap items-center gap-2 text-sm font-semibold text-foreground">
                   {next.route.legs[0].originStation} · {lineNames}
+                  {isHomeActive && (
+                    <span
+                      className="rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase"
+                      style={{ backgroundColor: "color-mix(in srgb, var(--primary) 12%, transparent)", color: "var(--primary)" }}
+                    >
+                      {t.dashboard.homeBadge}
+                    </span>
+                  )}
                 </span>
                 <span className="text-xs text-foreground/60">
                   {dateLabel}, {next.route.departureTime}
@@ -125,6 +154,18 @@ export default function DashboardPage() {
                   {t.dashboard.busierSuggestion(next.route.alternateLegs ? (lineById(next.route.alternateLegs[0].line)?.name ?? "") : "")}
                 </p>
               )}
+            </div>
+
+            <div className="flex flex-col gap-2 overflow-hidden rounded-2xl border border-border bg-background">
+              <div className="h-56 w-full">
+                <RouteMap legs={next.route.legs} />
+              </div>
+              <Link
+                href={`/route?id=${next.route.id}`}
+                className="px-4 pb-4 text-xs font-medium text-primary underline-offset-4 hover:underline"
+              >
+                {t.dashboard.viewDetails}
+              </Link>
             </div>
 
             <button
