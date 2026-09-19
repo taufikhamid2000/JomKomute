@@ -17,6 +17,7 @@ export type UserReport = {
   category: ReportCategory;
   note: string | null;
   createdAt: string;
+  lineId: string | null;
 };
 
 export type NewUserReport = {
@@ -31,6 +32,11 @@ export type NewUserReport = {
   // report page itself always has a fix before it lets you submit.
   reporterLat?: number | null;
   reporterLng?: number | null;
+  // Which line the tapped point landed nearest to, when the report was
+  // made in a route-scoped context (see lib/route-corridor.ts and
+  // supabase/migrations/20260919170000_jomkomute_user_reports_line_id.sql)
+  // — null for a report made with no route context at all.
+  lineId?: string | null;
 };
 
 type UserReportRow = {
@@ -40,6 +46,7 @@ type UserReportRow = {
   category: ReportCategory;
   note: string | null;
   created_at: string;
+  line_id: string | null;
 };
 
 function fromRow(row: UserReportRow): UserReport {
@@ -50,6 +57,7 @@ function fromRow(row: UserReportRow): UserReport {
     category: row.category,
     note: row.note,
     createdAt: row.created_at,
+    lineId: row.line_id,
   };
 }
 
@@ -67,6 +75,7 @@ export async function submitUserReport(input: NewUserReport): Promise<UserReport
       note: input.note?.trim() ? input.note.trim().slice(0, 280) : null,
       reporter_lat: input.reporterLat ?? null,
       reporter_lng: input.reporterLng ?? null,
+      line_id: input.lineId ?? null,
     } as never)
     .select()
     .single();

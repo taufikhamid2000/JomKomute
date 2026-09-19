@@ -8,12 +8,13 @@
 // browser present).
 
 import "leaflet/dist/leaflet.css";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import L from "leaflet";
-import { MapContainer, Marker, Popup, TileLayer, useMapEvents } from "react-leaflet";
+import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import type { en } from "@/lib/dictionaries/en";
 import { reportMarkerHtml, type ReportCategoryMeta } from "@/lib/report-categories";
 import { clusterReports } from "@/lib/report-clusters";
+import type { CorridorPoint } from "@/lib/route-corridor";
 import { getMyVoteFor, submitReportVote, type ReportVote, type UserReport } from "@/lib/user-reports-client";
 
 type ReportPageDictionary = (typeof en)["reportPage"];
@@ -40,6 +41,18 @@ function ClickCatcher({ onPick }: { onPick: (lat: number, lng: number) => void }
       onPick(e.latlng.lat, e.latlng.lng);
     },
   });
+  return null;
+}
+
+// Frames the map on the route corridor (Phase 3's route-scoped reporting)
+// when one is present, instead of always sitting on the fixed
+// DEFAULT_CENTER — same idea as components/home-map.tsx's FitToPoints.
+function FitToCorridor({ points }: { points: [number, number][] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (points.length === 0) return;
+    map.fitBounds(L.latLngBounds(points), { padding: [32, 32] });
+  }, [map, points]);
   return null;
 }
 
@@ -111,6 +124,7 @@ export function ReportMap({
   pending,
   onPick,
   onVoted,
+  corridor,
   t,
 }: {
   reports: UserReport[];
@@ -118,6 +132,12 @@ export function ReportMap({
   pending: { lat: number; lng: number } | null;
   onPick: (lat: number, lng: number) => void;
   onVoted?: () => void;
+  // The active route's corridor, when app/report/page.tsx was reached
+  // with route context (Phase 3) — drawn as a visual guide for where a
+  // report will actually be accepted (see REPORT_CORRIDOR_METERS in
+  // lib/route-corridor.ts, checked at submit time by the page itself).
+  // Undefined/empty means no route context: tap anywhere, as before.
+  corridor?: CorridorPoint[];
   t: ReportPageDictionary;
 }) {
   const [pendingIcon] = useState(() =>
@@ -131,6 +151,7 @@ export function ReportMap({
 
   const categoryById = useMemo(() => new globalThis.Map(categories.map((c) => [c.id, c])), [categories]);
   const clusters = useMemo(() => clusterReports(reports), [reports]);
+  const corridorPoints = useMemo(() => (corridor ?? []).map((c) => c.coord), [corridor]);
 
   return (
     <MapContainer
@@ -143,6 +164,12 @@ export function ReportMap({
         attribution='Tiles &copy; Esri &mdash; Esri, HERE, Garmin, USGS, NGA, EPA, NPS'
         url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
       />
+      {corridorPoints.length > 0 && (
+        <>
+          <FitToCorridor points={corridorPoints} />
+          <Polyline positions={corridorPoints} pathOptions={{ color: "#2563eb", weight: 6, opacity: 0.25 }} />
+        </>
+      )}
       <ClickCatcher onPick={onPick} />
       {clusters.map((cluster) => {
         const meta = categoryById.get(cluster.category);

@@ -43,6 +43,7 @@ export const ms: Dictionary = {
     locationDenied: "Akses lokasi ditolak. Laporan memerlukan lokasi anda supaya kami boleh sahkan anda berdekatan — benarkan dalam tetapan pelayar anda dan muat semula.",
     locationUnavailable: "Gagal mendapatkan lokasi anda. Laporan memerlukan akses lokasi untuk memastikan anda benar-benar berdekatan dengan apa yang dilaporkan.",
     tooFar: "Anda terlalu jauh dari lokasi ini untuk membuat laporan — laporan mesti dibuat berdekatan lokasi tersebut.",
+    notOnRoute: "Itu bukan pada laluan yang anda laporkan — ketik di suatu tempat sepanjang laluan yang diserlahkan.",
     stillHappening: "Masih berlaku?",
     confirmVote: "Ya",
     disputeVote: "Tidak",

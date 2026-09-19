@@ -334,11 +334,22 @@ export default function HomePage() {
       : activeNext.departureAt.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })
     : "";
 
+  // Whichever route the map is currently showing — same priority
+  // HomeMap's legs prop already uses below. Shared into a variable so the
+  // report FAB can pass the same route's legs as ?legs= (Phase 3's
+  // route-scoped reporting, see lib/route-corridor.ts) instead of
+  // duplicating this fallback chain.
+  const reportableLegs = activeLegs ?? oneTimeRoute?.legs ?? homeLegs;
+  const reportHref =
+    reportableLegs && reportableLegs.length > 0
+      ? `/report?legs=${encodeURIComponent(JSON.stringify(reportableLegs))}`
+      : "/report";
+
   return (
     <Shell>
       <div className="relative h-[calc(100vh-3.5rem)] w-full overflow-hidden">
         <HomeMap
-          legs={activeLegs ?? oneTimeRoute?.legs ?? homeLegs}
+          legs={reportableLegs}
           routeOptions={routeOptions ?? undefined}
           selectedOptionIndex={selectedOptionIndex}
           onSelectOption={setSelectedOptionIndex}
@@ -352,9 +363,13 @@ export default function HomePage() {
             positioned bottom-right with enough bottom offset to clear the
             bottom sheet's collapsed height (the sheet's tallest collapsed
             state is the "Where to?" card, roughly 3.5rem tall as rendered
-            below). Home-screen only, by design — not a global overlay. */}
+            below). Home-screen only, by design — not a global overlay.
+            Carries the active route's legs as ?legs= when there is one,
+            so /report can scope itself to that route's corridor (Phase 3)
+            — with no active route, it's the same "tap anywhere" link as
+            before. */}
         <Link
-          href="/report"
+          href={reportHref}
           aria-label={t.homePage.reportFab}
           title={t.homePage.reportFab}
           className="absolute right-4 bottom-40 z-[1100] flex h-14 w-14 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-[0_4px_12px_rgba(0,0,0,0.35)] transition-transform hover:scale-105 active:scale-95 md:right-6"

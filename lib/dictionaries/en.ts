@@ -41,6 +41,7 @@ export const en = {
     locationDenied: "Location access was denied. Reports require your location so we can check you're nearby — allow it in your browser settings and reload.",
     locationUnavailable: "Couldn't get your location. Reports require location access to make sure you're actually near what you're reporting.",
     tooFar: "You're too far from this spot to report it — reports must be made near the location.",
+    notOnRoute: "That's not on the route you're reporting for — tap somewhere along the highlighted line.",
     stillHappening: "Still happening?",
     confirmVote: "Yes",
     disputeVote: "No",

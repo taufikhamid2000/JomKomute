@@ -8,12 +8,15 @@
 // caveats (anonymous, unmoderated, spoofable by design for now).
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { Shell } from "@/components/shell";
 import { useDictionary } from "@/lib/use-dictionary";
 import { reportCategoryMeta } from "@/lib/report-categories";
 import { distanceMeters } from "@/lib/geo-distance";
+import { nearestCorridorPoint, routeCorridorPoints, REPORT_CORRIDOR_METERS, type CorridorPoint } from "@/lib/route-corridor";
 import { getRecentUserReports, submitUserReport, type ReportCategory, type UserReport } from "@/lib/user-reports-client";
+import type { RouteLeg } from "@/lib/types";
 
 // Reports are meant to reflect what's actually happening where you are,
 // not something you saw on the news or are guessing about from home — so
@@ -43,9 +46,38 @@ const ReportMap = dynamic(() => import("@/components/report-map").then((m) => m.
 
 type SubmitState = { status: "idle" } | { status: "submitting" } | { status: "success" } | { status: "error"; message: string };
 
+// Wraps the actual page in Suspense — useSearchParams() (below, for the
+// ?legs= route context Phase 3 passes from the home screen's report FAB)
+// requires it, same as app/route/page.tsx's ?id= reader.
 export default function ReportPage() {
+  return (
+    <Shell>
+      <Suspense fallback={null}>
+        <ReportPageContent />
+      </Suspense>
+    </Shell>
+  );
+}
+
+function ReportPageContent() {
   const { t } = useDictionary();
   const categories = reportCategoryMeta(t.reportPage.categories);
+
+  // Route context from the home screen's report FAB (app/page.tsx) — the
+  // legs of whichever route was active there, so this page can scope
+  // reporting to that route's corridor instead of the whole network. No
+  // ?legs= (direct navigation, or no active route on the home screen)
+  // means no corridor: tap anywhere, exactly as before Phase 3.
+  const legsParam = useSearchParams().get("legs");
+  const corridor = useMemo<CorridorPoint[]>(() => {
+    if (!legsParam) return [];
+    try {
+      const legs = JSON.parse(legsParam) as RouteLeg[];
+      return routeCorridorPoints(legs);
+    } catch {
+      return [];
+    }
+  }, [legsParam]);
 
   const [reports, setReports] = useState<UserReport[]>([]);
   const [loadError, setLoadError] = useState(false);
@@ -107,9 +139,24 @@ export default function ReportPage() {
       return;
     }
 
+    // Phase 3: with route context (corridor non-empty), a tap has to
+    // actually land near the route it was reached from — otherwise
+    // there'd be nothing stopping a report on this route's map from
+    // landing on an unrelated part of the network. No corridor (no
+    // ?legs=) skips this entirely, same as before Phase 3.
+    let lineId: string | null = null;
+    if (corridor.length > 0) {
+      const nearest = nearestCorridorPoint(pending, corridor);
+      if (!nearest || nearest.distanceMeters > REPORT_CORRIDOR_METERS) {
+        setSubmitState({ status: "error", message: t.reportPage.notOnRoute });
+        return;
+      }
+      lineId = nearest.point.lineId;
+    }
+
     setSubmitState({ status: "submitting" });
     try {
-      await submitUserReport({ lat: pending.lat, lng: pending.lng, category, reporterLat: geo.lat, reporterLng: geo.lng });
+      await submitUserReport({ lat: pending.lat, lng: pending.lng, category, reporterLat: geo.lat, reporterLng: geo.lng, lineId });
       setPending(null);
       setSubmitState({ status: "success" });
       refresh();
@@ -121,7 +168,7 @@ export default function ReportPage() {
   const canSubmit = geo.status === "ready";
 
   return (
-    <Shell>
+    <>
       <div className="animate-page-in flex w-full flex-1 flex-col gap-4 p-4 md:p-8">
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-2">
           <div className="flex items-center gap-2">
@@ -141,7 +188,15 @@ export default function ReportPage() {
         </div>
 
         <div className="relative mx-auto h-[60vh] w-full max-w-2xl overflow-hidden rounded-2xl border border-border">
-          <ReportMap reports={reports} categories={categories} pending={pending} onPick={handlePick} onVoted={refresh} t={t.reportPage} />
+          <ReportMap
+            reports={reports}
+            categories={categories}
+            pending={pending}
+            onPick={handlePick}
+            onVoted={refresh}
+            corridor={corridor}
+            t={t.reportPage}
+          />
 
           {pending ? (
             <div className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-3 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)]">
@@ -208,6 +263,6 @@ export default function ReportPage() {
           ))}
         </div>
       </div>
-    </Shell>
+    </>
   );
 }
