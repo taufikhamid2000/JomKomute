@@ -195,9 +195,14 @@ export const en = {
   },
   about: {
     kicker: "The idea",
-    headline: "“How many people are planning this trip tomorrow?”",
+    headline: "Know what's happening on your line before you're stuck in it",
     subheadline:
-      "Not history — a live count of everyone else's planned trips for your station and time, so you know before you leave whether to go early or take another line. That needs real scale to mean anything, which is why this is a pitch for a partner like RapidKL to run — not a backend we'd build ourselves.",
+      "JomKomute is two things working together: riders report delays, accidents, breakdowns, and crowding on a live map as they happen — Waze-style, for public transit — and you save your commute so those reports and a real schedule reach you when it matters.",
+    liveKicker: "Live right now",
+    liveHeadline: "Reports from other riders, on a map, within seconds",
+    liveBody:
+      "Someone sees a delay, an accident, a breakdown, or a packed platform and drops a pin on the map. Every other rider nearby sees it too — no waiting for an official announcement, no digging through social media. Reports fade out after 24 hours, so what you see is what's actually happening now.",
+    liveCta: "Report or check live issues",
     futureBadge: "Concept — needs real scale to work",
     futureStation: "Maluri · MRT Putrajaya Line",
     futureTime: "Tomorrow, 7:30 AM",

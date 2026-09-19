@@ -197,9 +197,14 @@ export const ms: Dictionary = {
   },
   about: {
     kicker: "Ideanya",
-    headline: "“Berapa ramai orang merancang perjalanan ini esok?”",
+    headline: "Tahu apa yang berlaku di laluan anda sebelum anda terperangkap di dalamnya",
     subheadline:
-      "Bukan sejarah — kiraan langsung rancangan pengguna lain untuk stesen dan waktu itu, supaya anda tahu sebelum keluar sama ada patut awalkan langkah atau tukar laluan. Ini perlukan skala sebenar untuk bermakna, sebab itu ini adalah cadangan untuk rakan kongsi seperti RapidKL menjalankannya — bukan backend yang kami bina sendiri.",
+      "JomKomute ada dua perkara yang berfungsi bersama: penumpang melaporkan kelewatan, kemalangan, kerosakan, dan kesesakan di peta langsung sebaik sahaja ia berlaku — seperti Waze, tetapi untuk pengangkutan awam — dan anda simpan komuting anda supaya laporan itu dan jadual sebenar sampai kepada anda pada waktu yang penting.",
+    liveKicker: "Langsung sekarang",
+    liveHeadline: "Laporan daripada penumpang lain, di peta, dalam saat",
+    liveBody:
+      "Seseorang nampak kelewatan, kemalangan, kerosakan, atau platform yang sesak lalu meletakkan pin di peta. Setiap penumpang lain yang berdekatan turut nampaknya — tanpa menunggu pengumuman rasmi, tanpa menggali media sosial. Laporan luput selepas 24 jam, jadi apa yang anda nampak adalah apa yang sebenarnya berlaku sekarang.",
+    liveCta: "Laporkan atau semak isu langsung",
     futureBadge: "Konsep — perlukan skala sebenar",
     futureStation: "Maluri · Laluan MRT Putrajaya",
     futureTime: "Esok, 7:30 pagi",

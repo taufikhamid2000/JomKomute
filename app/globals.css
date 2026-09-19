@@ -208,6 +208,35 @@ body {
   animation: commute-loop 6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
 }
 
+/* The About page's live-reports diagram: report pins fade in one at a
+ * time along a map line, hold, then fade out — illustrating "riders
+ * report issues and they show up for others in real time." Each pin
+ * uses this same keyframe with a staggered animation-delay so only one
+ * (or the handoff between two) is visible at once, on a shared 9s loop. */
+@keyframes report-pin-loop {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  6% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  28% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  36% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+.animate-report-pin {
+  animation: report-pin-loop 9s ease-in-out infinite;
+}
+
 @keyframes backdrop-in {
   from {
     opacity: 0;

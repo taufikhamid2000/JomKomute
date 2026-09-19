@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { CommuteDiagram } from "@/components/commute-diagram";
+import { LiveReportsDiagram } from "@/components/live-reports-diagram";
 import { Shell } from "@/components/shell";
 import { useDictionary } from "@/lib/use-dictionary";
 
@@ -73,6 +74,23 @@ export default function AboutPage() {
           </h1>
           <p className="max-w-lg text-sm text-foreground/60">{t.about.subheadline}</p>
         </section>
+
+        <section className="flex flex-col items-center gap-2 pt-2 text-center">
+          <span className="text-xs font-semibold tracking-wide text-primary uppercase">{t.about.liveKicker}</span>
+          <h2 className="text-lg leading-snug font-semibold text-balance text-foreground">{t.about.liveHeadline}</h2>
+          <p className="max-w-md text-sm text-foreground/60">{t.about.liveBody}</p>
+        </section>
+
+        <div className="rounded-2xl border border-border bg-background p-6">
+          <LiveReportsDiagram />
+        </div>
+
+        <Link
+          href="/report"
+          className="mx-auto w-fit rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+        >
+          {t.about.liveCta}
+        </Link>
 
         <div className="relative mx-auto w-full max-w-sm rounded-2xl border border-border bg-background p-5">
           <span
