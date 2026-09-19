@@ -141,7 +141,7 @@ export default function ReportPage() {
         </div>
 
         <div className="relative mx-auto h-[60vh] w-full max-w-2xl overflow-hidden rounded-2xl border border-border">
-          <ReportMap reports={reports} categories={categories} pending={pending} onPick={handlePick} />
+          <ReportMap reports={reports} categories={categories} pending={pending} onPick={handlePick} onVoted={refresh} t={t.reportPage} />
 
           {pending ? (
             <div className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-3 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)]">

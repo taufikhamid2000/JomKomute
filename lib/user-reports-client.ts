@@ -75,16 +75,74 @@ export async function submitUserReport(input: NewUserReport): Promise<UserReport
   return fromRow(data as unknown as UserReportRow);
 }
 
-// Last 24h of reports — matches the table's own anon select policy, so
-// this is really just fetching everything that's visible.
+// Reads from jomkomute_user_reports_visible rather than the base table —
+// that view (see supabase/migrations/20260919160000_jomkomute_user_report_votes.sql)
+// already applies the base table's 24h-recency select policy and layers
+// on "not net-disputed away by 3+ votes", so this is just fetching
+// everything that's actually visible right now.
 export async function getRecentUserReports(): Promise<UserReport[]> {
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const { data, error } = await supabaseBrowser()
-    .from("jomkomute_user_reports")
+    .from("jomkomute_user_reports_visible")
     .select()
-    .gt("created_at", since)
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(`Failed to load reports: ${error.message}`);
   return ((data ?? []) as unknown as UserReportRow[]).map(fromRow);
+}
+
+export type ReportVote = "confirm" | "dispute";
+
+const VOTER_KEY_STORAGE = "jomkomute:report-voter-key";
+
+// A per-device random id, generated once and persisted — the same "no
+// real per-user identity, just enough to dedupe one device's vote per
+// report" role lib/pings-client.ts's client secret plays for pings,
+// simplified here since votes don't need pings' cross-day-unlinkability
+// hashing (see that file's header for why pings does).
+function getVoterKey(): string {
+  if (typeof window === "undefined") return "";
+  let key = window.localStorage.getItem(VOTER_KEY_STORAGE);
+  if (!key) {
+    key = crypto.randomUUID();
+    window.localStorage.setItem(VOTER_KEY_STORAGE, key);
+  }
+  return key;
+}
+
+const VOTED_REPORTS_STORAGE = "jomkomute:voted-reports";
+
+function getVotedReports(): Record<string, ReportVote> {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(window.localStorage.getItem(VOTED_REPORTS_STORAGE) ?? "{}") as Record<string, ReportVote>;
+  } catch {
+    return {};
+  }
+}
+
+// What this device voted on a report, if anything — purely a UI
+// convenience (show "you said: still happening" instead of the vote
+// buttons again), not authoritative; the server has no way to verify a
+// voter_key belongs to whoever's asking, same caveat as the vote table
+// itself.
+export function getMyVoteFor(reportId: string): ReportVote | null {
+  return getVotedReports()[reportId] ?? null;
+}
+
+// Upsert on (report_id, voter_key) so a device can change its mind
+// (confirm -> dispute or back) rather than erroring on the unique
+// constraint the second time it votes on the same report.
+export async function submitReportVote(reportId: string, vote: ReportVote): Promise<void> {
+  const voterKey = getVoterKey();
+  const { error } = await supabaseBrowser()
+    .from("jomkomute_user_report_votes")
+    .upsert({ report_id: reportId, voter_key: voterKey, vote } as never, { onConflict: "report_id,voter_key" });
+
+  if (error) throw new Error(`Failed to submit vote: ${error.message}`);
+
+  if (typeof window !== "undefined") {
+    const votes = getVotedReports();
+    votes[reportId] = vote;
+    window.localStorage.setItem(VOTED_REPORTS_STORAGE, JSON.stringify(votes));
+  }
 }

@@ -11,9 +11,12 @@ import "leaflet/dist/leaflet.css";
 import { useMemo, useState } from "react";
 import L from "leaflet";
 import { MapContainer, Marker, Popup, TileLayer, useMapEvents } from "react-leaflet";
+import type { en } from "@/lib/dictionaries/en";
 import { reportMarkerHtml, type ReportCategoryMeta } from "@/lib/report-categories";
 import { clusterReports } from "@/lib/report-clusters";
-import type { UserReport } from "@/lib/user-reports-client";
+import { getMyVoteFor, submitReportVote, type ReportVote, type UserReport } from "@/lib/user-reports-client";
+
+type ReportPageDictionary = (typeof en)["reportPage"];
 
 // Klang Valley — roughly KL Sentral, a reasonable default center for a
 // prototype with no user geolocation wired up yet.
@@ -40,16 +43,82 @@ function ClickCatcher({ onPick }: { onPick: (lat: number, lng: number) => void }
   return null;
 }
 
+// One report's row inside a cluster popup: its time, plus a "Still
+// happening?" Yes/No once, or a plain confirmation of what this device
+// already said (see lib/user-reports-client.ts's getMyVoteFor — purely a
+// UI convenience, not authoritative). Its own state (not lifted to
+// ReportMap) since each row's vote is independent and popups already
+// unmount/remount per Leaflet's own lifecycle.
+function ReportVoteRow({ report, t, onVoted }: { report: UserReport; t: ReportPageDictionary; onVoted?: () => void }) {
+  const [vote, setVote] = useState<ReportVote | null>(() => getMyVoteFor(report.id));
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(false);
+
+  async function handleVote(next: ReportVote) {
+    setSubmitting(true);
+    setError(false);
+    try {
+      await submitReportVote(report.id, next);
+      setVote(next);
+      // A dispute vote can push a report past the visibility threshold
+      // (see the jomkomute_user_reports_visible view) — re-fetch so it
+      // drops off the map/list live instead of waiting for the next
+      // unrelated refresh.
+      onVoted?.();
+    } catch {
+      setError(true);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-2 border-t border-border pt-1.5 first:border-t-0 first:pt-0">
+      <span className="text-xs text-foreground/60">
+        {new Date(report.createdAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+      </span>
+      {vote ? (
+        <span className="text-xs text-foreground/50">{vote === "confirm" ? t.youConfirmed : t.youDisputed}</span>
+      ) : (
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-foreground/50">{t.stillHappening}</span>
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={() => handleVote("confirm")}
+            className="cursor-pointer rounded px-1.5 py-0.5 text-xs font-medium text-foreground hover:bg-[var(--nav-hover-bg)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {t.confirmVote}
+          </button>
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={() => handleVote("dispute")}
+            className="cursor-pointer rounded px-1.5 py-0.5 text-xs font-medium text-foreground hover:bg-[var(--nav-hover-bg)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {t.disputeVote}
+          </button>
+        </div>
+      )}
+      {error && <span className="text-xs text-[var(--destructive)]">{t.voteError}</span>}
+    </div>
+  );
+}
+
 export function ReportMap({
   reports,
   categories,
   pending,
   onPick,
+  onVoted,
+  t,
 }: {
   reports: UserReport[];
   categories: ReportCategoryMeta[];
   pending: { lat: number; lng: number } | null;
   onPick: (lat: number, lng: number) => void;
+  onVoted?: () => void;
+  t: ReportPageDictionary;
 }) {
   const [pendingIcon] = useState(() =>
     L.divIcon({
@@ -82,12 +151,10 @@ export function ReportMap({
         return (
           <Marker key={cluster.id} position={[cluster.lat, cluster.lng]} icon={icon}>
             <Popup>
-              <div className="flex flex-col gap-1.5">
+              <div className="flex min-w-[10rem] flex-col gap-1.5">
                 <p className="text-xs font-medium">{meta.label}</p>
                 {cluster.reports.map((r) => (
-                  <p key={r.id} className="text-xs text-foreground/60">
-                    {new Date(r.createdAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
-                  </p>
+                  <ReportVoteRow key={r.id} report={r} t={t} onVoted={onVoted} />
                 ))}
               </div>
             </Popup>
