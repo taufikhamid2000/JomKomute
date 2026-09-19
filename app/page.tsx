@@ -10,7 +10,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { Combobox } from "@/components/combobox";
 import { Shell } from "@/components/shell";
-import { allStationNames, findRoute } from "@/lib/route-finder";
+import { lineById } from "@/lib/lines";
+import { allStationNames, findRouteOptions, type RouteOption } from "@/lib/route-finder";
 import { useSavedRoutes } from "@/lib/store";
 import type { RouteLeg, SavedRoute } from "@/lib/types";
 import { useDictionary } from "@/lib/use-dictionary";
@@ -58,6 +59,11 @@ export default function HomePage() {
   // saved route). Only one of activeRoute / oneTimeRoute is set at a time;
   // picking Home/Work/a recent route clears this, and vice versa.
   const [oneTimeRoute, setOneTimeRoute] = useState<{ legs: RouteLeg[]; origin: string; destination: string } | null>(null);
+  // Populated by "Go" — candidate routes the rider picks from before any
+  // of them becomes the active oneTimeRoute. Only one of
+  // activeRoute/oneTimeRoute/routeOptions is meaningfully "current" at a
+  // time; picking an option clears this and sets oneTimeRoute instead.
+  const [routeOptions, setRouteOptions] = useState<RouteOption[] | null>(null);
   const [finderOrigin, setFinderOrigin] = useState("");
   const [finderDestination, setFinderDestination] = useState("");
   const [finderNotFound, setFinderNotFound] = useState(false);
@@ -65,24 +71,32 @@ export default function HomePage() {
 
   function handleSelectSaved(route: SavedRoute) {
     setOneTimeRoute(null);
+    setRouteOptions(null);
     setActiveRoute(route);
   }
 
   function handleFindRoute() {
     if (!finderOrigin || !finderDestination) return;
-    const legs = findRoute(finderOrigin, finderDestination);
-    if (legs) {
+    const options = findRouteOptions(finderOrigin, finderDestination);
+    if (options) {
       setFinderNotFound(false);
       setActiveRoute(null);
-      setOneTimeRoute({ legs, origin: finderOrigin, destination: finderDestination });
+      setOneTimeRoute(null);
+      setRouteOptions(options);
     } else {
       setFinderNotFound(true);
     }
   }
 
+  function handleStartOption(option: RouteOption) {
+    setRouteOptions(null);
+    setOneTimeRoute({ legs: option.legs, origin: finderOrigin, destination: finderDestination });
+  }
+
   function resetToOverview() {
     setActiveRoute(null);
     setOneTimeRoute(null);
+    setRouteOptions(null);
     setFinderNotFound(false);
   }
 
@@ -111,6 +125,42 @@ export default function HomePage() {
               >
                 {t.dashboard.viewDetails}
               </Link>
+            </div>
+            <button
+              type="button"
+              onClick={resetToOverview}
+              className="flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-foreground/60 transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M12 4L6 10L12 16" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {t.homePage.changeRoute}
+            </button>
+          </div>
+        ) : routeOptions ? (
+          <div className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-2 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4">
+            <span className="text-sm font-medium text-foreground">{t.homePage.optionsTitle}</span>
+            <div className="flex max-h-72 flex-col gap-2 overflow-y-auto">
+              {routeOptions.map((option, i) => {
+                const lineNames = Array.from(new Set(option.legs.map((leg) => lineById(leg.line)?.name ?? leg.line))).join(" → ");
+                return (
+                  <div key={i} className="flex items-center justify-between gap-3 rounded-xl border border-border p-3">
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                      <span className="truncate text-sm font-medium text-foreground">{t.homePage.optionVia(lineNames)}</span>
+                      <span className="truncate text-xs text-foreground/60">
+                        {t.routesPage.transfer(option.transfers)} · {t.homePage.optionStations(option.stationCount)}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleStartOption(option)}
+                      className="shrink-0 cursor-pointer rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                    >
+                      {t.homePage.optionStart}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
             <button
               type="button"

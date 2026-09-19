@@ -111,6 +111,11 @@ export const ms: Dictionary = {
     finderNotFound: "Tiada laluan ditemui antara dua stesen itu.",
     finderSummary: (origin: string, destination: string) => `${origin} → ${destination}`,
     saveAsRegular: "Simpan sebagai laluan tetap",
+    optionsTitle: "Pilih laluan",
+    optionVia: (lines: string) => `Melalui ${lines}`,
+    optionStations: (count: number) => (count === 1 ? "1 stesen" : `${count} stesen`),
+    optionStart: "Mula",
+    backToOptions: "Kembali ke laluan",
   },
   routeForm: {
     title: "Tambah laluan",

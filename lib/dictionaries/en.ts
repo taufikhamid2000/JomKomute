@@ -109,6 +109,11 @@ export const en = {
     finderNotFound: "Couldn't find a route between those two stations.",
     finderSummary: (origin: string, destination: string) => `${origin} → ${destination}`,
     saveAsRegular: "Save as a regular route",
+    optionsTitle: "Choose a route",
+    optionVia: (lines: string) => `Via ${lines}`,
+    optionStations: (count: number) => (count === 1 ? "1 station" : `${count} stations`),
+    optionStart: "Start",
+    backToOptions: "Back to routes",
   },
   routeForm: {
     title: "Add a route",

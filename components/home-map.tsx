@@ -15,7 +15,7 @@ import { useEffect, useMemo } from "react";
 import L from "leaflet";
 import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
 import { lineById } from "@/lib/lines";
-import { STATION_COORDS } from "@/lib/stations";
+import { LINES, STATION_COORDS } from "@/lib/stations";
 import type { RouteLeg } from "@/lib/types";
 
 const DEFAULT_CENTER: [number, number] = [3.1339, 101.6869]; // KL Sentral
@@ -62,7 +62,36 @@ function FitToPoints({ points }: { points: [number, number][] }) {
   return null;
 }
 
+// The full rail network, drawn thin and faded underneath the active
+// route — every consecutive pair of stations on each line that both have
+// real coordinates in STATION_COORDS, split into separate segments at
+// any gap (a station missing from STATION_COORDS) rather than skipping
+// straight across it, same "don't draw a fake straight line over a
+// missing stop" rule route-map.tsx's stationsForLeg follows for a single
+// route. Computed once (LINES/STATION_COORDS are both static, module-level
+// data) and reused across renders instead of every render.
+function buildNetworkSegments(): { color: string; points: [number, number][] }[] {
+  const segments: { color: string; points: [number, number][] }[] = [];
+  for (const line of LINES) {
+    let current: [number, number][] = [];
+    for (const station of line.stations) {
+      const coord = STATION_COORDS[station as string];
+      if (!coord) {
+        if (current.length > 1) segments.push({ color: line.color, points: current });
+        current = [];
+        continue;
+      }
+      current.push(coord);
+    }
+    if (current.length > 1) segments.push({ color: line.color, points: current });
+  }
+  return segments;
+}
+
+const NETWORK_SEGMENTS = buildNetworkSegments();
+
 export function HomeMap({ legs }: { legs?: RouteLeg[] }) {
+  const networkSegments = useMemo(() => NETWORK_SEGMENTS, []);
   const segments = useMemo(() => {
     if (!legs || legs.length === 0) return [];
     return legs.map((leg) => {
@@ -82,13 +111,20 @@ export function HomeMap({ legs }: { legs?: RouteLeg[] }) {
   return (
     <MapContainer center={center} zoom={DEFAULT_ZOOM} scrollWheelZoom className="h-full w-full">
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
       />
       {allCoords.length > 0 && <FitToPoints points={allCoords} />}
+      {networkSegments.map((segment, i) => (
+        <Polyline key={`network-${i}`} positions={segment.points} pathOptions={{ color: segment.color, weight: 2, opacity: 0.35 }} />
+      ))}
       {segments.map((segment, i) =>
         segment.points.length > 1 ? (
-          <Polyline key={i} positions={segment.points.map((p) => p.coord)} pathOptions={{ color: segment.color, weight: 4 }} />
+          <Polyline
+            key={i}
+            positions={segment.points.map((p) => p.coord)}
+            pathOptions={{ color: segment.color, weight: 5 }}
+          />
         ) : null
       )}
       {segments.map((segment, si) => {
