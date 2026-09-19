@@ -17,6 +17,7 @@ import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet
 import { distanceMeters } from "@/lib/geo-distance";
 import { lineById } from "@/lib/lines";
 import { reportCategoryMeta, reportMarkerHtml } from "@/lib/report-categories";
+import { clusterReports } from "@/lib/report-clusters";
 import type { RouteOption } from "@/lib/route-finder";
 import { LINES, STATION_COORDS } from "@/lib/stations";
 import type { RouteLeg } from "@/lib/types";
@@ -63,13 +64,15 @@ const CATEGORY_META = reportCategoryMeta({
 });
 const CATEGORY_META_BY_ID = new Map(CATEGORY_META.map((m) => [m.id, m]));
 
-function reportIcon(category: UserReport["category"]) {
+// Built per-cluster (not cached by category alone) since the badge count
+// varies cluster to cluster — see lib/report-clusters.ts.
+function reportIcon(category: UserReport["category"], count: number) {
   const meta = CATEGORY_META_BY_ID.get(category);
   const color = meta?.color ?? "#475569";
   const svg = meta?.svg ?? "";
   return L.divIcon({
     className: "",
-    html: reportMarkerHtml(color, svg),
+    html: reportMarkerHtml(color, svg, count),
     iconSize: [26, 26],
     iconAnchor: [13, 13],
   });
@@ -237,6 +240,7 @@ export function HomeMap({
     return reports.filter((r) => isNearRoute([r.lat, r.lng], relevantRoutePoints));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reports, relevantRoutePoints]);
+  const nearbyReportClusters = useMemo(() => clusterReports(nearbyReports), [nearbyReports]);
 
   return (
     <MapContainer center={center} zoom={DEFAULT_ZOOM} scrollWheelZoom className="h-full w-full">
@@ -304,8 +308,12 @@ export function HomeMap({
           );
         })}
 
-      {nearbyReports.map((report) => (
-        <Marker key={`report-${report.id}`} position={[report.lat, report.lng]} icon={reportIcon(report.category)} />
+      {nearbyReportClusters.map((cluster) => (
+        <Marker
+          key={`report-${cluster.id}`}
+          position={[cluster.lat, cluster.lng]}
+          icon={reportIcon(cluster.category, cluster.reports.length)}
+        />
       ))}
 
       {pinMarkers.map((marker) => (

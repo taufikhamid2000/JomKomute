@@ -75,9 +75,18 @@ export function reportCategoryMeta(labels: Record<ReportCategory, string>): Repo
 // Wraps a category's svg string in the pin-shaped marker background used
 // on the map (see components/report-map.tsx's divIcon) — kept here so
 // the marker and the picker button never drift out of sync visually.
-export function reportMarkerHtml(color: string, svg: string): string {
-  return `<div style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9999px;background:${color};box-shadow:0 1px 4px rgba(0,0,0,0.35);border:2px solid white;">${svg.replace(
+//
+// `count` is the number of reports a clustered marker represents (see
+// lib/report-clusters.ts) — when there's more than one, a small numeric
+// badge renders instead of stacking a marker per report. Omitted/1 draws
+// the plain pin exactly as before.
+export function reportMarkerHtml(color: string, svg: string, count?: number): string {
+  const badge =
+    count && count > 1
+      ? `<div style="position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;padding:0 3px;border-radius:9999px;background:#0f172a;color:white;font-size:10px;font-weight:700;line-height:16px;text-align:center;border:1.5px solid white;">${count > 99 ? "99+" : count}</div>`
+      : "";
+  return `<div style="position:relative;display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9999px;background:${color};box-shadow:0 1px 4px rgba(0,0,0,0.35);border:2px solid white;">${svg.replace(
     /stroke="[^"]*"/g,
     'stroke="white"',
-  ).replace(/fill="#[0-9a-fA-F]{3,6}"/g, 'fill="white"')}</div>`;
+  ).replace(/fill="#[0-9a-fA-F]{3,6}"/g, 'fill="white"')}${badge}</div>`;
 }

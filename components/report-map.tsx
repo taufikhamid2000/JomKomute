@@ -10,8 +10,9 @@
 import "leaflet/dist/leaflet.css";
 import { useMemo, useState } from "react";
 import L from "leaflet";
-import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
+import { MapContainer, Marker, Popup, TileLayer, useMapEvents } from "react-leaflet";
 import { reportMarkerHtml, type ReportCategoryMeta } from "@/lib/report-categories";
+import { clusterReports } from "@/lib/report-clusters";
 import type { UserReport } from "@/lib/user-reports-client";
 
 // Klang Valley — roughly KL Sentral, a reasonable default center for a
@@ -19,10 +20,12 @@ import type { UserReport } from "@/lib/user-reports-client";
 const DEFAULT_CENTER: [number, number] = [3.1339, 101.6869];
 const DEFAULT_ZOOM = 12;
 
-function pinIcon(color: string, svg: string) {
+// Built per-cluster (not cached by category alone) since the badge count
+// varies cluster to cluster — see lib/report-clusters.ts.
+function pinIcon(color: string, svg: string, count: number) {
   return L.divIcon({
     className: "",
-    html: reportMarkerHtml(color, svg),
+    html: reportMarkerHtml(color, svg, count),
     iconSize: [30, 30],
     iconAnchor: [15, 15],
   });
@@ -57,11 +60,8 @@ export function ReportMap({
     }),
   );
 
-  const iconByCategory = useMemo(() => {
-    const map = new globalThis.Map<string, L.DivIcon>();
-    for (const c of categories) map.set(c.id, pinIcon(c.color, c.svg));
-    return map;
-  }, [categories]);
+  const categoryById = useMemo(() => new globalThis.Map(categories.map((c) => [c.id, c])), [categories]);
+  const clusters = useMemo(() => clusterReports(reports), [reports]);
 
   return (
     <MapContainer
@@ -75,10 +75,24 @@ export function ReportMap({
         url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
       />
       <ClickCatcher onPick={onPick} />
-      {reports.map((r) => {
-        const icon = iconByCategory.get(r.category);
-        if (!icon) return null;
-        return <Marker key={r.id} position={[r.lat, r.lng]} icon={icon} />;
+      {clusters.map((cluster) => {
+        const meta = categoryById.get(cluster.category);
+        if (!meta) return null;
+        const icon = pinIcon(meta.color, meta.svg, cluster.reports.length);
+        return (
+          <Marker key={cluster.id} position={[cluster.lat, cluster.lng]} icon={icon}>
+            <Popup>
+              <div className="flex flex-col gap-1.5">
+                <p className="text-xs font-medium">{meta.label}</p>
+                {cluster.reports.map((r) => (
+                  <p key={r.id} className="text-xs text-foreground/60">
+                    {new Date(r.createdAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                ))}
+              </div>
+            </Popup>
+          </Marker>
+        );
       })}
       {pending ? <Marker position={[pending.lat, pending.lng]} icon={pendingIcon} /> : null}
     </MapContainer>
