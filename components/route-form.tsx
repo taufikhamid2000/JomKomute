@@ -25,9 +25,26 @@ export function RouteForm() {
   // ?reverseOf=<id> — "Add return trip" on the route detail page links
   // here so the form starts pre-filled with that route's legs reversed,
   // instead of making you rebuild the same commute from scratch.
-  const reverseOfId = useSearchParams().get("reverseOf");
+  const searchParams = useSearchParams();
+  const reverseOfId = searchParams.get("reverseOf");
+  // ?prefillLegs=<json> — the home screen's one-time "Where to?" finder
+  // hands off here with its ephemeral (never-saved) found legs serialized
+  // as JSON, so "Save as a regular route" doesn't make you re-enter the
+  // origin/destination it already found. Parallel to reverseOf above (a
+  // different prefill source, same idea), not a replacement for it.
+  const prefillLegsParam = searchParams.get("prefillLegs");
 
-  const [legs, setLegs] = useState<RouteLeg[]>([blankLeg()]);
+  const [legs, setLegs] = useState<RouteLeg[]>(() => {
+    if (prefillLegsParam) {
+      try {
+        const parsed = JSON.parse(prefillLegsParam);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed as RouteLeg[];
+      } catch {
+        // fall through to a blank leg below
+      }
+    }
+    return [blankLeg()];
+  });
   const [hasAlternate, setHasAlternate] = useState(false);
   const [alternateLegs, setAlternateLegs] = useState<RouteLeg[]>([blankLeg()]);
   const [time, setTime] = useState("07:15");

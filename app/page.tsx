@@ -8,9 +8,11 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState } from "react";
+import { Combobox } from "@/components/combobox";
 import { Shell } from "@/components/shell";
+import { allStationNames, findRoute } from "@/lib/route-finder";
 import { useSavedRoutes } from "@/lib/store";
-import type { SavedRoute } from "@/lib/types";
+import type { RouteLeg, SavedRoute } from "@/lib/types";
 import { useDictionary } from "@/lib/use-dictionary";
 
 // react-leaflet touches window/document at module load — dynamic-import
@@ -51,6 +53,38 @@ export default function HomePage() {
   // further, via the collapsed handle below). null = no route selected,
   // panel shows the full "Where to?" / quick-access / recent-routes content.
   const [activeRoute, setActiveRoute] = useState<SavedRoute | null>(null);
+  // A one-off "Where to?" lookup — ephemeral, never written to
+  // lib/store.ts/localStorage (unlike activeRoute above, which is always a
+  // saved route). Only one of activeRoute / oneTimeRoute is set at a time;
+  // picking Home/Work/a recent route clears this, and vice versa.
+  const [oneTimeRoute, setOneTimeRoute] = useState<{ legs: RouteLeg[]; origin: string; destination: string } | null>(null);
+  const [finderOrigin, setFinderOrigin] = useState("");
+  const [finderDestination, setFinderDestination] = useState("");
+  const [finderNotFound, setFinderNotFound] = useState(false);
+  const stationNames = allStationNames();
+
+  function handleSelectSaved(route: SavedRoute) {
+    setOneTimeRoute(null);
+    setActiveRoute(route);
+  }
+
+  function handleFindRoute() {
+    if (!finderOrigin || !finderDestination) return;
+    const legs = findRoute(finderOrigin, finderDestination);
+    if (legs) {
+      setFinderNotFound(false);
+      setActiveRoute(null);
+      setOneTimeRoute({ legs, origin: finderOrigin, destination: finderDestination });
+    } else {
+      setFinderNotFound(true);
+    }
+  }
+
+  function resetToOverview() {
+    setActiveRoute(null);
+    setOneTimeRoute(null);
+    setFinderNotFound(false);
+  }
 
   const homeRoute = routes.find((r) => r.isHome);
   const workRoute = routes.find((r) => r.isWork);
@@ -59,7 +93,7 @@ export default function HomePage() {
   return (
     <Shell>
       <div className="relative h-[calc(100vh-3.5rem)] w-full overflow-hidden">
-        <HomeMap legs={activeRoute?.legs ?? homeRoute?.legs} />
+        <HomeMap legs={activeRoute?.legs ?? oneTimeRoute?.legs ?? homeRoute?.legs} />
 
         {activeRoute ? (
           <div className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-2 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4">
@@ -80,7 +114,31 @@ export default function HomePage() {
             </div>
             <button
               type="button"
-              onClick={() => setActiveRoute(null)}
+              onClick={resetToOverview}
+              className="flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-foreground/60 transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M12 4L6 10L12 16" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {t.homePage.changeRoute}
+            </button>
+          </div>
+        ) : oneTimeRoute ? (
+          <div className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-2 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4">
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <span className="truncate text-sm font-semibold text-foreground">
+                {t.homePage.finderSummary(oneTimeRoute.origin, oneTimeRoute.destination)}
+              </span>
+            </div>
+            <Link
+              href={`/new?prefillLegs=${encodeURIComponent(JSON.stringify(oneTimeRoute.legs))}`}
+              className="flex items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+            >
+              {t.homePage.saveAsRegular}
+            </Link>
+            <button
+              type="button"
+              onClick={resetToOverview}
               className="flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-foreground/60 transition-colors hover:bg-muted hover:text-foreground"
             >
               <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -91,21 +149,51 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-3 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4">
-            <Link
-              href="/new"
-              className="flex items-center gap-3 rounded-xl border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-            >
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true" className="shrink-0 text-foreground/50">
-                <circle cx="9" cy="9" r="6.5" stroke="currentColor" strokeWidth="1.75" />
-                <path d="M14 14L18 18" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
-              </svg>
-              {t.homePage.whereTo}
-            </Link>
+            <div className="flex flex-col gap-2 rounded-xl border border-border p-3">
+              <div className="flex items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true" className="shrink-0 text-foreground/50">
+                  <circle cx="9" cy="9" r="6.5" stroke="currentColor" strokeWidth="1.75" />
+                  <path d="M14 14L18 18" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+                </svg>
+                <span className="text-sm font-medium text-foreground">{t.homePage.whereTo}</span>
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <Combobox
+                  value={finderOrigin}
+                  onChange={(station) => {
+                    setFinderOrigin(station);
+                    setFinderNotFound(false);
+                  }}
+                  options={stationNames}
+                  placeholder={t.legsEditor.from}
+                  noResultsLabel={t.legsEditor.noStationsFound}
+                />
+                <Combobox
+                  value={finderDestination}
+                  onChange={(station) => {
+                    setFinderDestination(station);
+                    setFinderNotFound(false);
+                  }}
+                  options={stationNames}
+                  placeholder={t.legsEditor.to}
+                  noResultsLabel={t.legsEditor.noStationsFound}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleFindRoute}
+                disabled={!finderOrigin || !finderDestination}
+                className="w-fit cursor-pointer rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {t.homePage.finderGo}
+              </button>
+              {finderNotFound && <p className="text-xs text-destructive">{t.homePage.finderNotFound}</p>}
+            </div>
 
             {homeRoute || workRoute ? (
               <div className="flex gap-2">
                 {homeRoute ? (
-                  <QuickAccessCard label={t.homePage.homeQuickAccess} route={homeRoute} onSelect={setActiveRoute} />
+                  <QuickAccessCard label={t.homePage.homeQuickAccess} route={homeRoute} onSelect={handleSelectSaved} />
                 ) : (
                   <Link
                     href="/new"
@@ -115,7 +203,7 @@ export default function HomePage() {
                   </Link>
                 )}
                 {workRoute ? (
-                  <QuickAccessCard label={t.homePage.workQuickAccess} route={workRoute} onSelect={setActiveRoute} />
+                  <QuickAccessCard label={t.homePage.workQuickAccess} route={workRoute} onSelect={handleSelectSaved} />
                 ) : (
                   <Link
                     href="/new"
@@ -143,7 +231,7 @@ export default function HomePage() {
                     <button
                       key={route.id}
                       type="button"
-                      onClick={() => setActiveRoute(route)}
+                      onClick={() => handleSelectSaved(route)}
                       className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-muted"
                     >
                       <span className="truncate">{route.label}</span>

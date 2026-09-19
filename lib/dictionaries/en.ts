@@ -105,6 +105,10 @@ export const en = {
     viewAllRoutes: "View all routes",
     changeRoute: "Change route",
     backToOverview: "Back to overview",
+    finderGo: "Go",
+    finderNotFound: "Couldn't find a route between those two stations.",
+    finderSummary: (origin: string, destination: string) => `${origin} → ${destination}`,
+    saveAsRegular: "Save as a regular route",
   },
   routeForm: {
     title: "Add a route",

@@ -107,6 +107,10 @@ export const ms: Dictionary = {
     viewAllRoutes: "Lihat semua laluan",
     changeRoute: "Tukar laluan",
     backToOverview: "Kembali ke gambaran keseluruhan",
+    finderGo: "Pergi",
+    finderNotFound: "Tiada laluan ditemui antara dua stesen itu.",
+    finderSummary: (origin: string, destination: string) => `${origin} → ${destination}`,
+    saveAsRegular: "Simpan sebagai laluan tetap",
   },
   routeForm: {
     title: "Tambah laluan",
