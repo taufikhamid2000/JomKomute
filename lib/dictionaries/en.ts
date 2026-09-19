@@ -114,6 +114,9 @@ export const en = {
     optionStations: (count: number) => (count === 1 ? "1 station" : `${count} stations`),
     optionStart: "Start",
     backToOptions: "Back to routes",
+    goNow: "Go now",
+    leaveLater: "Leave later",
+    hazardNearby: (category: string) => `${category} reported near this route`,
   },
   routeForm: {
     title: "Add a route",

@@ -116,6 +116,9 @@ export const ms: Dictionary = {
     optionStations: (count: number) => (count === 1 ? "1 stesen" : `${count} stesen`),
     optionStart: "Mula",
     backToOptions: "Kembali ke laluan",
+    goNow: "Pergi sekarang",
+    leaveLater: "Berlepas nanti",
+    hazardNearby: (category: string) => `${category} dilaporkan berhampiran laluan ini`,
   },
   routeForm: {
     title: "Tambah laluan",
