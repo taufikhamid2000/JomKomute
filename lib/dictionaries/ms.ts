@@ -47,6 +47,10 @@ export const ms: Dictionary = {
     success: "Terima kasih — laporan anda kini di peta.",
     error: "Gagal menghantar laporan. Cuba lagi.",
     loadError: "Gagal memuatkan laporan terkini.",
+    locationLoading: "Mendapatkan lokasi anda…",
+    locationDenied: "Akses lokasi ditolak. Laporan memerlukan lokasi anda supaya kami boleh sahkan anda berdekatan — benarkan dalam tetapan pelayar anda dan muat semula.",
+    locationUnavailable: "Gagal mendapatkan lokasi anda. Laporan memerlukan akses lokasi untuk memastikan anda benar-benar berdekatan dengan apa yang dilaporkan.",
+    tooFar: "Anda terlalu jauh dari lokasi ini untuk membuat laporan — laporan mesti dibuat berdekatan lokasi tersebut.",
     categories: {
       delay: "Kelewatan",
       accident: "Kemalangan",

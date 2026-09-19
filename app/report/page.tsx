@@ -12,7 +12,23 @@ import { useCallback, useEffect, useState } from "react";
 import { Shell } from "@/components/shell";
 import { useDictionary } from "@/lib/use-dictionary";
 import { reportCategoryMeta } from "@/lib/report-categories";
+import { distanceMeters } from "@/lib/geo-distance";
 import { getRecentUserReports, submitUserReport, type ReportCategory, type UserReport } from "@/lib/user-reports-client";
+
+// Reports are meant to reflect what's actually happening where you are,
+// not something you saw on the news or are guessing about from home — so
+// submission is gated on the browser's own geolocation, within this much
+// of the tapped point. Transit lines/stations are places people stand
+// *near*, not exactly on top of (GPS drift, standing across the street,
+// etc.), so this is deliberately loose rather than a tight "you must be
+// standing on the line" radius.
+const MAX_REPORT_DISTANCE_METERS = 500;
+
+type GeoState =
+  | { status: "loading" }
+  | { status: "ready"; lat: number; lng: number }
+  | { status: "denied" }
+  | { status: "unavailable" };
 
 // react-leaflet reaches for `window` at import time, which breaks
 // `next build`'s static export (next.config.ts's output: "export"
@@ -35,6 +51,19 @@ export default function ReportPage() {
   const [loadError, setLoadError] = useState(false);
   const [pending, setPending] = useState<{ lat: number; lng: number } | null>(null);
   const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle" });
+  const [geo, setGeo] = useState<GeoState>({ status: "loading" });
+
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setGeo({ status: "unavailable" });
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setGeo({ status: "ready", lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (err) => setGeo({ status: err.code === err.PERMISSION_DENIED ? "denied" : "unavailable" }),
+      { enableHighAccuracy: true, timeout: 10_000 },
+    );
+  }, []);
 
   const refresh = useCallback(() => {
     getRecentUserReports()
@@ -62,9 +91,25 @@ export default function ReportPage() {
 
   async function handleSelectCategory(category: ReportCategory) {
     if (!pending) return;
+
+    // Belt and suspenders: the category buttons are already disabled
+    // while geo isn't ready (see canSubmit below), but re-check here too
+    // rather than trusting that disabled state alone — this is the
+    // actual gate.
+    if (geo.status !== "ready") {
+      setSubmitState({ status: "error", message: geo.status === "denied" ? t.reportPage.locationDenied : t.reportPage.locationUnavailable });
+      return;
+    }
+
+    const distance = distanceMeters({ lat: geo.lat, lng: geo.lng }, pending);
+    if (distance > MAX_REPORT_DISTANCE_METERS) {
+      setSubmitState({ status: "error", message: t.reportPage.tooFar });
+      return;
+    }
+
     setSubmitState({ status: "submitting" });
     try {
-      await submitUserReport({ lat: pending.lat, lng: pending.lng, category });
+      await submitUserReport({ lat: pending.lat, lng: pending.lng, category, reporterLat: geo.lat, reporterLng: geo.lng });
       setPending(null);
       setSubmitState({ status: "success" });
       refresh();
@@ -72,6 +117,8 @@ export default function ReportPage() {
       setSubmitState({ status: "error", message: t.reportPage.error });
     }
   }
+
+  const canSubmit = geo.status === "ready";
 
   return (
     <Shell>
@@ -88,6 +135,9 @@ export default function ReportPage() {
           </div>
           <p className="max-w-lg text-sm text-foreground/60">{t.reportPage.description}</p>
           {loadError ? <p className="text-sm text-[var(--destructive)]">{t.reportPage.loadError}</p> : null}
+          {geo.status === "loading" ? <p className="text-sm text-foreground/50">{t.reportPage.locationLoading}</p> : null}
+          {geo.status === "denied" ? <p className="text-sm text-[var(--destructive)]">{t.reportPage.locationDenied}</p> : null}
+          {geo.status === "unavailable" ? <p className="text-sm text-[var(--destructive)]">{t.reportPage.locationUnavailable}</p> : null}
         </div>
 
         <div className="relative mx-auto h-[60vh] w-full max-w-2xl overflow-hidden rounded-2xl border border-border">
@@ -111,7 +161,7 @@ export default function ReportPage() {
                   <button
                     key={c.id}
                     type="button"
-                    disabled={submitState.status === "submitting"}
+                    disabled={submitState.status === "submitting" || !canSubmit}
                     onClick={() => handleSelectCategory(c.id)}
                     className="flex flex-1 min-w-[5.5rem] cursor-pointer flex-col items-center gap-1.5 rounded-xl border border-border p-3 text-xs font-medium text-foreground transition-colors hover:bg-[var(--nav-hover-bg)] disabled:cursor-not-allowed disabled:opacity-50"
                   >

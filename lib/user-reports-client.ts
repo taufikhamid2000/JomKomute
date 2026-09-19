@@ -24,6 +24,13 @@ export type NewUserReport = {
   lng: number;
   category: ReportCategory;
   note?: string;
+  // The reporter's own GPS position at submit time — captured for future
+  // anti-abuse/corroboration work (see the reporter_lat/reporter_lng
+  // migration), not read back or displayed anywhere yet. Optional only
+  // because the type is shared with the insert payload's shape; the
+  // report page itself always has a fix before it lets you submit.
+  reporterLat?: number | null;
+  reporterLng?: number | null;
 };
 
 type UserReportRow = {
@@ -58,6 +65,8 @@ export async function submitUserReport(input: NewUserReport): Promise<UserReport
       lng: input.lng,
       category: input.category,
       note: input.note?.trim() ? input.note.trim().slice(0, 280) : null,
+      reporter_lat: input.reporterLat ?? null,
+      reporter_lng: input.reporterLng ?? null,
     } as never)
     .select()
     .single();

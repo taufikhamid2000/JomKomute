@@ -45,6 +45,10 @@ export const en = {
     success: "Thanks — your report is on the map.",
     error: "Couldn't send that report. Try again.",
     loadError: "Couldn't load recent reports.",
+    locationLoading: "Getting your location…",
+    locationDenied: "Location access was denied. Reports require your location so we can check you're nearby — allow it in your browser settings and reload.",
+    locationUnavailable: "Couldn't get your location. Reports require location access to make sure you're actually near what you're reporting.",
+    tooFar: "You're too far from this spot to report it — reports must be made near the location.",
     categories: {
       delay: "Delay",
       accident: "Accident",
