@@ -2,7 +2,6 @@ export const en = {
   nav: {
     brand: "JomKomute",
     dashboard: "Dashboard",
-    report: "Report",
     routes: "Routes",
     addRoute: "Add route",
     operatingHours: "Operating hours",
@@ -106,6 +105,7 @@ export const en = {
     backToOptions: "Back to routes",
     goNow: "Go now",
     leaveLater: "Leave later",
+    reportFab: "Report an issue",
     hazardNearby: (category: string) => `${category} reported near this route`,
     lastTrainSoon: (time: string, line: string) => `Last train ~${time} on the ${line}`,
   },

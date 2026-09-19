@@ -270,6 +270,27 @@ export default function HomePage() {
           reports={reports}
         />
 
+        {/* Waze-style floating action button — the sidebar's old "/report"
+            link is gone (see components/shell.tsx); this is now the only
+            entry point to the report page. Fixed to the viewport corner
+            (not a Leaflet marker) so it never pans/zooms with the map, and
+            positioned bottom-right with enough bottom offset to clear the
+            bottom sheet's collapsed height (the sheet's tallest collapsed
+            state is the "Where to?" card, roughly 3.5rem tall as rendered
+            below). Home-screen only, by design — not a global overlay. */}
+        <Link
+          href="/report"
+          aria-label={t.homePage.reportFab}
+          title={t.homePage.reportFab}
+          className="absolute right-4 bottom-40 z-[1100] flex h-14 w-14 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-[0_4px_12px_rgba(0,0,0,0.35)] transition-transform hover:scale-105 active:scale-95 md:right-6"
+        >
+          <svg width="26" height="26" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M10 2.5 18 17H2L10 2.5Z" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" />
+            <path d="M10 8v4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+            <circle cx="10" cy="14.3" r="1" fill="currentColor" />
+          </svg>
+        </Link>
+
         {activeRoute ? (
           <div className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-2 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4">
             <div className="flex items-center justify-between gap-3">

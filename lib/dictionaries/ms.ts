@@ -4,7 +4,6 @@ export const ms: Dictionary = {
   nav: {
     brand: "JomKomute",
     dashboard: "Papan pemuka",
-    report: "Lapor",
     routes: "Laluan",
     addRoute: "Tambah laluan",
     operatingHours: "Waktu operasi",
@@ -108,6 +107,7 @@ export const ms: Dictionary = {
     backToOptions: "Kembali ke laluan",
     goNow: "Pergi sekarang",
     leaveLater: "Berlepas nanti",
+    reportFab: "Lapor kejadian",
     hazardNearby: (category: string) => `${category} dilaporkan berhampiran laluan ini`,
     lastTrainSoon: (time: string, line: string) => `Tren terakhir ~${time} pada ${line}`,
   },
