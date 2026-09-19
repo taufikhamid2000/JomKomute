@@ -38,6 +38,7 @@ export function RouteForm() {
   const [findOrigin, setFindOrigin] = useState("");
   const [findDestination, setFindDestination] = useState("");
   const [findNotFound, setFindNotFound] = useState(false);
+  const [finderCollapsed, setFinderCollapsed] = useState(false);
   const stationNames = allStationNames();
 
   function handleFindRoute() {
@@ -46,6 +47,7 @@ export function RouteForm() {
     if (result) {
       setLegs(result);
       setFindNotFound(false);
+      setFinderCollapsed(true);
     } else {
       setFindNotFound(true);
     }
@@ -111,49 +113,64 @@ export function RouteForm() {
         />
       </div>
 
-      <div className="flex flex-col gap-3 rounded-2xl border border-border p-3">
-        <div>
-          <p className="text-sm font-medium text-foreground">{t.routeForm.findTitle}</p>
-          <p className="text-xs text-foreground/50">{t.routeForm.findDescription}</p>
-        </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-foreground">{t.legsEditor.from}</label>
-            <Combobox
-              value={findOrigin}
-              onChange={(station) => {
-                setFindOrigin(station);
-                setFindNotFound(false);
-              }}
-              options={stationNames}
-              placeholder={t.legsEditor.selectStation}
-              noResultsLabel={t.legsEditor.noStationsFound}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-foreground">{t.legsEditor.to}</label>
-            <Combobox
-              value={findDestination}
-              onChange={(station) => {
-                setFindDestination(station);
-                setFindNotFound(false);
-              }}
-              options={stationNames}
-              placeholder={t.legsEditor.selectStation}
-              noResultsLabel={t.legsEditor.noStationsFound}
-            />
-          </div>
-        </div>
+      {finderCollapsed ? (
         <button
           type="button"
-          onClick={handleFindRoute}
-          disabled={!findOrigin || !findDestination}
-          className="w-fit cursor-pointer rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={() => setFinderCollapsed(false)}
+          className="flex w-full cursor-pointer items-center justify-between rounded-2xl border border-border bg-muted/40 px-3 py-2.5 text-left transition-colors hover:bg-muted"
         >
-          {t.routeForm.findButton}
+          <span className="text-sm font-medium text-foreground">
+            {t.routeForm.findFoundSummary(findOrigin, findDestination)}
+          </span>
+          <span className="text-xs font-medium text-primary underline-offset-4 hover:underline">
+            {t.routeForm.findChange}
+          </span>
         </button>
-        {findNotFound && <p className="text-xs text-destructive">{t.routeForm.findNotFound}</p>}
-      </div>
+      ) : (
+        <div className="flex flex-col gap-3 rounded-2xl border border-border p-3">
+          <div>
+            <p className="text-sm font-medium text-foreground">{t.routeForm.findTitle}</p>
+            <p className="text-xs text-foreground/50">{t.routeForm.findDescription}</p>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-foreground">{t.legsEditor.from}</label>
+              <Combobox
+                value={findOrigin}
+                onChange={(station) => {
+                  setFindOrigin(station);
+                  setFindNotFound(false);
+                }}
+                options={stationNames}
+                placeholder={t.legsEditor.selectStation}
+                noResultsLabel={t.legsEditor.noStationsFound}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-foreground">{t.legsEditor.to}</label>
+              <Combobox
+                value={findDestination}
+                onChange={(station) => {
+                  setFindDestination(station);
+                  setFindNotFound(false);
+                }}
+                options={stationNames}
+                placeholder={t.legsEditor.selectStation}
+                noResultsLabel={t.legsEditor.noStationsFound}
+              />
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleFindRoute}
+            disabled={!findOrigin || !findDestination}
+            className="w-fit cursor-pointer rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {t.routeForm.findButton}
+          </button>
+          {findNotFound && <p className="text-xs text-destructive">{t.routeForm.findNotFound}</p>}
+        </div>
+      )}
 
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium text-foreground">{t.routeForm.routeLabel}</span>

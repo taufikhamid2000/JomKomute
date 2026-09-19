@@ -120,6 +120,8 @@ export const ms: Dictionary = {
     findDescription: "Pilih stesen dan destinasi, kami akan cadangkan laluan di bawah — pertukaran paling sedikit, bukan semestinya paling laju. Boleh diedit sebelum disimpan jika anda mahu laluan lain.",
     findButton: "Cari laluan",
     findNotFound: "Tiada laluan ditemui antara dua stesen itu.",
+    findFoundSummary: (origin: string, destination: string) => `Ditemui: ${origin} → ${destination}`,
+    findChange: "Tukar",
     routeLabel: "Laluan",
     backupCheckbox: "Tambah laluan sandaran",
     backupDescription: "Cth. laluan/pertukaran lain untuk digunakan jika laluan biasa anda bermasalah.",

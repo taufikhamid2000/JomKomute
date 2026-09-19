@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { ExceptionPanel } from "@/components/exception-panel";
 import { ForecastBars } from "@/components/forecast-bars";
 import { LegSummary } from "@/components/leg-summary";
@@ -31,11 +31,28 @@ function RouteDetail() {
   const router = useRouter();
   const { routes, removeRoute, setHomeRoute, clearHomeRoute, setWorkRoute, clearWorkRoute } = useSavedRoutes();
   const route = routes.find((r) => r.id === id);
+  // Set right before removeRoute + router.push in handleDelete — removing
+  // the route triggers a synchronous re-render (useSyncExternalStore) that
+  // lands before the navigation away completes, so without this guard the
+  // "not found" fallback below flashes for a frame on every delete.
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Today's date: pings are per specific date, so "today" is the best
+  // real signal available to upgrade this weekly-recurring route's
+  // synthetic curve (see components/route-card.tsx's same choice).
+  const today = new Date().toISOString().slice(0, 10);
+  // useForecast must run on every render regardless of whether `route` is
+  // defined yet (rules of hooks) — it briefly goes undefined during
+  // hydration and right after a delete, so this falls back to placeholder
+  // args rather than being called from inside the `if (!route)` branch
+  // below, which previously threw "Rendered fewer hooks than expected."
+  const forecast = useForecast(route?.id ?? "", route?.legs[0]?.originStation ?? "", today);
 
   // Renders once with an empty snapshot during hydration (localStorage isn't
   // read server-side), then useSyncExternalStore corrects it on the client
   // — so this is a plain fallback, not a hard 404, to give that a chance to land.
   if (!route) {
+    if (isDeleting) return null;
     return (
       <div className="animate-page-in mx-auto flex w-full max-w-2xl flex-col gap-3 p-4 md:p-8">
         <p className="text-sm text-foreground/60">{t.routeDetail.notFound}</p>
@@ -46,11 +63,6 @@ function RouteDetail() {
     );
   }
 
-  // Today's date: pings are per specific date, so "today" is the best
-  // real signal available to upgrade this weekly-recurring route's
-  // synthetic curve (see components/route-card.tsx's same choice).
-  const today = new Date().toISOString().slice(0, 10);
-  const forecast = useForecast(route.id, route.legs[0].originStation, today);
   const { hour, crowdLevel } = forecastEntryForTime(forecast, route.departureTime);
   const arrival = estimatedArrival(route.departureTime, route.legs);
   const legArrivals = legArrivalTimes(route.departureTime, route.legs);
@@ -60,6 +72,7 @@ function RouteDetail() {
 
   function handleDelete() {
     if (!route) return;
+    setIsDeleting(true);
     removeRoute(route.id);
     router.push("/routes");
   }

@@ -118,6 +118,8 @@ export const en = {
     findDescription: "Pick a station and destination and we'll suggest the route below — fewest transfers, not necessarily fastest. Edit it before saving if you'd rather go a different way.",
     findButton: "Find route",
     findNotFound: "Couldn't find a route between those two stations.",
+    findFoundSummary: (origin: string, destination: string) => `Found: ${origin} → ${destination}`,
+    findChange: "Change",
     routeLabel: "Route",
     backupCheckbox: "Add a backup route",
     backupDescription: "E.g. a different line/interchange to use if your usual line has a problem.",
