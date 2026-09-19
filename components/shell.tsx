@@ -127,7 +127,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1 flex-col md:flex-row">
         <div
           aria-hidden={!open}
-          className={`fixed inset-0 z-20 bg-black/40 transition-opacity duration-200 md:hidden ${
+          className={`fixed inset-0 z-[1200] bg-black/40 transition-opacity duration-200 md:hidden ${
             open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
           }`}
           onClick={() => setOpen(false)}
@@ -136,7 +136,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           role="dialog"
           aria-modal="true"
           aria-label={t.nav.brand}
-          className={`fixed top-14 bottom-0 left-0 z-30 flex w-64 flex-col border-r border-[var(--nav-border)] bg-[var(--nav-bg)] px-4 py-4 shadow-xl transition-transform duration-200 md:hidden ${
+          className={`fixed top-14 bottom-0 left-0 z-[1210] flex w-64 flex-col border-r border-[var(--nav-border)] bg-[var(--nav-bg)] px-4 py-4 shadow-xl transition-transform duration-200 md:hidden ${
             open ? "translate-x-0" : "-translate-x-full"
           }`}
         >

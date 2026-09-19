@@ -46,7 +46,7 @@ export function ChangePlanModal({
       role="dialog"
       aria-modal="true"
       aria-label={t.changePlanModal.title}
-      className="animate-backdrop-in fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
+      className="animate-backdrop-in fixed inset-0 z-[1300] flex items-center justify-center bg-black/40 p-4"
       onClick={onClose}
     >
       <div
