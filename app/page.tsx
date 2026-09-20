@@ -100,14 +100,12 @@ export default function HomePage() {
   // a separate page (see components/report-modal.tsx). /report itself is
   // still reachable directly, now repurposed as a browse-and-vote map.
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-  // "Tap a station on the map" for components/report-modal.tsx's "Pick a
-  // station" mode — the modal draws no map of its own, so picking a
-  // station by tapping happens directly on this page's own HomeMap
-  // instead. isPickingStationOnMap true hides the modal (and the bottom
-  // sheet, to maximize tappable map area) and switches HomeMap into
-  // pick mode; mapPickedStation carries the result back to the modal
-  // once, then the modal acknowledges it via onPickedStationConsumed.
-  const [isPickingStationOnMap, setIsPickingStationOnMap] = useState(false);
+  // Stations are directly tappable on this page's own HomeMap whenever
+  // the report modal isn't already covering it (see the HomeMap call
+  // below) — components/report-modal.tsx draws no map of its own.
+  // Tapping one opens the modal already in "pick a station" mode with
+  // that station selected; mapPickedStation carries the result across
+  // until the modal acknowledges it via onPickedStationConsumed.
   const [mapPickedStation, setMapPickedStation] = useState<string | null>(null);
   // Waze-style bottom-sheet collapse: tap the handle (or the collapsed
   // strip itself) to shrink the panel down to a thin, tappable bar so more
@@ -454,9 +452,9 @@ export default function HomePage() {
       ? `/report?legs=${encodeURIComponent(JSON.stringify(reportableLegs))}`
       : "/report";
   // The exact station list components/report-modal.tsx's Combobox
-  // offers — computed here too so HomeMap's "tap to pick a station"
-  // overlay (only shown while isPickingStationOnMap) offers the same
-  // set, not a second independently-derived list.
+  // offers — computed here too so HomeMap's always-on "tap a station to
+  // report" overlay offers the same set, not a second
+  // independently-derived list.
   const reportStationOptions = useMemo(() => reportableStationOptions(reportableLegs), [reportableLegs]);
 
   // One-line context shown on the collapsed strip — mirrors whichever of
@@ -483,12 +481,12 @@ export default function HomePage() {
           selectedOptionIndex={selectedOptionIndex}
           onSelectOption={setSelectedOptionIndex}
           reports={reports}
-          pickableStations={isPickingStationOnMap ? reportStationOptions : undefined}
+          pickableStations={!isReportModalOpen ? reportStationOptions : undefined}
           onPickStation={
-            isPickingStationOnMap
+            !isReportModalOpen
               ? (name) => {
                   setMapPickedStation(name);
-                  setIsPickingStationOnMap(false);
+                  setIsReportModalOpen(true);
                 }
               : undefined
           }
@@ -505,21 +503,19 @@ export default function HomePage() {
             Passes the active route's legs so the modal can scope its
             corridor check (Phase 3) — with no active route, submission is
             unrestricted, same as before Phase 3. */}
-        {!isPickingStationOnMap && (
-          <button
-            type="button"
-            onClick={() => setIsReportModalOpen(true)}
-            aria-label={t.homePage.reportFab}
-            title={t.homePage.reportFab}
-            className="absolute right-4 bottom-40 z-[1100] flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-[0_4px_12px_rgba(0,0,0,0.35)] transition-transform hover:scale-105 active:scale-95 md:right-6"
-          >
-            <svg width="26" height="26" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <path d="M10 2.5 18 17H2L10 2.5Z" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" />
-              <path d="M10 8v4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
-              <circle cx="10" cy="14.3" r="1" fill="currentColor" />
-            </svg>
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => setIsReportModalOpen(true)}
+          aria-label={t.homePage.reportFab}
+          title={t.homePage.reportFab}
+          className="absolute right-4 bottom-40 z-[1100] flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-[0_4px_12px_rgba(0,0,0,0.35)] transition-transform hover:scale-105 active:scale-95 md:right-6"
+        >
+          <svg width="26" height="26" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M10 2.5 18 17H2L10 2.5Z" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" />
+            <path d="M10 8v4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+            <circle cx="10" cy="14.3" r="1" fill="currentColor" />
+          </svg>
+        </button>
 
         {/* Waze-style collapsible bottom sheet: tapping the handle strip
             below shrinks whichever of the four panel states is current
@@ -529,7 +525,7 @@ export default function HomePage() {
             only the rendered panel changes). Precedent for the
             tap-to-toggle "found summary" card pattern is
             components/route-form.tsx's collapsed finder card. */}
-        {!isPickingStationOnMap && (isPanelCollapsed ? (
+        {isPanelCollapsed ? (
           <button
             type="button"
             {...dragHandleProps}
@@ -891,26 +887,13 @@ export default function HomePage() {
               {t.reportPage.browseReports}
             </Link>
           </div>
-        ))}
-
-        {isPickingStationOnMap && (
-          <div className="absolute inset-x-0 bottom-6 z-[1000] mx-auto flex w-fit max-w-[90vw] items-center gap-3 rounded-full border border-border bg-background px-4 py-2.5 shadow-[0_4px_16px_rgba(0,0,0,0.2)]">
-            <span className="truncate text-sm font-medium text-foreground">{t.reportPage.pickOnMapInstruction}</span>
-            <button
-              type="button"
-              onClick={() => setIsPickingStationOnMap(false)}
-              className="shrink-0 cursor-pointer text-sm font-medium text-primary underline-offset-4 hover:underline"
-            >
-              {t.reportPage.pickOnMapCancel}
-            </button>
-          </div>
         )}
       </div>
 
       {changePlanOpen && activeNext && (
         <ChangePlanModal date={activeNext.date} routes={routes} onClose={() => setChangePlanOpen(false)} />
       )}
-      {isReportModalOpen && !isPickingStationOnMap && (
+      {isReportModalOpen && (
         <ReportModal
           legs={reportableLegs}
           onClose={() => setIsReportModalOpen(false)}
@@ -921,7 +904,6 @@ export default function HomePage() {
           }}
           pickedStation={mapPickedStation}
           onPickedStationConsumed={() => setMapPickedStation(null)}
-          onRequestPickOnMap={() => setIsPickingStationOnMap(true)}
         />
       )}
     </Shell>

@@ -13,10 +13,12 @@
 //   geolocation requirement at all in this mode; the reporter's own
 //   position (if available) is still recorded as metadata, just not
 //   used to gate submission the way it does in "My location" mode.
-//   Offers a typeable Combobox, plus a "Tap on the map" button that asks
-//   the home screen's own HomeMap (app/page.tsx) to go into pick mode —
-//   this modal draws no map of its own, so there's only ever the one
-//   map on screen instead of two overlapping/duplicate ones.
+//   Fillable by typing into the Combobox, or — before this modal is even
+//   open — by tapping a station directly on the home screen's own
+//   HomeMap (app/page.tsx only makes the map's stations tappable while
+//   this modal is closed, and opens it with that station preselected on
+//   a tap). This modal draws no map of its own, so there's only ever
+//   the one map on screen.
 //
 // app/report/page.tsx still exists, but only as a browse-and-vote map
 // (clusters + "Still happening?" voting) — creating a new report always
@@ -58,7 +60,6 @@ export function ReportModal({
   onSubmitted,
   pickedStation,
   onPickedStationConsumed,
-  onRequestPickOnMap,
 }: {
   // The active route's legs, when the home screen had one selected
   // (app/page.tsx's reportableLegs) — used to scope submission to that
@@ -70,18 +71,13 @@ export function ReportModal({
   legs?: RouteLeg[];
   onClose: () => void;
   onSubmitted?: () => void;
-  // A station name app/page.tsx's HomeMap reported back after a tap in
-  // "pick on the map" mode — consumed once (via the effect below) into
-  // this modal's own `station` state, then acknowledged with
+  // A station name app/page.tsx's HomeMap reported back after a direct
+  // tap on the map — consumed once (via the effect below) into this
+  // modal's own `station` state, then acknowledged with
   // onPickedStationConsumed so the parent clears it and doesn't keep
   // re-delivering the same pick.
   pickedStation?: string | null;
   onPickedStationConsumed?: () => void;
-  // Asks the parent to switch the home screen's map into "tap to pick a
-  // station" mode. Omitted entirely (e.g. if this modal is ever reused
-  // somewhere without a map behind it) simply hides the "Tap on the map"
-  // button — the Combobox alone still works.
-  onRequestPickOnMap?: () => void;
 }) {
   const { t } = useDictionary();
   const categories = reportCategoryMeta(t.reportPage.categories);
@@ -297,26 +293,13 @@ export function ReportModal({
           </>
         ) : (
           submitState.status !== "success" && (
-            <div className="flex items-center gap-2">
-              <div className="flex-1">
-                <Combobox
-                  value={station}
-                  onChange={setStation}
-                  options={stationOptions}
-                  placeholder={t.reportPage.stationPlaceholder}
-                  noResultsLabel={t.legsEditor.noStationsFound}
-                />
-              </div>
-              {onRequestPickOnMap && (
-                <button
-                  type="button"
-                  onClick={onRequestPickOnMap}
-                  className="shrink-0 cursor-pointer rounded-lg border border-border px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-[var(--nav-hover-bg)]"
-                >
-                  {t.reportPage.pickOnMap}
-                </button>
-              )}
-            </div>
+            <Combobox
+              value={station}
+              onChange={setStation}
+              options={stationOptions}
+              placeholder={t.reportPage.stationPlaceholder}
+              noResultsLabel={t.legsEditor.noStationsFound}
+            />
           )
         )}
 

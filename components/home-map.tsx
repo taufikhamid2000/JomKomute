@@ -37,10 +37,12 @@ function stationIcon(color: string) {
   });
 }
 
-// Dots for components/report-modal.tsx's "pick a station on the map"
-// mode — a pulsing ring on top of a plain dot, so the whole set of
-// pickable stations reads clearly as "tap one of these" rather than
-// blending into the plain station dots a route already draws.
+// Dots marking every reportable station when no route is currently drawn
+// (see the `pickableStations` prop below) — a pulsing ring on top of a
+// plain dot, so they read clearly as "tap one of these to report an
+// issue" even with no other explanation on screen. Not used when a route
+// IS drawn — its own stationIcon markers become directly tappable
+// instead, rather than doubling up two markers on the same spot.
 const PICKABLE_STATION_ICON = L.divIcon({
   className: "",
   html: `<div style="position:relative;width:14px;height:14px;">
@@ -53,9 +55,11 @@ const PICKABLE_STATION_ICON = L.divIcon({
 
 // A tap anywhere on the map, while `pickableStations` is set, snaps to
 // the nearest one of them (lib/nearest-station.ts) and reports it back —
-// the actual "tap the main map to pick a station" interaction, so
-// components/report-modal.tsx doesn't need a second, redundant map of
-// its own.
+// covers taps that land near but not exactly on a station marker.
+// Together with the per-marker click handlers below, this is what lets
+// someone report an issue by tapping a station directly on this map,
+// with no separate picker UI (components/report-modal.tsx draws no map
+// of its own).
 function StationPickCatcher({
   points,
   onPick,
@@ -197,19 +201,36 @@ export function HomeMap({
   onSelectOption?: (index: number) => void;
   reports?: UserReport[];
   routePins?: RoutePin[];
-  // When set, taps on the map snap to the nearest of these station names
-  // and call onPickStation — components/report-modal.tsx's "pick a
-  // station" flow requesting a tap directly on this map instead of its
-  // own. Undefined (the normal case) leaves the map's click behavior
-  // untouched.
+  // When set (app/page.tsx passes this whenever the report modal isn't
+  // open), every station in this list is directly tappable to report an
+  // issue there — either by tapping its own marker or, via
+  // StationPickCatcher below, by tapping anywhere near it. When a route
+  // is also drawn (`legs`/`routeOptions`), this list is expected to be
+  // exactly that route's own stations, so no separate overlay is drawn
+  // for them (see pickablePoints below) — the route's own dots become
+  // clickable instead of drawing a second marker on top.
   pickableStations?: string[];
   onPickStation?: (name: string) => void;
 }) {
   const networkSegments = useMemo(() => NETWORK_SEGMENTS, []);
   const hasOptions = !!routeOptions && routeOptions.length > 0;
   const selectedIndex = selectedOptionIndex ?? 0;
+  const hasDrawnRoute = hasOptions || (!!legs && legs.length > 0);
 
+  // Only rendered when there's no route already drawn — with a route
+  // shown, pickableStations is that route's own station list, already
+  // covered by the (now-clickable) segments/optionSegments markers below.
   const pickablePoints = useMemo(() => {
+    if (hasDrawnRoute || !pickableStations || pickableStations.length === 0) return [];
+    return pickableStations
+      .map((name) => ({ name, coord: STATION_COORDS[name] }))
+      .filter((s): s is { name: string; coord: [number, number] } => !!s.coord);
+  }, [hasDrawnRoute, pickableStations]);
+
+  // The full pickable set, drawn-route-stations included — for
+  // StationPickCatcher, which needs every reportable station regardless
+  // of whether it's separately drawn as its own overlay marker.
+  const allPickablePoints = useMemo(() => {
     if (!pickableStations || pickableStations.length === 0) return [];
     return pickableStations
       .map((name) => ({ name, coord: STATION_COORDS[name] }))
@@ -275,7 +296,7 @@ export function HomeMap({
         url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
       />
       {fitPoints.length > 0 && <FitToPoints points={fitPoints} />}
-      {pickablePoints.length > 0 && onPickStation && <StationPickCatcher points={pickablePoints} onPick={onPickStation} />}
+      {allPickablePoints.length > 0 && onPickStation && <StationPickCatcher points={allPickablePoints} onPick={onPickStation} />}
       {networkSegments.map((segment, i) => (
         <Polyline key={`network-${i}`} positions={segment.points} pathOptions={{ color: segment.color, weight: 2, opacity: 0.35 }} />
       ))}
@@ -311,12 +332,26 @@ export function HomeMap({
             if (oi !== selectedIndex) return null;
             return segs.map((segment, si) => {
               const icon = stationIcon(segment.color);
-              return segment.points.map((p, pi) => <Marker key={`opt-station-${oi}-${si}-${pi}`} position={p.coord} icon={icon} />);
+              return segment.points.map((p, pi) => (
+                <Marker
+                  key={`opt-station-${oi}-${si}-${pi}`}
+                  position={p.coord}
+                  icon={icon}
+                  eventHandlers={onPickStation ? { click: () => onPickStation(p.name) } : undefined}
+                />
+              ));
             });
           })
         : segments.map((segment, si) => {
             const icon = stationIcon(segment.color);
-            return segment.points.map((p, pi) => <Marker key={`${si}-${pi}`} position={p.coord} icon={icon} />);
+            return segment.points.map((p, pi) => (
+              <Marker
+                key={`${si}-${pi}`}
+                position={p.coord}
+                icon={icon}
+                eventHandlers={onPickStation ? { click: () => onPickStation(p.name) } : undefined}
+              />
+            ));
           })}
 
       {hasOptions &&
