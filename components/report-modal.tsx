@@ -1,0 +1,240 @@
+"use client";
+
+// Waze-style "tap to report" flow, now a quick modal over the home screen
+// instead of a dedicated map page. Reports are already gated on the
+// reporter's own geolocation (see
+// supabase/migrations/20260919120000_jomkomute_user_reports.sql and
+// 20260919140000_..._reporter_location.sql), so there's no "tap a point on
+// the map" step at all — the report's lat/lng *is* wherever the browser's
+// geolocation says the user is right now.
+//
+// app/report/page.tsx still exists, but only as a browse-and-vote map
+// (clusters + "Still happening?" voting) — creating a new report always
+// goes through this modal, opened from the home screen's floating report
+// button (app/page.tsx).
+
+import { useEffect, useMemo, useState } from "react";
+import { reportCategoryMeta } from "@/lib/report-categories";
+import { nearestCorridorPoint, routeCorridorPoints, REPORT_CORRIDOR_METERS, type CorridorPoint } from "@/lib/route-corridor";
+import type { RouteLeg } from "@/lib/types";
+import { useDictionary } from "@/lib/use-dictionary";
+import { submitUserReport, type ReportCategory } from "@/lib/user-reports-client";
+
+// Same limit as the `jomkomute_user_reports` table's
+// `coalesce(length(note), 0) <= 280` check constraint — enforced
+// client-side too so a submit never round-trips just to be rejected by
+// Postgres for a too-long note.
+const MAX_NOTE_LENGTH = 280;
+
+type GeoState =
+  | { status: "loading" }
+  | { status: "ready"; lat: number; lng: number }
+  | { status: "denied" }
+  | { status: "unavailable" };
+
+type SubmitState = { status: "idle" } | { status: "submitting" } | { status: "success" } | { status: "error"; message: string };
+
+export function ReportModal({
+  legs,
+  onClose,
+  onSubmitted,
+}: {
+  // The active route's legs, when the home screen had one selected
+  // (app/page.tsx's reportableLegs) — used to scope submission to that
+  // route's corridor (Phase 3's REPORT_CORRIDOR_METERS check), same as
+  // app/report/page.tsx used to via its ?legs= param. No legs (no active
+  // route) means no corridor: submit from wherever, exactly as before
+  // Phase 3. The modal itself draws no map/visual guide — the check is
+  // silent, surfaced only via an error message on failure.
+  legs?: RouteLeg[];
+  onClose: () => void;
+  onSubmitted?: () => void;
+}) {
+  const { t } = useDictionary();
+  const categories = reportCategoryMeta(t.reportPage.categories);
+
+  const corridor = useMemo<CorridorPoint[]>(() => (legs && legs.length > 0 ? routeCorridorPoints(legs) : []), [legs]);
+
+  const [geo, setGeo] = useState<GeoState>({ status: "loading" });
+  const [note, setNote] = useState("");
+  const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle" });
+
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setGeo({ status: "unavailable" });
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setGeo({ status: "ready", lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (err) => setGeo({ status: err.code === err.PERMISSION_DENIED ? "denied" : "unavailable" }),
+      { enableHighAccuracy: true, timeout: 10_000 },
+    );
+  }, []);
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
+  // Close automatically a beat after a successful submit, same as the old
+  // page's inline success toast, just closing the modal instead of
+  // leaving it open indefinitely.
+  useEffect(() => {
+    if (submitState.status !== "success") return;
+    const timer = setTimeout(() => {
+      onSubmitted?.();
+      onClose();
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [submitState.status, onClose, onSubmitted]);
+
+  const canSubmit = geo.status === "ready" && submitState.status !== "submitting" && submitState.status !== "success";
+
+  async function handleSelectCategory(category: ReportCategory) {
+    if (geo.status !== "ready") {
+      setSubmitState({ status: "error", message: geo.status === "denied" ? t.reportPage.locationDenied : t.reportPage.locationUnavailable });
+      return;
+    }
+
+    // Phase 3's corridor check, ported from app/report/page.tsx: with
+    // route context (corridor non-empty), the reporter's own position has
+    // to actually land near that route — otherwise there'd be nothing
+    // stopping a report opened from one route's FAB from being tagged
+    // onto an unrelated part of the network. No corridor (no active
+    // route on the home screen) skips this entirely.
+    let lineId: string | null = null;
+    if (corridor.length > 0) {
+      const nearest = nearestCorridorPoint({ lat: geo.lat, lng: geo.lng }, corridor);
+      if (!nearest || nearest.distanceMeters > REPORT_CORRIDOR_METERS) {
+        setSubmitState({ status: "error", message: t.reportPage.notOnRoute });
+        return;
+      }
+      lineId = nearest.point.lineId;
+    }
+
+    setSubmitState({ status: "submitting" });
+    try {
+      // No separate "tapped" location anymore — the report is wherever
+      // the reporter's own GPS fix says they are, so lat/lng and
+      // reporterLat/reporterLng are the same point.
+      await submitUserReport({
+        lat: geo.lat,
+        lng: geo.lng,
+        category,
+        note: note.trim() ? note.trim().slice(0, MAX_NOTE_LENGTH) : undefined,
+        reporterLat: geo.lat,
+        reporterLng: geo.lng,
+        lineId,
+      });
+      setSubmitState({ status: "success" });
+    } catch {
+      setSubmitState({ status: "error", message: t.reportPage.error });
+    }
+  }
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={t.reportPage.title}
+      className="animate-backdrop-in fixed inset-0 z-[1200] flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
+      onClick={onClose}
+    >
+      <div
+        className="animate-modal-in flex w-full max-w-sm flex-col gap-3 rounded-t-2xl border-t border-border bg-background p-5 sm:rounded-2xl sm:border"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-foreground">{t.reportPage.title}</h2>
+            <span
+              className="rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase"
+              style={{ backgroundColor: "color-mix(in srgb, var(--destructive) 12%, transparent)", color: "var(--destructive)" }}
+            >
+              {t.reportPage.conceptBadge}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t.reportPage.close}
+            className="cursor-pointer rounded-full p-1 text-foreground/50 hover:bg-[var(--nav-hover-bg)] hover:text-foreground"
+          >
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        <p className="text-xs text-foreground/60">{t.reportPage.modalDescription}</p>
+
+        {geo.status === "loading" ? <p className="text-xs text-foreground/50">{t.reportPage.locationLoading}</p> : null}
+        {geo.status === "denied" ? <p className="text-xs text-[var(--destructive)]">{t.reportPage.locationDenied}</p> : null}
+        {geo.status === "unavailable" ? <p className="text-xs text-[var(--destructive)]">{t.reportPage.locationUnavailable}</p> : null}
+
+        {submitState.status === "success" ? (
+          <div
+            className="rounded-xl px-3 py-2.5 text-center text-sm font-medium"
+            style={{ backgroundColor: "color-mix(in srgb, var(--accent) 90%, transparent)", color: "var(--accent-foreground)" }}
+          >
+            {t.reportPage.success}
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-3 gap-2">
+              {categories.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  disabled={!canSubmit}
+                  onClick={() => handleSelectCategory(c.id)}
+                  className="flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border border-border p-3 text-xs font-medium text-foreground transition-colors hover:bg-[var(--nav-hover-bg)] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <span
+                    className="flex h-9 w-9 items-center justify-center rounded-full"
+                    style={{ backgroundColor: c.color, color: "white" }}
+                  >
+                    {c.icon}
+                  </span>
+                  {c.label}
+                </button>
+              ))}
+            </div>
+
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value.slice(0, MAX_NOTE_LENGTH))}
+              placeholder={t.reportPage.notePlaceholder}
+              rows={2}
+              maxLength={MAX_NOTE_LENGTH}
+              disabled={submitState.status === "submitting"}
+              className="w-full resize-none rounded-xl border border-border bg-background p-2.5 text-sm text-foreground placeholder:text-foreground/40 disabled:opacity-50"
+            />
+            <p className="text-right text-[10px] text-foreground/40">
+              {note.length}/{MAX_NOTE_LENGTH}
+            </p>
+
+            {submitState.status === "submitting" ? (
+              <p className="text-center text-xs text-foreground/50">{t.reportPage.submitting}</p>
+            ) : null}
+            {submitState.status === "error" ? (
+              <p className="text-center text-xs text-[var(--destructive)]">{submitState.message}</p>
+            ) : null}
+
+            <div className="flex items-center justify-between gap-2">
+              <button type="button" onClick={onClose} className="cursor-pointer text-xs text-foreground/50 hover:text-foreground">
+                {t.reportPage.cancel}
+              </button>
+              <a href="/report" className="cursor-pointer text-xs text-primary underline-offset-4 hover:underline">
+                {t.reportPage.browseReports}
+              </a>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

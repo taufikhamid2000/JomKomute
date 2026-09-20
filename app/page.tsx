@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ChangePlanModal } from "@/components/change-plan-modal";
 import { Combobox } from "@/components/combobox";
+import { ReportModal } from "@/components/report-modal";
 import { Shell } from "@/components/shell";
 import { mockCrowdFor, type CrowdMock } from "@/lib/crowd-mock";
 import { distanceMeters } from "@/lib/geo-distance";
@@ -94,6 +95,10 @@ export default function HomePage() {
   // app/dashboard/page.tsx, only meaningful for a saved (Home/Work/recent)
   // route, not a one-off finder lookup.
   const [changePlanOpen, setChangePlanOpen] = useState(false);
+  // Waze-style report FAB — opens an inline modal instead of navigating to
+  // a separate page (see components/report-modal.tsx). /report itself is
+  // still reachable directly, now repurposed as a browse-and-vote map.
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const exceptions = useAllExceptions();
   const {
     origin: finderOrigin,
@@ -336,11 +341,14 @@ export default function HomePage() {
 
   // Whichever route the map is currently showing — same priority
   // HomeMap's legs prop already uses below. Shared into a variable so the
-  // report FAB can pass the same route's legs as ?legs= (Phase 3's
-  // route-scoped reporting, see lib/route-corridor.ts) instead of
+  // report modal can scope its corridor check to the same route (Phase
+  // 3's route-scoped reporting, see lib/route-corridor.ts) instead of
   // duplicating this fallback chain.
   const reportableLegs = activeLegs ?? oneTimeRoute?.legs ?? homeLegs;
-  const reportHref =
+  // /report is still directly reachable as a browse-and-vote map (see
+  // app/report/page.tsx); carry the same legs as ?legs= so it can draw
+  // the corridor as a visual guide, same param it always read.
+  const reportsHref =
     reportableLegs && reportableLegs.length > 0
       ? `/report?legs=${encodeURIComponent(JSON.stringify(reportableLegs))}`
       : "/report";
@@ -356,30 +364,30 @@ export default function HomePage() {
           reports={reports}
         />
 
-        {/* Waze-style floating action button — the sidebar's old "/report"
-            link is gone (see components/shell.tsx); this is now the only
-            entry point to the report page. Fixed to the viewport corner
-            (not a Leaflet marker) so it never pans/zooms with the map, and
+        {/* Waze-style floating action button — opens the report modal in
+            place (see components/report-modal.tsx) instead of navigating
+            to a separate page. Fixed to the viewport corner (not a
+            Leaflet marker) so it never pans/zooms with the map, and
             positioned bottom-right with enough bottom offset to clear the
             bottom sheet's collapsed height (the sheet's tallest collapsed
             state is the "Where to?" card, roughly 3.5rem tall as rendered
             below). Home-screen only, by design — not a global overlay.
-            Carries the active route's legs as ?legs= when there is one,
-            so /report can scope itself to that route's corridor (Phase 3)
-            — with no active route, it's the same "tap anywhere" link as
-            before. */}
-        <Link
-          href={reportHref}
+            Passes the active route's legs so the modal can scope its
+            corridor check (Phase 3) — with no active route, submission is
+            unrestricted, same as before Phase 3. */}
+        <button
+          type="button"
+          onClick={() => setIsReportModalOpen(true)}
           aria-label={t.homePage.reportFab}
           title={t.homePage.reportFab}
-          className="absolute right-4 bottom-40 z-[1100] flex h-14 w-14 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-[0_4px_12px_rgba(0,0,0,0.35)] transition-transform hover:scale-105 active:scale-95 md:right-6"
+          className="absolute right-4 bottom-40 z-[1100] flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-[0_4px_12px_rgba(0,0,0,0.35)] transition-transform hover:scale-105 active:scale-95 md:right-6"
         >
           <svg width="26" height="26" viewBox="0 0 20 20" fill="none" aria-hidden="true">
             <path d="M10 2.5 18 17H2L10 2.5Z" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" />
             <path d="M10 8v4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
             <circle cx="10" cy="14.3" r="1" fill="currentColor" />
           </svg>
-        </Link>
+        </button>
 
         {activeRoute ? (
           <div className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-2 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4">
@@ -679,12 +687,31 @@ export default function HomePage() {
                 </Link>
               </div>
             )}
+
+            {/* /report is still directly reachable (it's now a
+                browse-and-vote map, not the tap-to-report flow — see
+                components/report-map.tsx) — surfaced here rather than
+                left findable only by URL. */}
+            <Link href={reportsHref} className="text-xs font-medium text-primary underline-offset-4 hover:underline">
+              {t.reportPage.browseReports}
+            </Link>
           </div>
         )}
       </div>
 
       {changePlanOpen && activeNext && (
         <ChangePlanModal date={activeNext.date} routes={routes} onClose={() => setChangePlanOpen(false)} />
+      )}
+      {isReportModalOpen && (
+        <ReportModal
+          legs={reportableLegs}
+          onClose={() => setIsReportModalOpen(false)}
+          onSubmitted={() => {
+            getRecentUserReports()
+              .then(setReports)
+              .catch(() => {});
+          }}
+        />
       )}
     </Shell>
   );

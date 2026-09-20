@@ -1,16 +1,16 @@
 "use client";
 
-// The actual Leaflet map for app/report/page.tsx. Split into its own
-// file so the page can `next/dynamic`-import it with `ssr: false` —
-// react-leaflet touches `window`/`document` at module load, which would
-// otherwise break `next build`'s static export (next.config.ts's
-// output: "export" prerenders every route at build time, with no
-// browser present).
+// The actual Leaflet map for app/report/page.tsx, now a browse-and-vote
+// view only — creating a new report happens in components/report-modal.tsx
+// (opened from the home screen's FAB), not by tapping this map. Split into
+// its own file so the page can `next/dynamic`-import it with `ssr: false`
+// — react-leaflet touches `window`/`document` at module load, which would
+// otherwise break `next build`.
 
 import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo, useState } from "react";
 import L from "leaflet";
-import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from "react-leaflet";
 import type { en } from "@/lib/dictionaries/en";
 import { reportMarkerHtml, type ReportCategoryMeta } from "@/lib/report-categories";
 import { clusterReports } from "@/lib/report-clusters";
@@ -33,15 +33,6 @@ function pinIcon(color: string, svg: string, count: number) {
     iconSize: [30, 30],
     iconAnchor: [15, 15],
   });
-}
-
-function ClickCatcher({ onPick }: { onPick: (lat: number, lng: number) => void }) {
-  useMapEvents({
-    click(e) {
-      onPick(e.latlng.lat, e.latlng.lng);
-    },
-  });
-  return null;
 }
 
 // Frames the map on the route corridor (Phase 3's route-scoped reporting)
@@ -121,34 +112,22 @@ function ReportVoteRow({ report, t, onVoted }: { report: UserReport; t: ReportPa
 export function ReportMap({
   reports,
   categories,
-  pending,
-  onPick,
   onVoted,
   corridor,
   t,
 }: {
   reports: UserReport[];
   categories: ReportCategoryMeta[];
-  pending: { lat: number; lng: number } | null;
-  onPick: (lat: number, lng: number) => void;
   onVoted?: () => void;
   // The active route's corridor, when app/report/page.tsx was reached
-  // with route context (Phase 3) — drawn as a visual guide for where a
-  // report will actually be accepted (see REPORT_CORRIDOR_METERS in
-  // lib/route-corridor.ts, checked at submit time by the page itself).
-  // Undefined/empty means no route context: tap anywhere, as before.
+  // with route context (Phase 3, still passed via ?legs= from the home
+  // screen's "View all reports" link) — drawn as a visual guide only now;
+  // there's nothing left on this page to gate against it since reports
+  // are created from components/report-modal.tsx instead. Undefined/empty
+  // means no route context: just the plain map.
   corridor?: CorridorPoint[];
   t: ReportPageDictionary;
 }) {
-  const [pendingIcon] = useState(() =>
-    L.divIcon({
-      className: "",
-      html: `<div style="width:14px;height:14px;border-radius:9999px;background:rgba(37,99,235,0.9);border:3px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>`,
-      iconSize: [14, 14],
-      iconAnchor: [7, 7],
-    }),
-  );
-
   const categoryById = useMemo(() => new globalThis.Map(categories.map((c) => [c.id, c])), [categories]);
   const clusters = useMemo(() => clusterReports(reports), [reports]);
   const corridorPoints = useMemo(() => (corridor ?? []).map((c) => c.coord), [corridor]);
@@ -170,7 +149,6 @@ export function ReportMap({
           <Polyline positions={corridorPoints} pathOptions={{ color: "#2563eb", weight: 6, opacity: 0.25 }} />
         </>
       )}
-      <ClickCatcher onPick={onPick} />
       {clusters.map((cluster) => {
         const meta = categoryById.get(cluster.category);
         if (!meta) return null;
@@ -188,7 +166,6 @@ export function ReportMap({
           </Marker>
         );
       })}
-      {pending ? <Marker position={[pending.lat, pending.lng]} icon={pendingIcon} /> : null}
     </MapContainer>
   );
 }
