@@ -14,12 +14,53 @@ const firaCode = Fira_Code({
   subsets: ["latin"],
 });
 
+const DESCRIPTION =
+  "Save your usual KTM/LRT/MRT commute and see how crowded it typically gets — plus live rider-reported delays, accidents, breakdowns, and crowding, Waze-style, for Klang Valley rail.";
+
+// metadataBase resolves every relative URL below (openGraph.images,
+// sitemap.ts/opengraph-image.tsx's own og:image, etc.) against the live
+// deployment (see README.md's Deploy section) rather than whatever host
+// a preview/local build happens to run on.
 export const metadata: Metadata = {
+  metadataBase: new URL("https://jomkomute.vercel.app"),
   title: {
-    default: "JomKomute",
+    default: "JomKomute — Klang Valley rail commute companion",
     template: "%s · JomKomute",
   },
-  description: "Save your usual LRT/MRT commute and see how crowded it typically gets.",
+  description: DESCRIPTION,
+  applicationName: "JomKomute",
+  keywords: [
+    "JomKomute",
+    "KTM Komuter",
+    "LRT Klang Valley",
+    "MRT Kuala Lumpur",
+    "Rapid Rail",
+    "Kuala Lumpur commute",
+    "train crowding",
+    "rail delay reports",
+    "Malaysia public transit",
+  ],
+  authors: [{ name: "taufikhamid2000", url: "https://github.com/taufikhamid2000" }],
+  category: "travel",
+  robots: { index: true, follow: true },
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "en_MY",
+    url: "/",
+    siteName: "JomKomute",
+    title: "JomKomute — Klang Valley rail commute companion",
+    description: DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "JomKomute — Klang Valley rail commute companion",
+    description: DESCRIPTION,
+  },
+  icons: {
+    icon: "/icon.svg",
+  },
+  manifest: "/manifest.webmanifest",
 };
 
 // Runs before paint, so an explicit theme/accent pick applies immediately
