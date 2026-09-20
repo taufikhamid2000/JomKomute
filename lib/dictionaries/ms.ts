@@ -6,7 +6,7 @@ export const ms: Dictionary = {
     myRoutes: "Laluan Saya",
     routes: "Laluan",
     addRoute: "Tambah laluan",
-    operatingHours: "Waktu operasi",
+    operatingHours: "Status laluan",
     settings: "Tetapan",
     about: "Perihal",
     openMenu: "Buka menu",
@@ -121,8 +121,8 @@ export const ms: Dictionary = {
     lastTrainSoon: (time: string, line: string) => `Tren terakhir ~${time} pada ${line}`,
   },
   operatingHoursPage: {
-    title: "Waktu operasi",
-    description: "Waktu tren pertama dan terakhir mengikut laluan, daripada jadual GTFS rasmi. Waktu sebenar boleh berbeza pada cuti umum.",
+    title: "Status laluan",
+    description: "Status terkini daripada laporan pengguna, serta waktu tren pertama dan terakhir mengikut laluan, daripada jadual GTFS rasmi. Waktu sebenar boleh berbeza pada cuti umum.",
     weekday: "Hari bekerja",
     weekend: "Hujung minggu",
     first: "Pertama",
@@ -130,6 +130,9 @@ export const ms: Dictionary = {
     today: "Hari ini",
     holidayNote: "Jadual cuti berbeza — semak aplikasi operator atau papan tanda pada cuti umum.",
     empty: "Waktu operasi belum tersedia.",
+    statusNormal: "Perkhidmatan normal",
+    statusReported: (count: number, category: string) =>
+      count === 1 ? `1 laporan ${category} dalam sejam lepas` : `${count} laporan ${category} dalam sejam lepas`,
   },
   routeForm: {
     title: "Tambah laluan",

@@ -4,7 +4,7 @@ export const en = {
     myRoutes: "My Routes",
     routes: "Routes",
     addRoute: "Add route",
-    operatingHours: "Operating hours",
+    operatingHours: "Line status",
     settings: "Settings",
     about: "About",
     openMenu: "Open menu",
@@ -119,8 +119,8 @@ export const en = {
     lastTrainSoon: (time: string, line: string) => `Last train ~${time} on the ${line}`,
   },
   operatingHoursPage: {
-    title: "Operating hours",
-    description: "First and last train times by line, from official GTFS timetables. Actual times can vary on public holidays.",
+    title: "Line status",
+    description: "Live crowdsourced status plus first and last train times by line, from official GTFS timetables. Actual times can vary on public holidays.",
     weekday: "Weekday",
     weekend: "Weekend",
     first: "First",
@@ -128,6 +128,9 @@ export const en = {
     today: "Today",
     holidayNote: "Holiday schedule differs — check the operator's app or signage on public holidays.",
     empty: "Operating hours aren't available yet.",
+    statusNormal: "Normal service",
+    statusReported: (count: number, category: string) =>
+      count === 1 ? `1 report of ${category} in the last hour` : `${count} reports of ${category} in the last hour`,
   },
   routeForm: {
     title: "Add a route",

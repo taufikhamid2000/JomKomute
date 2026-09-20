@@ -12,13 +12,18 @@
 import { useEffect, useState } from "react";
 import { Shell } from "@/components/shell";
 import { LINES } from "@/lib/lines";
+import { lineStatusesByLine, type LineStatus } from "@/lib/line-status";
 import { formatClockTime, getLineOperatingHours, isWeekend, type LineOperatingHours } from "@/lib/operating-hours-client";
+import { reportCategoryMeta } from "@/lib/report-categories";
 import { useDictionary } from "@/lib/use-dictionary";
+import { getRecentUserReports } from "@/lib/user-reports-client";
 
 export default function OperatingHoursPage() {
   const { t } = useDictionary();
   const [hoursByLine, setHoursByLine] = useState<Map<string, LineOperatingHours> | null>(null);
+  const [statusByLine, setStatusByLine] = useState<Map<string, LineStatus>>(new Map());
   const [today] = useState(() => new Date());
+  const categoryMeta = reportCategoryMeta(t.reportPage.categories);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,6 +36,16 @@ export default function OperatingHoursPage() {
       // back to the "not available yet" state below, not a broken page.
       .catch(() => {
         if (!cancelled) setHoursByLine(new Map());
+      });
+    // Best-effort here too — a failed fetch just leaves every line at
+    // the default "normal service" status rather than breaking the page.
+    getRecentUserReports()
+      .then((reports) => {
+        if (cancelled) return;
+        setStatusByLine(lineStatusesByLine(reports));
+      })
+      .catch(() => {
+        if (!cancelled) setStatusByLine(new Map());
       });
     return () => {
       cancelled = true;
@@ -50,11 +65,29 @@ export default function OperatingHoursPage() {
         <div className="flex flex-col gap-3">
           {LINES.map((line) => {
             const hours = hoursByLine?.get(line.id);
+            const status = statusByLine.get(line.id);
+            const worstMeta = status?.worstCategory ? categoryMeta.find((c) => c.id === status.worstCategory) : undefined;
             return (
               <div key={line.id} className="flex flex-col gap-2 rounded-xl border border-border bg-background p-4">
                 <div className="flex items-center gap-2">
                   <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: line.color }} />
                   <span className="truncate text-sm font-semibold text-foreground">{line.name}</span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <span
+                    aria-hidden="true"
+                    className="h-1.5 w-1.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: status?.level === "reported" ? (worstMeta?.color ?? "#475569") : "#16a34a" }}
+                  />
+                  <span
+                    className={`text-xs font-medium ${status?.level === "reported" ? "" : "text-foreground/50"}`}
+                    style={status?.level === "reported" ? { color: worstMeta?.color } : undefined}
+                  >
+                    {status?.level === "reported" && status.worstCategory
+                      ? t.operatingHoursPage.statusReported(status.count, worstMeta?.label ?? status.worstCategory)
+                      : t.operatingHoursPage.statusNormal}
+                  </span>
                 </div>
 
                 {hoursByLine === null ? (
