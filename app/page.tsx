@@ -7,7 +7,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChangePlanModal } from "@/components/change-plan-modal";
 import { Combobox } from "@/components/combobox";
 import { ReportModal } from "@/components/report-modal";
@@ -107,6 +107,85 @@ export default function HomePage() {
   // see the shared `panelSummary` computed further down for what the
   // collapsed strip shows per state.
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
+
+  // Physical drag-to-collapse/expand on top of the tap-to-toggle above.
+  // `dragOffset` is a live pixel translateY applied to whichever panel
+  // container is currently rendered, so the sheet visually follows the
+  // finger during the gesture; it's purely a render-time offset — the
+  // single source of truth for collapsed/expanded stays isPanelCollapsed,
+  // updated only on release (tap or snap). Drag bookkeeping (start Y,
+  // whether the pointer has moved enough to count as a drag rather than a
+  // tap, and the live offset) lives in a ref rather than state since
+  // pointermove fires far more often than a render needs to be gated on.
+  const DRAG_TAP_THRESHOLD_PX = 6; // movement under this = a tap, not a drag
+  const DRAG_RANGE_PX = 96; // full travel mapped for the drag gesture
+  const DRAG_SNAP_RATIO = 0.3; // >30% of DRAG_RANGE_PX toggles state on release
+  const dragRef = useRef<{ startY: number; offset: number; moved: boolean } | null>(null);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isHandleDragging, setIsHandleDragging] = useState(false);
+
+  function handleHandlePointerDown(e: React.PointerEvent<HTMLElement>) {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = { startY: e.clientY, offset: 0, moved: false };
+    setIsHandleDragging(true);
+  }
+
+  function handleHandlePointerMove(e: React.PointerEvent<HTMLElement>) {
+    const info = dragRef.current;
+    if (!info) return;
+    const delta = e.clientY - info.startY;
+    if (Math.abs(delta) > DRAG_TAP_THRESHOLD_PX) info.moved = true;
+    // Collapsed: only allow dragging up (toward expanding), delta <= 0.
+    // Expanded: only allow dragging down (toward collapsing), delta >= 0.
+    const clamped = isPanelCollapsed
+      ? Math.min(0, Math.max(-DRAG_RANGE_PX, delta))
+      : Math.max(0, Math.min(DRAG_RANGE_PX, delta));
+    info.offset = clamped;
+    setDragOffset(clamped);
+  }
+
+  function endHandleDrag(e: React.PointerEvent<HTMLElement>, commit: boolean) {
+    const info = dragRef.current;
+    dragRef.current = null;
+    setIsHandleDragging(false);
+    setDragOffset(0);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // Pointer capture may already be released (e.g. pointercancel) — fine to ignore.
+    }
+    if (!info || !commit) return;
+    if (!info.moved) {
+      // Negligible movement — treat as a plain tap, same as the old click handler.
+      setIsPanelCollapsed((prev) => !prev);
+      return;
+    }
+    const ratio = Math.abs(info.offset) / DRAG_RANGE_PX;
+    if (ratio > DRAG_SNAP_RATIO) setIsPanelCollapsed((prev) => !prev);
+  }
+
+  function handleHandlePointerUp(e: React.PointerEvent<HTMLElement>) {
+    endHandleDrag(e, true);
+  }
+
+  function handleHandlePointerCancel(e: React.PointerEvent<HTMLElement>) {
+    endHandleDrag(e, false);
+  }
+
+  const dragHandleProps = {
+    onPointerDown: handleHandlePointerDown,
+    onPointerMove: handleHandlePointerMove,
+    onPointerUp: handleHandlePointerUp,
+    onPointerCancel: handleHandlePointerCancel,
+  };
+  // Applied to whichever panel container is current so it translates with
+  // the live drag offset and snaps smoothly on release; transition is
+  // suspended while actively dragging for 1:1 finger tracking.
+  const panelDragStyle = {
+    transform: dragOffset !== 0 ? `translateY(${dragOffset}px)` : undefined,
+    transition: isHandleDragging ? "none" : "transform 200ms ease-out",
+  };
+
   const exceptions = useAllExceptions();
   const {
     origin: finderOrigin,
@@ -427,20 +506,24 @@ export default function HomePage() {
         {isPanelCollapsed ? (
           <button
             type="button"
-            onClick={() => setIsPanelCollapsed(false)}
+            {...dragHandleProps}
             aria-label={t.homePage.whereTo}
-            className="absolute inset-x-0 bottom-0 z-[1000] flex w-full cursor-pointer flex-col items-center gap-1.5 rounded-t-2xl border-t border-border bg-background px-4 pt-2 pb-3 text-left shadow-[0_-4px_16px_rgba(0,0,0,0.12)] transition-colors hover:bg-muted md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4"
+            style={panelDragStyle}
+            className="absolute inset-x-0 bottom-0 z-[1000] flex w-full cursor-pointer touch-none flex-col items-center gap-1.5 rounded-t-2xl border-t border-border bg-background px-4 pt-2 pb-3 text-left shadow-[0_-4px_16px_rgba(0,0,0,0.12)] transition-colors hover:bg-muted md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4"
           >
             <span className="h-1.5 w-10 shrink-0 rounded-full bg-foreground/20" aria-hidden="true" />
             <span className="w-full truncate text-center text-sm font-medium text-foreground">{panelSummary}</span>
           </button>
         ) : activeRoute ? (
-          <div className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-2 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4">
+          <div
+            style={panelDragStyle}
+            className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-2 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4"
+          >
             <button
               type="button"
-              onClick={() => setIsPanelCollapsed(true)}
+              {...dragHandleProps}
               aria-label="Collapse panel"
-              className="-mt-1 flex w-full cursor-pointer items-center justify-center pb-1"
+              className="-mt-1 flex w-full cursor-pointer touch-none items-center justify-center pb-1"
             >
               <span className="h-1.5 w-10 rounded-full bg-foreground/20" aria-hidden="true" />
             </button>
@@ -513,12 +596,15 @@ export default function HomePage() {
             </div>
           </div>
         ) : routeOptions ? (
-          <div className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-3 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4">
+          <div
+            style={panelDragStyle}
+            className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-3 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4"
+          >
             <button
               type="button"
-              onClick={() => setIsPanelCollapsed(true)}
+              {...dragHandleProps}
               aria-label="Collapse panel"
-              className="-mt-1 flex w-full cursor-pointer items-center justify-center pb-1"
+              className="-mt-1 flex w-full cursor-pointer touch-none items-center justify-center pb-1"
             >
               <span className="h-1.5 w-10 rounded-full bg-foreground/20" aria-hidden="true" />
             </button>
@@ -632,12 +718,15 @@ export default function HomePage() {
             </button>
           </div>
         ) : oneTimeRoute ? (
-          <div className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-2 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4">
+          <div
+            style={panelDragStyle}
+            className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-2 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4"
+          >
             <button
               type="button"
-              onClick={() => setIsPanelCollapsed(true)}
+              {...dragHandleProps}
               aria-label="Collapse panel"
-              className="-mt-1 flex w-full cursor-pointer items-center justify-center pb-1"
+              className="-mt-1 flex w-full cursor-pointer touch-none items-center justify-center pb-1"
             >
               <span className="h-1.5 w-10 rounded-full bg-foreground/20" aria-hidden="true" />
             </button>
@@ -664,12 +753,15 @@ export default function HomePage() {
             </button>
           </div>
         ) : (
-          <div className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-3 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4">
+          <div
+            style={panelDragStyle}
+            className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-3 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4"
+          >
             <button
               type="button"
-              onClick={() => setIsPanelCollapsed(true)}
+              {...dragHandleProps}
               aria-label="Collapse panel"
-              className="-mt-1 flex w-full cursor-pointer items-center justify-center pb-1"
+              className="-mt-1 flex w-full cursor-pointer touch-none items-center justify-center pb-1"
             >
               <span className="h-1.5 w-10 rounded-full bg-foreground/20" aria-hidden="true" />
             </button>
