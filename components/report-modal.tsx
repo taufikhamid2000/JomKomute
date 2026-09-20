@@ -13,12 +13,16 @@
 //   geolocation requirement at all in this mode; the reporter's own
 //   position (if available) is still recorded as metadata, just not
 //   used to gate submission the way it does in "My location" mode.
+//   Offers both a typeable Combobox and a small tap-to-pick map
+//   (components/report-modal-map.tsx) — either one sets the same
+//   `station` state, so they always stay in sync.
 //
 // app/report/page.tsx still exists, but only as a browse-and-vote map
 // (clusters + "Still happening?" voting) — creating a new report always
 // goes through this modal, opened from the home screen's floating report
 // button (app/page.tsx).
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { Combobox } from "@/components/combobox";
 import { reportCategoryMeta } from "@/lib/report-categories";
@@ -34,6 +38,17 @@ import { STATION_COORDS } from "@/lib/stations";
 import type { RouteLeg } from "@/lib/types";
 import { useDictionary } from "@/lib/use-dictionary";
 import { submitUserReport, type ReportCategory } from "@/lib/user-reports-client";
+
+// react-leaflet touches `window`/`document` at module load — dynamic
+// import with `ssr: false`, same pattern every other Leaflet-using
+// component here follows (app/page.tsx's HomeMap, app/report/page.tsx's
+// ReportMap, etc.).
+const ReportModalMap = dynamic(() => import("@/components/report-modal-map").then((m) => m.ReportModalMap), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full w-full items-center justify-center text-xs text-foreground/40">Loading map…</div>
+  ),
+});
 
 // Same limit as the `jomkomute_user_reports` table's
 // `coalesce(length(note), 0) <= 280` check constraint — enforced
@@ -270,13 +285,18 @@ export function ReportModal({
           </>
         ) : (
           submitState.status !== "success" && (
-            <Combobox
-              value={station}
-              onChange={setStation}
-              options={stationOptions}
-              placeholder={t.reportPage.stationPlaceholder}
-              noResultsLabel={t.legsEditor.noStationsFound}
-            />
+            <>
+              <Combobox
+                value={station}
+                onChange={setStation}
+                options={stationOptions}
+                placeholder={t.reportPage.stationPlaceholder}
+                noResultsLabel={t.legsEditor.noStationsFound}
+              />
+              <div className="h-40 w-full overflow-hidden rounded-xl border border-border">
+                <ReportModalMap stations={stationOptions} selected={station} onSelect={setStation} />
+              </div>
+            </>
           )
         )}
 
