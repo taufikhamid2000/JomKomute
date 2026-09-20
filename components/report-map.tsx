@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from "react";
 import L from "leaflet";
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from "react-leaflet";
 import type { en } from "@/lib/dictionaries/en";
+import { NETWORK_SEGMENTS } from "@/lib/network-segments";
 import { reportMarkerHtml, type ReportCategoryMeta } from "@/lib/report-categories";
 import { clusterReports } from "@/lib/report-clusters";
 import type { CorridorPoint } from "@/lib/route-corridor";
@@ -143,6 +144,9 @@ export function ReportMap({
         attribution='Tiles &copy; Esri &mdash; Esri, HERE, Garmin, USGS, NGA, EPA, NPS'
         url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
       />
+      {NETWORK_SEGMENTS.map((segment, i) => (
+        <Polyline key={`network-${i}`} positions={segment.points} pathOptions={{ color: segment.color, weight: 2, opacity: 0.35 }} />
+      ))}
       {corridorPoints.length > 0 && (
         <>
           <FitToCorridor points={corridorPoints} />

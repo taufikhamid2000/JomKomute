@@ -16,10 +16,11 @@ import L from "leaflet";
 import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
 import { distanceMeters } from "@/lib/geo-distance";
 import { lineById } from "@/lib/lines";
+import { NETWORK_SEGMENTS } from "@/lib/network-segments";
 import { reportCategoryMeta, reportMarkerHtml } from "@/lib/report-categories";
 import { clusterReports } from "@/lib/report-clusters";
 import type { RouteOption } from "@/lib/route-finder";
-import { LINES, STATION_COORDS } from "@/lib/stations";
+import { STATION_COORDS } from "@/lib/stations";
 import type { RouteLeg } from "@/lib/types";
 import type { UserReport } from "@/lib/user-reports-client";
 
@@ -122,33 +123,6 @@ function FitToPoints({ points }: { points: [number, number][] }) {
   return null;
 }
 
-// The full rail network, drawn thin and faded underneath the active
-// route — every consecutive pair of stations on each line that both have
-// real coordinates in STATION_COORDS, split into separate segments at
-// any gap (a station missing from STATION_COORDS) rather than skipping
-// straight across it, same "don't draw a fake straight line over a
-// missing stop" rule route-map.tsx's stationsForLeg follows for a single
-// route. Computed once (LINES/STATION_COORDS are both static, module-level
-// data) and reused across renders instead of every render.
-function buildNetworkSegments(): { color: string; points: [number, number][] }[] {
-  const segments: { color: string; points: [number, number][] }[] = [];
-  for (const line of LINES) {
-    let current: [number, number][] = [];
-    for (const station of line.stations) {
-      const coord = STATION_COORDS[station as string];
-      if (!coord) {
-        if (current.length > 1) segments.push({ color: line.color, points: current });
-        current = [];
-        continue;
-      }
-      current.push(coord);
-    }
-    if (current.length > 1) segments.push({ color: line.color, points: current });
-  }
-  return segments;
-}
-
-const NETWORK_SEGMENTS = buildNetworkSegments();
 
 type LegSegment = { color: string; points: { name: string; coord: [number, number] }[] };
 

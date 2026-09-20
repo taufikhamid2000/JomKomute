@@ -1,12 +1,18 @@
 "use client";
 
-// Waze-style "tap to report" flow, now a quick modal over the home screen
-// instead of a dedicated map page. Reports are already gated on the
-// reporter's own geolocation (see
-// supabase/migrations/20260919120000_jomkomute_user_reports.sql and
-// 20260919140000_..._reporter_location.sql), so there's no "tap a point on
-// the map" step at all — the report's lat/lng *is* wherever the browser's
-// geolocation says the user is right now.
+// Waze-style "report an issue" flow, a quick modal over the home screen
+// instead of a dedicated map page. Two ways to place a report:
+// - "My location": the report's lat/lng is wherever the browser's
+//   geolocation says the user is right now (see supabase/migrations/
+//   20260919120000_jomkomute_user_reports.sql and
+//   20260919140000_..._reporter_location.sql for the table this writes
+//   to). This is the original behavior.
+// - "Pick a station": lets someone report an issue at a station they
+//   know about but aren't standing at right now — e.g. a friend just
+//   told them, or they're reporting ahead of their own trip. No
+//   geolocation requirement at all in this mode; the reporter's own
+//   position (if available) is still recorded as metadata, just not
+//   used to gate submission the way it does in "My location" mode.
 //
 // app/report/page.tsx still exists, but only as a browse-and-vote map
 // (clusters + "Still happening?" voting) — creating a new report always
@@ -14,8 +20,17 @@
 // button (app/page.tsx).
 
 import { useEffect, useMemo, useState } from "react";
+import { Combobox } from "@/components/combobox";
 import { reportCategoryMeta } from "@/lib/report-categories";
-import { nearestCorridorPoint, routeCorridorPoints, REPORT_CORRIDOR_METERS, type CorridorPoint } from "@/lib/route-corridor";
+import { allStationNames } from "@/lib/route-finder";
+import {
+  nearestCorridorPoint,
+  routeCorridorPoints,
+  routeCorridorStationNames,
+  REPORT_CORRIDOR_METERS,
+  type CorridorPoint,
+} from "@/lib/route-corridor";
+import { STATION_COORDS } from "@/lib/stations";
 import type { RouteLeg } from "@/lib/types";
 import { useDictionary } from "@/lib/use-dictionary";
 import { submitUserReport, type ReportCategory } from "@/lib/user-reports-client";
@@ -55,6 +70,17 @@ export function ReportModal({
 
   const corridor = useMemo<CorridorPoint[]>(() => (legs && legs.length > 0 ? routeCorridorPoints(legs) : []), [legs]);
 
+  // With route context, only that route's own stations are pickable —
+  // keeps a route-scoped report actually scoped to that route, same
+  // intent as the corridor check "My location" mode still runs below.
+  // With no route context, any station on the network is fair game.
+  const stationOptions = useMemo(
+    () => (legs && legs.length > 0 ? routeCorridorStationNames(legs) : allStationNames().filter((name) => !!STATION_COORDS[name])),
+    [legs],
+  );
+
+  const [mode, setMode] = useState<"location" | "station">("location");
+  const [station, setStation] = useState("");
   const [geo, setGeo] = useState<GeoState>({ status: "loading" });
   const [note, setNote] = useState("");
   const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle" });
@@ -91,9 +117,44 @@ export function ReportModal({
     return () => clearTimeout(timer);
   }, [submitState.status, onClose, onSubmitted]);
 
-  const canSubmit = geo.status === "ready" && submitState.status !== "submitting" && submitState.status !== "success";
+  const canSubmit =
+    (mode === "location" ? geo.status === "ready" : station !== "") &&
+    submitState.status !== "submitting" &&
+    submitState.status !== "success";
 
   async function handleSelectCategory(category: ReportCategory) {
+    // "Pick a station" mode: report the station's own coordinates, no
+    // geolocation requirement — the whole point is letting someone
+    // report somewhere they aren't standing right now, so there's
+    // nothing to gate against here. The reporter's own position (if a
+    // fix happens to be available) still rides along as metadata, same
+    // field "My location" mode uses, just not required or checked.
+    if (mode === "station") {
+      const coord = STATION_COORDS[station];
+      if (!coord) {
+        setSubmitState({ status: "error", message: t.reportPage.error });
+        return;
+      }
+      const lineId = corridor.length > 0 ? (nearestCorridorPoint({ lat: coord[0], lng: coord[1] }, corridor)?.point.lineId ?? null) : null;
+
+      setSubmitState({ status: "submitting" });
+      try {
+        await submitUserReport({
+          lat: coord[0],
+          lng: coord[1],
+          category,
+          note: note.trim() ? note.trim().slice(0, MAX_NOTE_LENGTH) : undefined,
+          reporterLat: geo.status === "ready" ? geo.lat : null,
+          reporterLng: geo.status === "ready" ? geo.lng : null,
+          lineId,
+        });
+        setSubmitState({ status: "success" });
+      } catch {
+        setSubmitState({ status: "error", message: t.reportPage.error });
+      }
+      return;
+    }
+
     if (geo.status !== "ready") {
       setSubmitState({ status: "error", message: geo.status === "denied" ? t.reportPage.locationDenied : t.reportPage.locationUnavailable });
       return;
@@ -104,7 +165,10 @@ export function ReportModal({
     // to actually land near that route — otherwise there'd be nothing
     // stopping a report opened from one route's FAB from being tagged
     // onto an unrelated part of the network. No corridor (no active
-    // route on the home screen) skips this entirely.
+    // route on the home screen) skips this entirely. Only applies in
+    // "My location" mode — "Pick a station" above scopes itself via
+    // stationOptions instead, since the whole mode exists to not be
+    // gated on the reporter's own position.
     let lineId: string | null = null;
     if (corridor.length > 0) {
       const nearest = nearestCorridorPoint({ lat: geo.lat, lng: geo.lng }, corridor);
@@ -171,9 +235,50 @@ export function ReportModal({
 
         <p className="text-xs text-foreground/60">{t.reportPage.modalDescription}</p>
 
-        {geo.status === "loading" ? <p className="text-xs text-foreground/50">{t.reportPage.locationLoading}</p> : null}
-        {geo.status === "denied" ? <p className="text-xs text-[var(--destructive)]">{t.reportPage.locationDenied}</p> : null}
-        {geo.status === "unavailable" ? <p className="text-xs text-[var(--destructive)]">{t.reportPage.locationUnavailable}</p> : null}
+        {submitState.status !== "success" && (
+          <div className="flex gap-1 rounded-lg bg-[var(--nav-hover-bg)] p-1">
+            <button
+              type="button"
+              onClick={() => setMode("location")}
+              className={
+                mode === "location"
+                  ? "flex-1 cursor-pointer rounded-md bg-background px-2 py-1.5 text-xs font-medium text-foreground shadow-sm"
+                  : "flex-1 cursor-pointer rounded-md px-2 py-1.5 text-xs font-medium text-foreground/60"
+              }
+            >
+              {t.reportPage.useMyLocation}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("station")}
+              className={
+                mode === "station"
+                  ? "flex-1 cursor-pointer rounded-md bg-background px-2 py-1.5 text-xs font-medium text-foreground shadow-sm"
+                  : "flex-1 cursor-pointer rounded-md px-2 py-1.5 text-xs font-medium text-foreground/60"
+              }
+            >
+              {t.reportPage.pickStation}
+            </button>
+          </div>
+        )}
+
+        {mode === "location" ? (
+          <>
+            {geo.status === "loading" ? <p className="text-xs text-foreground/50">{t.reportPage.locationLoading}</p> : null}
+            {geo.status === "denied" ? <p className="text-xs text-[var(--destructive)]">{t.reportPage.locationDenied}</p> : null}
+            {geo.status === "unavailable" ? <p className="text-xs text-[var(--destructive)]">{t.reportPage.locationUnavailable}</p> : null}
+          </>
+        ) : (
+          submitState.status !== "success" && (
+            <Combobox
+              value={station}
+              onChange={setStation}
+              options={stationOptions}
+              placeholder={t.reportPage.stationPlaceholder}
+              noResultsLabel={t.legsEditor.noStationsFound}
+            />
+          )
+        )}
 
         {submitState.status === "success" ? (
           <div

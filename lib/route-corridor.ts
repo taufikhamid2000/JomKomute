@@ -13,7 +13,7 @@ import { lineById } from "@/lib/lines";
 import { STATION_COORDS } from "@/lib/stations";
 import type { RouteLeg } from "@/lib/types";
 
-export type CorridorPoint = { coord: [number, number]; lineId: string };
+export type CorridorPoint = { coord: [number, number]; lineId: string; name: string };
 
 function stationsForLeg(leg: RouteLeg): string[] {
   const line = lineById(leg.line);
@@ -37,10 +37,17 @@ function stationsForLeg(leg: RouteLeg): string[] {
 export function routeCorridorPoints(legs: RouteLeg[]): CorridorPoint[] {
   return legs.flatMap((leg) =>
     stationsForLeg(leg)
-      .map((name) => STATION_COORDS[name])
-      .filter((coord): coord is [number, number] => !!coord)
-      .map((coord) => ({ coord, lineId: leg.line })),
+      .map((name) => ({ name, coord: STATION_COORDS[name] }))
+      .filter((s): s is { name: string; coord: [number, number] } => !!s.coord)
+      .map((s) => ({ coord: s.coord, lineId: leg.line, name: s.name })),
   );
+}
+
+// Just the station names along a route, in order, deduped — what a
+// station-picker (components/report-modal.tsx) offers when reporting is
+// scoped to a route, instead of the full ~190-station list.
+export function routeCorridorStationNames(legs: RouteLeg[]): string[] {
+  return Array.from(new Set(routeCorridorPoints(legs).map((p) => p.name)));
 }
 
 export const REPORT_CORRIDOR_METERS = 300;
