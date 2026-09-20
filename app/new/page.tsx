@@ -1,21 +1,14 @@
-"use client";
+// Plain server component so it can export this route's own metadata —
+// app/new/new-route-content.tsx (client: form state, useDictionary)
+// holds the actual page. Excluded from robots.txt/sitemap.ts (a form,
+// nothing to index), but still worth a real <title> for the browser tab
+// and bookmarks.
 
-import { Suspense } from "react";
-import { RouteForm } from "@/components/route-form";
-import { Shell } from "@/components/shell";
-import { useDictionary } from "@/lib/use-dictionary";
+import type { Metadata } from "next";
+import { NewRouteContent } from "./new-route-content";
+
+export const metadata: Metadata = { title: "Add a route" };
 
 export default function NewRoutePage() {
-  const { t } = useDictionary();
-
-  return (
-    <Shell>
-      <div className="animate-page-in mx-auto flex w-full max-w-lg flex-col gap-4 p-4 md:p-8">
-        <h1 className="text-lg font-semibold text-foreground">{t.routeForm.title}</h1>
-        <Suspense fallback={null}>
-          <RouteForm />
-        </Suspense>
-      </div>
-    </Shell>
-  );
+  return <NewRouteContent />;
 }
