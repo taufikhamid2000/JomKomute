@@ -13,10 +13,11 @@
 import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo } from "react";
 import L from "leaflet";
-import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
+import { MapContainer, Marker, Polyline, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import { distanceMeters } from "@/lib/geo-distance";
 import { lineById } from "@/lib/lines";
 import { NETWORK_SEGMENTS } from "@/lib/network-segments";
+import { nearestStationTo } from "@/lib/nearest-station";
 import { reportCategoryMeta, reportMarkerHtml } from "@/lib/report-categories";
 import { clusterReports } from "@/lib/report-clusters";
 import type { RouteOption } from "@/lib/route-finder";
@@ -34,6 +35,41 @@ function stationIcon(color: string) {
     iconSize: [10, 10],
     iconAnchor: [5, 5],
   });
+}
+
+// Dots for components/report-modal.tsx's "pick a station on the map"
+// mode — a pulsing ring on top of a plain dot, so the whole set of
+// pickable stations reads clearly as "tap one of these" rather than
+// blending into the plain station dots a route already draws.
+const PICKABLE_STATION_ICON = L.divIcon({
+  className: "",
+  html: `<div style="position:relative;width:14px;height:14px;">
+    <span class="animate-ping" style="position:absolute;inset:0;border-radius:9999px;background:rgba(37,99,235,0.35);"></span>
+    <div style="position:relative;width:14px;height:14px;border-radius:9999px;background:#2563eb;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>
+  </div>`,
+  iconSize: [14, 14],
+  iconAnchor: [7, 7],
+});
+
+// A tap anywhere on the map, while `pickableStations` is set, snaps to
+// the nearest one of them (lib/nearest-station.ts) and reports it back —
+// the actual "tap the main map to pick a station" interaction, so
+// components/report-modal.tsx doesn't need a second, redundant map of
+// its own.
+function StationPickCatcher({
+  points,
+  onPick,
+}: {
+  points: { name: string; coord: [number, number] }[];
+  onPick: (name: string) => void;
+}) {
+  useMapEvents({
+    click(e) {
+      const name = nearestStationTo({ lat: e.latlng.lat, lng: e.latlng.lng }, points);
+      if (name) onPick(name);
+    },
+  });
+  return null;
 }
 
 // Floating duration badge for a route option on the map — the selected
@@ -152,6 +188,8 @@ export function HomeMap({
   onSelectOption,
   reports,
   routePins,
+  pickableStations,
+  onPickStation,
 }: {
   legs?: RouteLeg[];
   routeOptions?: RouteOption[];
@@ -159,10 +197,24 @@ export function HomeMap({
   onSelectOption?: (index: number) => void;
   reports?: UserReport[];
   routePins?: RoutePin[];
+  // When set, taps on the map snap to the nearest of these station names
+  // and call onPickStation — components/report-modal.tsx's "pick a
+  // station" flow requesting a tap directly on this map instead of its
+  // own. Undefined (the normal case) leaves the map's click behavior
+  // untouched.
+  pickableStations?: string[];
+  onPickStation?: (name: string) => void;
 }) {
   const networkSegments = useMemo(() => NETWORK_SEGMENTS, []);
   const hasOptions = !!routeOptions && routeOptions.length > 0;
   const selectedIndex = selectedOptionIndex ?? 0;
+
+  const pickablePoints = useMemo(() => {
+    if (!pickableStations || pickableStations.length === 0) return [];
+    return pickableStations
+      .map((name) => ({ name, coord: STATION_COORDS[name] }))
+      .filter((s): s is { name: string; coord: [number, number] } => !!s.coord);
+  }, [pickableStations]);
 
   // Each pin resolves to up to two markers (origin/destination) — stations
   // missing from STATION_COORDS are silently skipped, same "don't draw
@@ -223,6 +275,7 @@ export function HomeMap({
         url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
       />
       {fitPoints.length > 0 && <FitToPoints points={fitPoints} />}
+      {pickablePoints.length > 0 && onPickStation && <StationPickCatcher points={pickablePoints} onPick={onPickStation} />}
       {networkSegments.map((segment, i) => (
         <Polyline key={`network-${i}`} positions={segment.points} pathOptions={{ color: segment.color, weight: 2, opacity: 0.35 }} />
       ))}
@@ -293,6 +346,11 @@ export function HomeMap({
       {pinMarkers.map((marker) => (
         <Marker key={marker.key} position={marker.coord} icon={stationIcon(marker.color)} />
       ))}
+
+      {onPickStation &&
+        pickablePoints.map((s) => (
+          <Marker key={`pick-${s.name}`} position={s.coord} icon={PICKABLE_STATION_ICON} eventHandlers={{ click: () => onPickStation(s.name) }} />
+        ))}
     </MapContainer>
   );
 }

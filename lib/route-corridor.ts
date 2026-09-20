@@ -10,6 +10,7 @@
 
 import { distanceMeters } from "@/lib/geo-distance";
 import { lineById } from "@/lib/lines";
+import { allStationNames } from "@/lib/route-finder";
 import { STATION_COORDS } from "@/lib/stations";
 import type { RouteLeg } from "@/lib/types";
 
@@ -48,6 +49,17 @@ export function routeCorridorPoints(legs: RouteLeg[]): CorridorPoint[] {
 // scoped to a route, instead of the full ~190-station list.
 export function routeCorridorStationNames(legs: RouteLeg[]): string[] {
   return Array.from(new Set(routeCorridorPoints(legs).map((p) => p.name)));
+}
+
+// The station list a report can be scoped to — a route's own stations
+// when there's route context, or every station on the network (that has
+// coordinates to plot) when there isn't. Shared by both
+// components/report-modal.tsx's Combobox/tap-to-pick-on-the-home-map
+// flow and app/page.tsx's HomeMap invocation, so the two always agree on
+// exactly which stations are pickable.
+export function reportableStationOptions(legs?: RouteLeg[]): string[] {
+  if (legs && legs.length > 0) return routeCorridorStationNames(legs);
+  return allStationNames().filter((name) => !!STATION_COORDS[name]);
 }
 
 export const REPORT_CORRIDOR_METERS = 300;

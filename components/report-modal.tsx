@@ -13,24 +13,23 @@
 //   geolocation requirement at all in this mode; the reporter's own
 //   position (if available) is still recorded as metadata, just not
 //   used to gate submission the way it does in "My location" mode.
-//   Offers both a typeable Combobox and a small tap-to-pick map
-//   (components/report-modal-map.tsx) — either one sets the same
-//   `station` state, so they always stay in sync.
+//   Offers a typeable Combobox, plus a "Tap on the map" button that asks
+//   the home screen's own HomeMap (app/page.tsx) to go into pick mode —
+//   this modal draws no map of its own, so there's only ever the one
+//   map on screen instead of two overlapping/duplicate ones.
 //
 // app/report/page.tsx still exists, but only as a browse-and-vote map
 // (clusters + "Still happening?" voting) — creating a new report always
 // goes through this modal, opened from the home screen's floating report
 // button (app/page.tsx).
 
-import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { Combobox } from "@/components/combobox";
 import { reportCategoryMeta } from "@/lib/report-categories";
-import { allStationNames } from "@/lib/route-finder";
 import {
   nearestCorridorPoint,
+  reportableStationOptions,
   routeCorridorPoints,
-  routeCorridorStationNames,
   REPORT_CORRIDOR_METERS,
   type CorridorPoint,
 } from "@/lib/route-corridor";
@@ -38,17 +37,6 @@ import { STATION_COORDS } from "@/lib/stations";
 import type { RouteLeg } from "@/lib/types";
 import { useDictionary } from "@/lib/use-dictionary";
 import { submitUserReport, type ReportCategory } from "@/lib/user-reports-client";
-
-// react-leaflet touches `window`/`document` at module load — dynamic
-// import with `ssr: false`, same pattern every other Leaflet-using
-// component here follows (app/page.tsx's HomeMap, app/report/page.tsx's
-// ReportMap, etc.).
-const ReportModalMap = dynamic(() => import("@/components/report-modal-map").then((m) => m.ReportModalMap), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-full w-full items-center justify-center text-xs text-foreground/40">Loading map…</div>
-  ),
-});
 
 // Same limit as the `jomkomute_user_reports` table's
 // `coalesce(length(note), 0) <= 280` check constraint — enforced
@@ -68,6 +56,9 @@ export function ReportModal({
   legs,
   onClose,
   onSubmitted,
+  pickedStation,
+  onPickedStationConsumed,
+  onRequestPickOnMap,
 }: {
   // The active route's legs, when the home screen had one selected
   // (app/page.tsx's reportableLegs) — used to scope submission to that
@@ -79,6 +70,18 @@ export function ReportModal({
   legs?: RouteLeg[];
   onClose: () => void;
   onSubmitted?: () => void;
+  // A station name app/page.tsx's HomeMap reported back after a tap in
+  // "pick on the map" mode — consumed once (via the effect below) into
+  // this modal's own `station` state, then acknowledged with
+  // onPickedStationConsumed so the parent clears it and doesn't keep
+  // re-delivering the same pick.
+  pickedStation?: string | null;
+  onPickedStationConsumed?: () => void;
+  // Asks the parent to switch the home screen's map into "tap to pick a
+  // station" mode. Omitted entirely (e.g. if this modal is ever reused
+  // somewhere without a map behind it) simply hides the "Tap on the map"
+  // button — the Combobox alone still works.
+  onRequestPickOnMap?: () => void;
 }) {
   const { t } = useDictionary();
   const categories = reportCategoryMeta(t.reportPage.categories);
@@ -88,17 +91,26 @@ export function ReportModal({
   // With route context, only that route's own stations are pickable —
   // keeps a route-scoped report actually scoped to that route, same
   // intent as the corridor check "My location" mode still runs below.
-  // With no route context, any station on the network is fair game.
-  const stationOptions = useMemo(
-    () => (legs && legs.length > 0 ? routeCorridorStationNames(legs) : allStationNames().filter((name) => !!STATION_COORDS[name])),
-    [legs],
-  );
+  // With no route context, any station on the network is fair game. The
+  // same list app/page.tsx passes to HomeMap for "pick on the map" mode,
+  // so the Combobox and the map always offer exactly the same stations.
+  const stationOptions = useMemo(() => reportableStationOptions(legs), [legs]);
 
   const [mode, setMode] = useState<"location" | "station">("location");
   const [station, setStation] = useState("");
   const [geo, setGeo] = useState<GeoState>({ status: "loading" });
   const [note, setNote] = useState("");
   const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle" });
+
+  // A tap on the main map (relayed from app/page.tsx) always means "I
+  // picked a station" — switch into that mode and adopt it, then tell
+  // the parent it's been consumed.
+  useEffect(() => {
+    if (!pickedStation) return;
+    setMode("station");
+    setStation(pickedStation);
+    onPickedStationConsumed?.();
+  }, [pickedStation, onPickedStationConsumed]);
 
   useEffect(() => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -285,18 +297,26 @@ export function ReportModal({
           </>
         ) : (
           submitState.status !== "success" && (
-            <>
-              <Combobox
-                value={station}
-                onChange={setStation}
-                options={stationOptions}
-                placeholder={t.reportPage.stationPlaceholder}
-                noResultsLabel={t.legsEditor.noStationsFound}
-              />
-              <div className="h-40 w-full overflow-hidden rounded-xl border border-border">
-                <ReportModalMap stations={stationOptions} selected={station} onSelect={setStation} />
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <Combobox
+                  value={station}
+                  onChange={setStation}
+                  options={stationOptions}
+                  placeholder={t.reportPage.stationPlaceholder}
+                  noResultsLabel={t.legsEditor.noStationsFound}
+                />
               </div>
-            </>
+              {onRequestPickOnMap && (
+                <button
+                  type="button"
+                  onClick={onRequestPickOnMap}
+                  className="shrink-0 cursor-pointer rounded-lg border border-border px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-[var(--nav-hover-bg)]"
+                >
+                  {t.reportPage.pickOnMap}
+                </button>
+              )}
+            </div>
           )
         )}
 
