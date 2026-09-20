@@ -99,6 +99,14 @@ export default function HomePage() {
   // a separate page (see components/report-modal.tsx). /report itself is
   // still reachable directly, now repurposed as a browse-and-vote map.
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  // Waze-style bottom-sheet collapse: tap the handle (or the collapsed
+  // strip itself) to shrink the panel down to a thin, tappable bar so more
+  // of the map is visible, and tap it again to restore full content. This
+  // applies uniformly across all three panel states below (idle finder,
+  // route-options, active-route) rather than being wired into just one —
+  // see the shared `panelSummary` computed further down for what the
+  // collapsed strip shows per state.
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
   const exceptions = useAllExceptions();
   const {
     origin: finderOrigin,
@@ -143,6 +151,7 @@ export default function HomePage() {
     setOneTimeRoute(null);
     setRouteOptions(null);
     setActiveRoute(route);
+    setIsPanelCollapsed(false);
   }
 
   function handleFindRoute() {
@@ -153,6 +162,7 @@ export default function HomePage() {
       setSelectedOptionIndex(0);
       setShowLeaveLater(false);
       setRouteOptions(options);
+      setIsPanelCollapsed(false);
     }
   }
 
@@ -160,6 +170,7 @@ export default function HomePage() {
     setRouteOptions(null);
     setShowLeaveLater(false);
     setOneTimeRoute({ legs: option.legs, origin: finderOrigin, destination: finderDestination });
+    setIsPanelCollapsed(false);
   }
 
   function resetToOverview() {
@@ -168,6 +179,7 @@ export default function HomePage() {
     setRouteOptions(null);
     setFinderNotFound(false);
     setShowLeaveLater(false);
+    setIsPanelCollapsed(false);
   }
 
   // Every point (in order) along an option's legs, for the "nearby
@@ -353,6 +365,21 @@ export default function HomePage() {
       ? `/report?legs=${encodeURIComponent(JSON.stringify(reportableLegs))}`
       : "/report";
 
+  // One-line context shown on the collapsed strip — mirrors whichever of
+  // the three panel states is current, same priority order as the
+  // full-panel ternary below (activeRoute -> routeOptions -> oneTimeRoute
+  // -> idle finder).
+  const panelSummary = activeRoute
+    ? `${activeRoute.label} · ${activeRoute.destinationStation}`
+    : routeOptions
+      ? (() => {
+          const selected = routeOptions[selectedOptionIndex] ?? routeOptions[0];
+          return `${Math.round(selected.totalMinutes)} min · ${finderDestination}`;
+        })()
+      : oneTimeRoute
+        ? t.homePage.finderSummary(oneTimeRoute.origin, oneTimeRoute.destination)
+        : t.homePage.whereTo;
+
   return (
     <Shell>
       <div className="relative h-[calc(100vh-3.5rem)] w-full overflow-hidden">
@@ -389,8 +416,34 @@ export default function HomePage() {
           </svg>
         </button>
 
-        {activeRoute ? (
+        {/* Waze-style collapsible bottom sheet: tapping the handle strip
+            below shrinks whichever of the four panel states is current
+            down to a thin, tappable bar so more of the map is visible,
+            without losing the underlying state (activeRoute/routeOptions/
+            oneTimeRoute/idle finder are all untouched while collapsed —
+            only the rendered panel changes). Precedent for the
+            tap-to-toggle "found summary" card pattern is
+            components/route-form.tsx's collapsed finder card. */}
+        {isPanelCollapsed ? (
+          <button
+            type="button"
+            onClick={() => setIsPanelCollapsed(false)}
+            aria-label={t.homePage.whereTo}
+            className="absolute inset-x-0 bottom-0 z-[1000] flex w-full cursor-pointer flex-col items-center gap-1.5 rounded-t-2xl border-t border-border bg-background px-4 pt-2 pb-3 text-left shadow-[0_-4px_16px_rgba(0,0,0,0.12)] transition-colors hover:bg-muted md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4"
+          >
+            <span className="h-1.5 w-10 shrink-0 rounded-full bg-foreground/20" aria-hidden="true" />
+            <span className="w-full truncate text-center text-sm font-medium text-foreground">{panelSummary}</span>
+          </button>
+        ) : activeRoute ? (
           <div className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-2 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4">
+            <button
+              type="button"
+              onClick={() => setIsPanelCollapsed(true)}
+              aria-label="Collapse panel"
+              className="-mt-1 flex w-full cursor-pointer items-center justify-center pb-1"
+            >
+              <span className="h-1.5 w-10 rounded-full bg-foreground/20" aria-hidden="true" />
+            </button>
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 flex-col gap-0.5">
                 <span className="truncate text-sm font-semibold text-foreground">{activeRoute.label}</span>
@@ -461,6 +514,14 @@ export default function HomePage() {
           </div>
         ) : routeOptions ? (
           <div className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-3 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4">
+            <button
+              type="button"
+              onClick={() => setIsPanelCollapsed(true)}
+              aria-label="Collapse panel"
+              className="-mt-1 flex w-full cursor-pointer items-center justify-center pb-1"
+            >
+              <span className="h-1.5 w-10 rounded-full bg-foreground/20" aria-hidden="true" />
+            </button>
             {(() => {
               const selected = routeOptions[selectedOptionIndex] ?? routeOptions[0];
               const lineNames = Array.from(new Set(selected.legs.map((leg) => lineById(leg.line)?.name ?? leg.line))).join(" → ");
@@ -572,6 +633,14 @@ export default function HomePage() {
           </div>
         ) : oneTimeRoute ? (
           <div className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-2 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4">
+            <button
+              type="button"
+              onClick={() => setIsPanelCollapsed(true)}
+              aria-label="Collapse panel"
+              className="-mt-1 flex w-full cursor-pointer items-center justify-center pb-1"
+            >
+              <span className="h-1.5 w-10 rounded-full bg-foreground/20" aria-hidden="true" />
+            </button>
             <div className="flex min-w-0 flex-col gap-0.5">
               <span className="truncate text-sm font-semibold text-foreground">
                 {t.homePage.finderSummary(oneTimeRoute.origin, oneTimeRoute.destination)}
@@ -596,6 +665,14 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-3 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4">
+            <button
+              type="button"
+              onClick={() => setIsPanelCollapsed(true)}
+              aria-label="Collapse panel"
+              className="-mt-1 flex w-full cursor-pointer items-center justify-center pb-1"
+            >
+              <span className="h-1.5 w-10 rounded-full bg-foreground/20" aria-hidden="true" />
+            </button>
             <div className="flex flex-col gap-2 rounded-xl border border-border p-3">
               <div className="flex items-center gap-2">
                 <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true" className="shrink-0 text-foreground/50">
