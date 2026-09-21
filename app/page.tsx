@@ -15,6 +15,7 @@ import { Shell } from "@/components/shell";
 import { mockCrowdFor, type CrowdMock } from "@/lib/crowd-mock";
 import { distanceMeters } from "@/lib/geo-distance";
 import { lineById } from "@/lib/lines";
+import { useMapLayerPrefs } from "@/lib/map-layer-prefs";
 import { computeNextRoute, type NextRoute } from "@/lib/next-route";
 import {
   formatClockTime,
@@ -69,6 +70,31 @@ function QuickAccessCard({
   );
 }
 
+// One row in the map-layers popover — a labelled switch, same on/off
+// track-and-thumb shape as a native checkbox styled as a toggle, kept
+// local to this file since nothing else needs it.
+function LayerToggleRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-2 text-left text-sm text-foreground transition-colors hover:bg-[var(--nav-hover-bg)]"
+    >
+      <span className="truncate">{label}</span>
+      <span
+        aria-hidden="true"
+        className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${checked ? "bg-primary" : "bg-foreground/20"}`}
+      >
+        <span
+          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${checked ? "translate-x-4" : "translate-x-0.5"}`}
+        />
+      </span>
+    </button>
+  );
+}
+
 export default function HomePage() {
   const { t } = useDictionary();
   const { routes } = useSavedRoutes();
@@ -107,6 +133,36 @@ export default function HomePage() {
   // that station selected; mapPickedStation carries the result across
   // until the modal acknowledges it via onPickedStationConsumed.
   const [mapPickedStation, setMapPickedStation] = useState<string | null>(null);
+  // Map layer toggles (station-clickable / live reports / station names)
+  // — persisted across sessions, see lib/map-layer-prefs.ts.
+  const { prefs: mapPrefs, setPref: setMapPref } = useMapLayerPrefs();
+  const [layersOpen, setLayersOpen] = useState(false);
+  // "Locate me" — the reporter's own GPS fix, flown to on the map (see
+  // components/home-map.tsx's myLocation prop). requestId is bumped on
+  // every press so pressing again re-flies even to an unchanged fix.
+  const [myLocation, setMyLocation] = useState<{ lat: number; lng: number; requestId: number } | null>(null);
+  const [locateError, setLocateError] = useState<string | null>(null);
+
+  function handleLocateMe() {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setLocateError(t.reportPage.locationUnavailable);
+      return;
+    }
+    setLocateError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setMyLocation((prev) => ({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          requestId: (prev?.requestId ?? 0) + 1,
+        }));
+      },
+      (err) => {
+        setLocateError(err.code === err.PERMISSION_DENIED ? t.reportPage.locationDenied : t.reportPage.locationUnavailable);
+      },
+      { enableHighAccuracy: true, timeout: 10_000 },
+    );
+  }
   // Waze-style bottom-sheet collapse: tap the handle (or the collapsed
   // strip itself) to shrink the panel down to a thin, tappable bar so more
   // of the map is visible, and tap it again to restore full content. This
@@ -481,9 +537,12 @@ export default function HomePage() {
           selectedOptionIndex={selectedOptionIndex}
           onSelectOption={setSelectedOptionIndex}
           reports={reports}
-          pickableStations={!isReportModalOpen ? reportStationOptions : undefined}
+          showReports={mapPrefs.showReports}
+          showStationNames={mapPrefs.showStationNames}
+          myLocation={myLocation}
+          pickableStations={!isReportModalOpen && mapPrefs.stationsClickable ? reportStationOptions : undefined}
           onPickStation={
-            !isReportModalOpen
+            !isReportModalOpen && mapPrefs.stationsClickable
               ? (name) => {
                   setMapPickedStation(name);
                   setIsReportModalOpen(true);
@@ -516,6 +575,74 @@ export default function HomePage() {
             <circle cx="10" cy="14.3" r="1" fill="currentColor" />
           </svg>
         </button>
+
+        {/* "Locate me" — flies the map to the browser's own geolocation
+            fix (components/home-map.tsx's myLocation prop). Stacked
+            directly above the report FAB, same corner, same reasoning
+            for being a plain fixed button rather than a Leaflet control. */}
+        <button
+          type="button"
+          onClick={handleLocateMe}
+          aria-label={t.homePage.locateMe}
+          title={t.homePage.locateMe}
+          className="absolute right-4 bottom-56 z-[1100] flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-background text-foreground shadow-[0_4px_12px_rgba(0,0,0,0.25)] transition-transform hover:scale-105 active:scale-95 md:right-6"
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="10" cy="10" r="2.5" fill="currentColor" />
+            <path
+              d="M10 2v2.5M10 15.5V18M2 10h2.5M15.5 10H18"
+              stroke="currentColor"
+              strokeWidth="1.75"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
+        {locateError && (
+          <div className="absolute right-4 bottom-[17.5rem] z-[1100] max-w-[14rem] rounded-lg bg-background px-3 py-2 text-xs text-[var(--destructive)] shadow-[0_4px_12px_rgba(0,0,0,0.25)] md:right-6">
+            {locateError}
+          </div>
+        )}
+
+        {/* Map layer toggles — components/home-map.tsx's stationsClickable/
+            showReports/showStationNames props, persisted via
+            lib/map-layer-prefs.ts. Top-right so it never collides with the
+            report FAB/locate-me stack (bottom-right) or the bottom sheet. */}
+        <div className="absolute top-4 right-4 z-[1100] md:right-6">
+          <button
+            type="button"
+            onClick={() => setLayersOpen((o) => !o)}
+            aria-label={t.homePage.mapLayers}
+            title={t.homePage.mapLayers}
+            aria-expanded={layersOpen}
+            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-background text-foreground shadow-[0_4px_12px_rgba(0,0,0,0.25)] transition-transform hover:scale-105 active:scale-95"
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M10 2.5 2.5 7 10 11.5 17.5 7Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+              <path d="M2.5 10.5 10 15 17.5 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M2.5 14 10 18.5 17.5 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+
+          {layersOpen && (
+            <div className="animate-modal-in absolute top-14 right-0 flex w-56 flex-col gap-1 rounded-xl border border-border bg-background p-2 shadow-[0_4px_16px_rgba(0,0,0,0.2)]">
+              <LayerToggleRow
+                label={t.homePage.stationsClickable}
+                checked={mapPrefs.stationsClickable}
+                onChange={(v) => setMapPref("stationsClickable", v)}
+              />
+              <LayerToggleRow
+                label={t.homePage.showReports}
+                checked={mapPrefs.showReports}
+                onChange={(v) => setMapPref("showReports", v)}
+              />
+              <LayerToggleRow
+                label={t.homePage.showStationNames}
+                checked={mapPrefs.showStationNames}
+                onChange={(v) => setMapPref("showStationNames", v)}
+              />
+            </div>
+          )}
+        </div>
 
         {/* Waze-style collapsible bottom sheet: tapping the handle strip
             below shrinks whichever of the four panel states is current

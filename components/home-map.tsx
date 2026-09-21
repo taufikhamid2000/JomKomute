@@ -13,7 +13,7 @@
 import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo } from "react";
 import L from "leaflet";
-import { MapContainer, Marker, Polyline, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, Marker, Polyline, Tooltip, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import { distanceMeters } from "@/lib/geo-distance";
 import { lineById } from "@/lib/lines";
 import { NETWORK_SEGMENTS } from "@/lib/network-segments";
@@ -163,6 +163,34 @@ function FitToPoints({ points }: { points: [number, number][] }) {
   return null;
 }
 
+const MY_LOCATION_ZOOM = 16;
+
+// A blue "you are here" dot, distinct from every other marker style here
+// (plain dots for stations, pins for routes, category icons for
+// reports) — same pulsing-ring treatment as PICKABLE_STATION_ICON above,
+// but a different color so the two are never confused for each other.
+const MY_LOCATION_ICON = L.divIcon({
+  className: "",
+  html: `<div style="position:relative;width:16px;height:16px;">
+    <span class="animate-ping" style="position:absolute;inset:0;border-radius:9999px;background:rgba(37,99,235,0.4);"></span>
+    <div style="position:relative;width:16px;height:16px;border-radius:9999px;background:#2563eb;border:3px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.45);"></div>
+  </div>`,
+  iconSize: [16, 16],
+  iconAnchor: [8, 8],
+});
+
+// Flies to the reporter's own position whenever it changes — keyed on
+// `requestId` (not just lat/lng) so pressing "locate me" again re-centers
+// even if the browser hands back the exact same fix as last time.
+function FlyToMyLocation({ lat, lng, requestId }: { lat: number; lng: number; requestId: number }) {
+  const map = useMap();
+  useEffect(() => {
+    map.flyTo([lat, lng], Math.max(map.getZoom(), MY_LOCATION_ZOOM));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-fly on requestId even if lat/lng happen to repeat
+  }, [map, requestId]);
+  return null;
+}
+
 
 type LegSegment = { color: string; points: { name: string; coord: [number, number] }[] };
 
@@ -194,6 +222,9 @@ export function HomeMap({
   routePins,
   pickableStations,
   onPickStation,
+  showStationNames,
+  showReports,
+  myLocation,
 }: {
   legs?: RouteLeg[];
   routeOptions?: RouteOption[];
@@ -211,6 +242,21 @@ export function HomeMap({
   // clickable instead of drawing a second marker on top.
   pickableStations?: string[];
   onPickStation?: (name: string) => void;
+  // "Station names" layer toggle (app/page.tsx's map-layers panel, see
+  // lib/map-layer-prefs.ts) — adds a permanent name label to every
+  // station marker this map already draws. Doesn't add any new markers
+  // of its own, so it's only ever as noisy as whatever's already shown.
+  showStationNames?: boolean;
+  // "Live reports" layer toggle — hides nearbyReportClusters entirely
+  // when false. Defaults to true (undefined means "not passed a
+  // preference", not "explicitly off") so every other HomeMap caller
+  // (app/routes/page.tsx's mini-map, etc.) keeps its current behavior.
+  showReports?: boolean;
+  // The reporter's own position, set by app/page.tsx's "locate me"
+  // button — renders a "you are here" dot and flies the map there.
+  // requestId lets pressing the button again re-fly even to an
+  // unchanged position (see FlyToMyLocation above).
+  myLocation?: { lat: number; lng: number; requestId: number } | null;
 }) {
   const networkSegments = useMemo(() => NETWORK_SEGMENTS, []);
   const hasOptions = !!routeOptions && routeOptions.length > 0;
@@ -288,6 +334,7 @@ export function HomeMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reports, relevantRoutePoints]);
   const nearbyReportClusters = useMemo(() => clusterReports(nearbyReports), [nearbyReports]);
+  const shouldShowReports = showReports !== false;
 
   return (
     <MapContainer center={center} zoom={DEFAULT_ZOOM} scrollWheelZoom className="h-full w-full">
@@ -338,7 +385,13 @@ export function HomeMap({
                   position={p.coord}
                   icon={icon}
                   eventHandlers={onPickStation ? { click: () => onPickStation(p.name) } : undefined}
-                />
+                >
+                  {showStationNames && (
+                    <Tooltip permanent direction="top" offset={[0, -6]} opacity={0.9}>
+                      {p.name}
+                    </Tooltip>
+                  )}
+                </Marker>
               ));
             });
           })
@@ -350,7 +403,13 @@ export function HomeMap({
                 position={p.coord}
                 icon={icon}
                 eventHandlers={onPickStation ? { click: () => onPickStation(p.name) } : undefined}
-              />
+              >
+                {showStationNames && (
+                  <Tooltip permanent direction="top" offset={[0, -6]} opacity={0.9}>
+                    {p.name}
+                  </Tooltip>
+                )}
+              </Marker>
             ));
           })}
 
@@ -370,13 +429,14 @@ export function HomeMap({
           );
         })}
 
-      {nearbyReportClusters.map((cluster) => (
-        <Marker
-          key={`report-${cluster.id}`}
-          position={[cluster.lat, cluster.lng]}
-          icon={reportIcon(cluster.category, cluster.reports.length)}
-        />
-      ))}
+      {shouldShowReports &&
+        nearbyReportClusters.map((cluster) => (
+          <Marker
+            key={`report-${cluster.id}`}
+            position={[cluster.lat, cluster.lng]}
+            icon={reportIcon(cluster.category, cluster.reports.length)}
+          />
+        ))}
 
       {pinMarkers.map((marker) => (
         <Marker key={marker.key} position={marker.coord} icon={stationIcon(marker.color)} />
@@ -384,8 +444,21 @@ export function HomeMap({
 
       {onPickStation &&
         pickablePoints.map((s) => (
-          <Marker key={`pick-${s.name}`} position={s.coord} icon={PICKABLE_STATION_ICON} eventHandlers={{ click: () => onPickStation(s.name) }} />
+          <Marker key={`pick-${s.name}`} position={s.coord} icon={PICKABLE_STATION_ICON} eventHandlers={{ click: () => onPickStation(s.name) }}>
+            {showStationNames && (
+              <Tooltip permanent direction="top" offset={[0, -8]} opacity={0.9}>
+                {s.name}
+              </Tooltip>
+            )}
+          </Marker>
         ))}
+
+      {myLocation && (
+        <>
+          <FlyToMyLocation lat={myLocation.lat} lng={myLocation.lng} requestId={myLocation.requestId} />
+          <Marker position={[myLocation.lat, myLocation.lng]} icon={MY_LOCATION_ICON} />
+        </>
+      )}
     </MapContainer>
   );
 }
