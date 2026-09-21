@@ -21,5 +21,6 @@ export function supabaseServer() {
 
   return createClient(url, serviceKey, {
     auth: { persistSession: false },
+    db: { schema: "jomkomute" },
   });
 }

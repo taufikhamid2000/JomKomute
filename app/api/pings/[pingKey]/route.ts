@@ -61,7 +61,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   const supabase = supabaseServer();
-  const { error } = await supabase.from("jomkomute_planned_trip_pings").upsert(
+  const { error } = await supabase.from("planned_trip_pings").upsert(
     {
       ping_key: pingKey,
       station: body.station,
@@ -88,7 +88,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
   const supabase = supabaseServer();
   // No-op if it doesn't exist, per openapi.yaml — delete() doesn't error
   // on zero matched rows.
-  const { error } = await supabase.from("jomkomute_planned_trip_pings").delete().eq("ping_key", pingKey);
+  const { error } = await supabase.from("planned_trip_pings").delete().eq("ping_key", pingKey);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

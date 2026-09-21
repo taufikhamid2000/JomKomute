@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
   const supabase = supabaseServer();
   const { count, error } = await supabase
-    .from("jomkomute_planned_trip_pings")
+    .from("planned_trip_pings")
     .select("*", { count: "exact", head: true })
     .eq("station", station)
     .eq("trip_date", date)

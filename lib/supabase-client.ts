@@ -20,6 +20,8 @@ export function supabaseBrowser() {
     );
   }
 
-  client = createClient(url, anonKey);
+  client = createClient(url, anonKey, {
+    db: { schema: "jomkomute" },
+  });
   return client;
 }

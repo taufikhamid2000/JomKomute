@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 
   const supabase = supabaseServer();
   const { data, error } = await supabase
-    .from("jomkomute_planned_trip_pings")
+    .from("planned_trip_pings")
     .select("time_bucket")
     .eq("station", station)
     .eq("trip_date", date);
