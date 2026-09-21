@@ -6,7 +6,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 
-let client: ReturnType<typeof createClient> | null = null;
+let client: ReturnType<typeof createClient<any, any, "jomkomute">> | null = null;
 
 export function supabaseBrowser() {
   if (client) return client;
