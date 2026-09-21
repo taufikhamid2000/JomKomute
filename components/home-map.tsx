@@ -328,8 +328,14 @@ export function HomeMap({
     ? (optionSegments[selectedIndex] ?? []).flatMap((s) => s.points.map((p) => p.coord))
     : singlePoints;
 
+  // With no route drawn (the idle home screen), there's no corridor to
+  // scope by — show every report, same as app/report/page.tsx's
+  // browse-and-vote map, rather than silently showing none. Only once a
+  // route IS drawn does this narrow down to "reports near this specific
+  // route", which is the actual point of relevantRoutePoints.
   const nearbyReports = useMemo(() => {
-    if (!reports || reports.length === 0 || relevantRoutePoints.length === 0) return [];
+    if (!reports || reports.length === 0) return [];
+    if (relevantRoutePoints.length === 0) return reports;
     return reports.filter((r) => isNearRoute([r.lat, r.lng], relevantRoutePoints));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reports, relevantRoutePoints]);
