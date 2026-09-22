@@ -52,5 +52,13 @@ export function lineById(id: string) {
   return LINES.find((l) => l.id === id);
 }
 
+// Every line that stops at `station` (or reaches it via a walkway-linked
+// counterpart) — the "no exclusion" counterpart to linesServing above,
+// for callers that want the full set (e.g. components/station-popup.tsx's
+// line badges) rather than transfer-only options.
+export function linesForStation(station: string) {
+  return LINES.filter((l) => stationNameOnLine(station, l.id) !== undefined);
+}
+
 export type { LineId };
 export { LINES };

@@ -5,6 +5,7 @@
 // window and aggregates by line_id for app/operating-hours/page.tsx's
 // per-line status badge.
 
+import { linesForStation } from "@/lib/lines";
 import type { ReportCategory, UserReport } from "@/lib/user-reports-client";
 
 // How far back a report still counts toward "current" status — reports
@@ -51,6 +52,19 @@ export function lineStatusFor(recentLineReports: UserReport[]): LineStatus {
   }
 
   return { level: "reported", count: recentLineReports.length, worstCategory };
+}
+
+// A single station's status — the worst status across every line that
+// serves it (a station on two lines is "reported" if either one is),
+// used by the station info popup (components/station-popup.tsx) rather
+// than per-line like lineStatusesByLine below.
+export function stationStatusFor(reports: UserReport[], station: string, now: Date = new Date()): LineStatus {
+  const lineIds = new Set<string>(linesForStation(station).map((l) => l.id));
+  const cutoff = now.getTime() - STATUS_WINDOW_MS;
+  const recent = reports.filter(
+    (r) => r.lineId && lineIds.has(r.lineId) && new Date(r.createdAt).getTime() >= cutoff,
+  );
+  return lineStatusFor(recent);
 }
 
 // Convenience: derive every line's status in one pass over the report

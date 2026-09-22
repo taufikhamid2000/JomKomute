@@ -12,6 +12,7 @@ import { ChangePlanModal } from "@/components/change-plan-modal";
 import { Combobox } from "@/components/combobox";
 import { ReportModal } from "@/components/report-modal";
 import { Shell } from "@/components/shell";
+import { StationPopup } from "@/components/station-popup";
 import { mockCrowdFor, type CrowdMock } from "@/lib/crowd-mock";
 import { distanceMeters } from "@/lib/geo-distance";
 import { lineById } from "@/lib/lines";
@@ -129,9 +130,13 @@ export default function HomePage() {
   // Stations are directly tappable on this page's own HomeMap whenever
   // the report modal isn't already covering it (see the HomeMap call
   // below) — components/report-modal.tsx draws no map of its own.
-  // Tapping one opens the modal already in "pick a station" mode with
-  // that station selected; mapPickedStation carries the result across
+  // Tapping one opens components/station-popup.tsx (line badges + live
+  // status) rather than jumping straight into the report flow; that
+  // popup's own "Report an issue" button is what sets mapPickedStation
+  // and opens the report modal, already in "pick a station" mode with
+  // that station selected — mapPickedStation carries the result across
   // until the modal acknowledges it via onPickedStationConsumed.
+  const [stationPopup, setStationPopup] = useState<string | null>(null);
   const [mapPickedStation, setMapPickedStation] = useState<string | null>(null);
   // Map layer toggles (station-clickable / live reports / station names)
   // — persisted across sessions, see lib/map-layer-prefs.ts.
@@ -540,14 +545,11 @@ export default function HomePage() {
           showReports={mapPrefs.showReports}
           showStationNames={mapPrefs.showStationNames}
           myLocation={myLocation}
-          pickableStations={!isReportModalOpen && mapPrefs.stationsClickable ? reportStationOptions : undefined}
+          pickableStations={
+            !isReportModalOpen && !stationPopup && mapPrefs.stationsClickable ? reportStationOptions : undefined
+          }
           onPickStation={
-            !isReportModalOpen && mapPrefs.stationsClickable
-              ? (name) => {
-                  setMapPickedStation(name);
-                  setIsReportModalOpen(true);
-                }
-              : undefined
+            !isReportModalOpen && !stationPopup && mapPrefs.stationsClickable ? (name) => setStationPopup(name) : undefined
           }
         />
 
@@ -1019,6 +1021,18 @@ export default function HomePage() {
 
       {changePlanOpen && activeNext && (
         <ChangePlanModal date={activeNext.date} routes={routes} onClose={() => setChangePlanOpen(false)} />
+      )}
+      {stationPopup && (
+        <StationPopup
+          station={stationPopup}
+          reports={reports}
+          onClose={() => setStationPopup(null)}
+          onReport={() => {
+            setMapPickedStation(stationPopup);
+            setStationPopup(null);
+            setIsReportModalOpen(true);
+          }}
+        />
       )}
       {isReportModalOpen && (
         <ReportModal
