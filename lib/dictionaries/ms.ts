@@ -153,6 +153,8 @@ export const ms: Dictionary = {
     unfollow: "Nyahikuti laluan ini",
     followedOnly: "Tunjukkan laluan yang diikuti sahaja",
     noFollowedLines: "Anda belum ikuti sebarang laluan — ketik bintang pada laluan untuk sematkan di sini.",
+    notifyFollowedLines: "Beritahu saya tentang laluan yang diikuti",
+    notifyError: "Gagal menghidupkan pemberitahuan. Cuba lagi.",
   },
   routeForm: {
     title: "Tambah laluan",

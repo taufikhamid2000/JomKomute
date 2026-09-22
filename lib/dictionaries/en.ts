@@ -151,6 +151,8 @@ export const en = {
     unfollow: "Unfollow this line",
     followedOnly: "Show followed lines only",
     noFollowedLines: "You haven't followed any lines yet — tap the star on a line to pin it here.",
+    notifyFollowedLines: "Notify me about followed lines",
+    notifyError: "Couldn't turn on notifications. Try again.",
   },
   routeForm: {
     title: "Add a route",

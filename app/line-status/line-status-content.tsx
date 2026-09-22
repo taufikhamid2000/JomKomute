@@ -17,6 +17,13 @@ import { LINES } from "@/lib/lines";
 import { lineStatusesByLine, recentReportsForLine, type LineStatus } from "@/lib/line-status";
 import { nearestStationTo } from "@/lib/nearest-station";
 import { formatClockTime, getLineOperatingHours, isWeekend, type LineOperatingHours } from "@/lib/operating-hours-client";
+import {
+  getExistingPushSubscription,
+  isPushSupported,
+  subscribeToPush,
+  syncPushLineIds,
+  unsubscribeFromPush,
+} from "@/lib/push-notifications";
 import { reportCategoryMeta } from "@/lib/report-categories";
 import { STATION_COORDS } from "@/lib/stations";
 import { useDictionary } from "@/lib/use-dictionary";
@@ -58,6 +65,46 @@ export function LineStatusContent() {
   const [followedOnly, setFollowedOnly] = useState(false);
   const { followed, toggleFollowed } = useFollowedLines();
   const categoryMeta = reportCategoryMeta(t.reportPage.categories);
+
+  // null while the initial check is in flight — kept separate from
+  // false so the toggle doesn't flash "off" for a moment before the
+  // real (possibly "on") state comes back from the browser's own
+  // PushSubscription (see lib/push-notifications.ts's header for why
+  // that, not a localStorage flag, is the source of truth here).
+  const [notifyEnabled, setNotifyEnabled] = useState<boolean | null>(null);
+  const [notifyBusy, setNotifyBusy] = useState(false);
+  const [notifyError, setNotifyError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getExistingPushSubscription()
+      .then((sub) => setNotifyEnabled(!!sub))
+      .catch(() => setNotifyEnabled(false));
+  }, []);
+
+  // Keeps app/api/push/check's per-subscription line list current
+  // whenever you follow/unfollow a line while notifications are
+  // already on — no new permission prompt, just a quiet re-sync.
+  useEffect(() => {
+    if (notifyEnabled) syncPushLineIds(Array.from(followed)).catch(() => {});
+  }, [followed, notifyEnabled]);
+
+  async function handleToggleNotify() {
+    setNotifyBusy(true);
+    setNotifyError(null);
+    try {
+      if (notifyEnabled) {
+        await unsubscribeFromPush();
+        setNotifyEnabled(false);
+      } else {
+        await subscribeToPush(Array.from(followed));
+        setNotifyEnabled(true);
+      }
+    } catch (err) {
+      setNotifyError(err instanceof Error ? err.message : t.operatingHoursPage.notifyError);
+    } finally {
+      setNotifyBusy(false);
+    }
+  }
 
   // Shared by the initial fetch below and a vote/delete inside an
   // expanded station's report list (components/report-row.tsx) — either
@@ -127,16 +174,32 @@ export function LineStatusContent() {
           <p className="text-sm text-foreground/60">{t.operatingHoursPage.description}</p>
         </div>
 
-        <label className="flex w-fit cursor-pointer items-center gap-2 text-xs text-foreground/70">
-          <input
-            type="checkbox"
-            checked={followedOnly}
-            onChange={(e) => setFollowedOnly(e.target.checked)}
-            disabled={followed.size === 0}
-            className="h-3.5 w-3.5 cursor-pointer accent-primary disabled:cursor-not-allowed"
-          />
-          {t.operatingHoursPage.followedOnly}
-        </label>
+        <div className="flex flex-wrap items-center gap-4">
+          <label className="flex w-fit cursor-pointer items-center gap-2 text-xs text-foreground/70">
+            <input
+              type="checkbox"
+              checked={followedOnly}
+              onChange={(e) => setFollowedOnly(e.target.checked)}
+              disabled={followed.size === 0}
+              className="h-3.5 w-3.5 cursor-pointer accent-primary disabled:cursor-not-allowed"
+            />
+            {t.operatingHoursPage.followedOnly}
+          </label>
+
+          {isPushSupported() && (
+            <label className="flex w-fit cursor-pointer items-center gap-2 text-xs text-foreground/70">
+              <input
+                type="checkbox"
+                checked={notifyEnabled ?? false}
+                onChange={handleToggleNotify}
+                disabled={notifyEnabled === null || notifyBusy || (notifyEnabled === false && followed.size === 0)}
+                className="h-3.5 w-3.5 cursor-pointer accent-primary disabled:cursor-not-allowed"
+              />
+              {t.operatingHoursPage.notifyFollowedLines}
+            </label>
+          )}
+        </div>
+        {notifyError && <p className="text-xs text-[var(--destructive)]">{notifyError}</p>}
 
         <div className="flex flex-col gap-3">
           {orderedLines.length === 0 && (
