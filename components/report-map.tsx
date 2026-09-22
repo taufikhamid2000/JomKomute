@@ -8,15 +8,16 @@
 // otherwise break `next build`.
 
 import "leaflet/dist/leaflet.css";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import L from "leaflet";
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from "react-leaflet";
+import { ReportRow } from "@/components/report-row";
 import type { en } from "@/lib/dictionaries/en";
 import { NETWORK_SEGMENTS } from "@/lib/network-segments";
 import { reportMarkerHtml, type ReportCategoryMeta } from "@/lib/report-categories";
 import { clusterReports } from "@/lib/report-clusters";
 import type { CorridorPoint } from "@/lib/route-corridor";
-import { getMyVoteFor, ReportSubmitError, submitReportVote, type ReportVote, type UserReport } from "@/lib/user-reports-client";
+import type { UserReport } from "@/lib/user-reports-client";
 
 type ReportPageDictionary = (typeof en)["reportPage"];
 
@@ -46,81 +47,6 @@ function FitToCorridor({ points }: { points: [number, number][] }) {
     map.fitBounds(L.latLngBounds(points), { padding: [32, 32] });
   }, [map, points]);
   return null;
-}
-
-// One report's row inside a cluster popup: its time, plus a "Still
-// happening?" Yes/No once, or a plain confirmation of what this device
-// already said (see lib/user-reports-client.ts's getMyVoteFor — purely a
-// UI convenience, not authoritative). Its own state (not lifted to
-// ReportMap) since each row's vote is independent and popups already
-// unmount/remount per Leaflet's own lifecycle.
-function ReportVoteRow({ report, t, onVoted }: { report: UserReport; t: ReportPageDictionary; onVoted?: () => void }) {
-  const [vote, setVote] = useState<ReportVote | null>(() => getMyVoteFor(report.id));
-  const [submitting, setSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  async function handleVote(next: ReportVote) {
-    setSubmitting(true);
-    setErrorMessage(null);
-    try {
-      await submitReportVote(report.id, next);
-      setVote(next);
-      // A dispute vote can push a report past the visibility threshold
-      // (see the jomkomute_user_reports_visible view) — re-fetch so it
-      // drops off the map/list live instead of waiting for the next
-      // unrelated refresh.
-      onVoted?.();
-    } catch (err) {
-      // Same offline/server/unknown split as components/report-modal.tsx's
-      // submitErrorMessage, including surfacing the raw error message in
-      // the UI itself (no error tracking set up for this prototype, so
-      // devtools console isn't a reliable way to catch it after the fact).
-      if (err instanceof ReportSubmitError) {
-        if (err.reason === "offline") {
-          setErrorMessage(t.errorOffline);
-        } else {
-          const detail = err.message ? ` (${err.message})` : "";
-          setErrorMessage(`${err.reason === "server" ? t.errorServer : t.voteError}${detail}`);
-        }
-      } else {
-        setErrorMessage(t.voteError);
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  return (
-    <div className="flex items-center justify-between gap-2 border-t border-border pt-1.5 first:border-t-0 first:pt-0">
-      <span className="text-xs text-foreground/60">
-        {new Date(report.createdAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
-      </span>
-      {vote ? (
-        <span className="text-xs text-foreground/50">{vote === "confirm" ? t.youConfirmed : t.youDisputed}</span>
-      ) : (
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-foreground/50">{t.stillHappening}</span>
-          <button
-            type="button"
-            disabled={submitting}
-            onClick={() => handleVote("confirm")}
-            className="cursor-pointer rounded px-1.5 py-0.5 text-xs font-medium text-foreground hover:bg-[var(--nav-hover-bg)] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {t.confirmVote}
-          </button>
-          <button
-            type="button"
-            disabled={submitting}
-            onClick={() => handleVote("dispute")}
-            className="cursor-pointer rounded px-1.5 py-0.5 text-xs font-medium text-foreground hover:bg-[var(--nav-hover-bg)] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {t.disputeVote}
-          </button>
-        </div>
-      )}
-      {errorMessage && <span className="text-xs text-[var(--destructive)]">{errorMessage}</span>}
-    </div>
-  );
 }
 
 export function ReportMap({
@@ -176,7 +102,7 @@ export function ReportMap({
               <div className="flex min-w-[10rem] flex-col gap-1.5">
                 <p className="text-xs font-medium">{meta.label}</p>
                 {cluster.reports.map((r) => (
-                  <ReportVoteRow key={r.id} report={r} t={t} onVoted={onVoted} />
+                  <ReportRow key={r.id} report={r} t={t} onVoted={onVoted} onDeleted={onVoted} />
                 ))}
               </div>
             </Popup>

@@ -6,7 +6,7 @@ import type { MetadataRoute } from "next";
 // visiting browser's own localStorage (/route?id=, see
 // app/route/page.tsx) — disallow those specifically rather than the
 // whole site, so the explainer/live-data pages (/, /about,
-// /operating-hours, /report, /routes) stay crawlable.
+// /line-status, /report, /routes) stay crawlable.
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {

@@ -1,4 +1,4 @@
-// Direct-to-Supabase read for app/operating-hours/page.tsx and app/page.tsx's
+// Direct-to-Supabase read for app/line-status/page.tsx and app/page.tsx's
 // home-screen "last train" hint — follows lib/user-reports-client.ts's
 // browser-client convention (anon key, safe from "use client" files, no API
 // route to call through since this app is a static export).

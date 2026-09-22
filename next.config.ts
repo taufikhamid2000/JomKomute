@@ -16,6 +16,14 @@ const nextConfig: NextConfig = {
         destination: "/",
         permanent: true,
       },
+      // Renamed once the page grew past just first/last train times
+      // (live crowdsourced status, followed lines, per-station report
+      // breakdown) — redirect any bookmarked/external links.
+      {
+        source: "/operating-hours",
+        destination: "/line-status",
+        permanent: true,
+      },
     ];
   },
 };

@@ -60,6 +60,8 @@ export const ms: Dictionary = {
     youConfirmed: "Anda mengesahkan ini",
     youDisputed: "Anda kata ini tidak berlaku",
     voteError: "Gagal menyimpan undi anda. Cuba lagi.",
+    deleteReport: "Padam laporan ini",
+    deleteError: "Gagal memadam laporan itu. Cuba lagi.",
     categories: {
       delay: "Kelewatan",
       accident: "Kemalangan",

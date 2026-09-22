@@ -7,7 +7,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChangePlanModal } from "@/components/change-plan-modal";
 import { Combobox } from "@/components/combobox";
 import { ReportModal } from "@/components/report-modal";
@@ -274,6 +274,19 @@ export default function HomePage() {
   // "Live reports" layer toggle is on, not just after a route search or
   // the reporter's own submit (which separately refetches on success,
   // below).
+  // Shared by the initial fetch below, a new submit (ReportModal's
+  // onSubmitted), and a vote/delete inside the station popup's report
+  // list (components/report-row.tsx) — any of those can change what's
+  // actually visible (see jomkomute.user_reports_visible), so they all
+  // just re-run this rather than each keeping its own fetch logic.
+  const refreshReports = useCallback(() => {
+    return getRecentUserReports()
+      .then((r) => setReports(r))
+      .catch(() => {
+        // Best-effort overlay — a failed fetch just means no hazard chip/markers, not a broken screen.
+      });
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     getRecentUserReports()
@@ -1030,6 +1043,7 @@ export default function HomePage() {
         <StationPopup
           station={stationPopup}
           reports={reports}
+          onReportsChanged={refreshReports}
           onClose={() => setStationPopup(null)}
           onReport={() => {
             setMapPickedStation(stationPopup);
@@ -1042,11 +1056,7 @@ export default function HomePage() {
         <ReportModal
           legs={reportableLegs}
           onClose={() => setIsReportModalOpen(false)}
-          onSubmitted={() => {
-            getRecentUserReports()
-              .then(setReports)
-              .catch(() => {});
-          }}
+          onSubmitted={refreshReports}
           pickedStation={mapPickedStation}
           onPickedStationConsumed={() => setMapPickedStation(null)}
         />

@@ -58,6 +58,8 @@ export const en = {
     youConfirmed: "You confirmed this",
     youDisputed: "You said this isn't happening",
     voteError: "Couldn't save your vote. Try again.",
+    deleteReport: "Delete this report",
+    deleteError: "Couldn't delete that report. Try again.",
     categories: {
       delay: "Delay",
       accident: "Accident",

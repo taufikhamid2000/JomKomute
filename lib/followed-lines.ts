@@ -1,6 +1,6 @@
 "use client";
 
-// Persisted "follow this line" set for app/operating-hours — same
+// Persisted "follow this line" set for app/line-status — same
 // useSyncExternalStore-backed localStorage pattern as
 // lib/map-layer-prefs.ts, so every component reads independently and it
 // stays in sync across tabs for free via the native "storage" event. A

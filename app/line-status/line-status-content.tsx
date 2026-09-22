@@ -5,11 +5,12 @@
 // as the rest of the app), data fetched client-side from
 // line_operating_hours (see lib/operating-hours-client.ts and
 // supabase/migrations/20260919150000_line_operating_hours.sql). Rendered
-// by the server app/operating-hours/page.tsx, which owns this route's
+// by the server app/line-status/page.tsx, which owns this route's
 // metadata — kept a client component since useDictionary() reads the
 // locale from localStorage and the hours/status fetches run client-side.
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ReportRow } from "@/components/report-row";
 import { Shell } from "@/components/shell";
 import { useFollowedLines } from "@/lib/followed-lines";
 import { LINES } from "@/lib/lines";
@@ -46,16 +47,33 @@ function groupReportsByStation(
     .sort((a, b) => b.reports.length - a.reports.length);
 }
 
-export function OperatingHoursContent() {
+export function LineStatusContent() {
   const { t } = useDictionary();
   const [hoursByLine, setHoursByLine] = useState<Map<string, LineOperatingHours> | null>(null);
   const [reports, setReports] = useState<UserReport[]>([]);
   const [statusByLine, setStatusByLine] = useState<Map<string, LineStatus>>(new Map());
   const [today] = useState(() => new Date());
   const [expandedLineId, setExpandedLineId] = useState<string | null>(null);
+  const [expandedStation, setExpandedStation] = useState<string | null>(null);
   const [followedOnly, setFollowedOnly] = useState(false);
   const { followed, toggleFollowed } = useFollowedLines();
   const categoryMeta = reportCategoryMeta(t.reportPage.categories);
+
+  // Shared by the initial fetch below and a vote/delete inside an
+  // expanded station's report list (components/report-row.tsx) — either
+  // can change what's actually visible (see
+  // jomkomute.user_reports_visible), so both just re-run this.
+  const refreshReports = useCallback(() => {
+    return getRecentUserReports()
+      .then((r) => {
+        setReports(r);
+        setStatusByLine(lineStatusesByLine(r));
+      })
+      .catch(() => {
+        // Best-effort — a failed fetch just leaves every line at the
+        // default "normal service" status, not a broken page.
+      });
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,21 +87,11 @@ export function OperatingHoursContent() {
       .catch(() => {
         if (!cancelled) setHoursByLine(new Map());
       });
-    // Best-effort here too — a failed fetch just leaves every line at
-    // the default "normal service" status rather than breaking the page.
-    getRecentUserReports()
-      .then((r) => {
-        if (cancelled) return;
-        setReports(r);
-        setStatusByLine(lineStatusesByLine(r));
-      })
-      .catch(() => {
-        if (!cancelled) setStatusByLine(new Map());
-      });
+    refreshReports();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refreshReports]);
 
   const weekend = isWeekend(today);
 
@@ -217,12 +225,52 @@ export function OperatingHoursContent() {
                       {isExpanded && (
                         <ul className="flex flex-col gap-1.5 rounded-lg bg-[var(--nav-hover-bg)] p-2.5">
                           {groupReportsByStation(recentReportsForLine(reports, line.id), stationsByLine.get(line.id) ?? []).map(
-                            ({ station, reports: stationReports }) => (
-                              <li key={station} className="flex items-center justify-between gap-2 text-xs">
-                                <span className="truncate text-foreground/80">{station}</span>
-                                <span className="shrink-0 text-foreground/50">{t.operatingHoursPage.reportCount(stationReports.length)}</span>
-                              </li>
-                            ),
+                            ({ station, reports: stationReports }) => {
+                              const stationKey = `${line.id}:${station}`;
+                              const stationExpanded = expandedStation === stationKey;
+                              return (
+                                <li key={station} className="flex flex-col gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => setExpandedStation(stationExpanded ? null : stationKey)}
+                                    aria-expanded={stationExpanded}
+                                    className="flex cursor-pointer items-center justify-between gap-2 rounded-md text-xs hover:opacity-80"
+                                  >
+                                    <span className="truncate text-foreground/80">{station}</span>
+                                    <span className="flex shrink-0 items-center gap-1 text-foreground/50">
+                                      {t.operatingHoursPage.reportCount(stationReports.length)}
+                                      <svg
+                                        width="10"
+                                        height="10"
+                                        viewBox="0 0 20 20"
+                                        fill="none"
+                                        aria-hidden="true"
+                                        className={`text-foreground/40 transition-transform ${stationExpanded ? "rotate-180" : ""}`}
+                                      >
+                                        <path d="M5 8l5 5 5-5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                                      </svg>
+                                    </span>
+                                  </button>
+                                  {stationExpanded && (
+                                    <div className="flex flex-col rounded-md bg-background px-2 py-1">
+                                      {stationReports.map((report) => {
+                                        const meta = categoryMeta.find((c) => c.id === report.category);
+                                        return (
+                                          <ReportRow
+                                            key={report.id}
+                                            report={report}
+                                            meta={meta}
+                                            t={t.reportPage}
+                                            onVoted={refreshReports}
+                                            onDeleted={refreshReports}
+                                          />
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </li>
+                              );
+                            },
                           )}
                         </ul>
                       )}

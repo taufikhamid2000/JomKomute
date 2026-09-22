@@ -37,7 +37,10 @@ ridership data. Design system carried over from
   radius.
 - **Line status** — first/last train times per line (from official GTFS
   static feeds) plus crowdsourced live status ("normal service" vs.
-  "N reports of X in the last hour"), at `/operating-hours`.
+  "N reports of X in the last 24h", expandable to the affected stations
+  and each station's individual reports), followable lines, and per-report
+  vote/delete actions, at `/line-status` (was `/operating-hours` —
+  `next.config.ts` redirects the old path).
 
 ## For contributors and AI agents navigating this repo cold
 
@@ -53,7 +56,7 @@ most pages are `"use client"`), not a static export. Start here:
 | Route-scoped reporting geometry | `lib/route-corridor.ts` (a route's own stations, corridor distance checks) |
 | Route planning / fewest-transfer search | `lib/route-finder.ts` |
 | Station/line data (generated) | `lib/stations.ts`, `lib/lines.ts` — see [Station data](#station-data), don't hand-edit `lib/stations.ts` |
-| Line status / operating hours | `app/operating-hours/page.tsx`, `lib/operating-hours-client.ts`, `lib/line-status.ts` |
+| Line status / operating hours | `app/line-status/page.tsx`, `lib/operating-hours-client.ts`, `lib/line-status.ts`, `lib/followed-lines.ts` |
 | Saved routes (localStorage) | `lib/store.ts`, `lib/types.ts`'s `SavedRoute` |
 | i18n (English/Malay) | `lib/dictionaries/en.ts` / `ms.ts`, `lib/use-dictionary.ts` — every UI string lives here, not inline |
 | Sidebar nav structure | `components/shell.tsx` |
@@ -87,7 +90,7 @@ either source changes:
 node scripts/generate-stations.mjs
 ```
 
-Line first/last train times (`/operating-hours`) come from the same GTFS
+Line first/last train times (`/line-status`) come from the same GTFS
 feeds via a separate script:
 
 ```bash

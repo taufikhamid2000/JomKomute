@@ -17,6 +17,7 @@
 // crowdsourced status from recent reports on those lines.
 
 import { useMemo } from "react";
+import { ReportRow } from "@/components/report-row";
 import { distanceMeters } from "@/lib/geo-distance";
 import { linesForStation } from "@/lib/lines";
 import { stationStatusFor } from "@/lib/line-status";
@@ -34,11 +35,16 @@ const NEARBY_REPORT_METERS = 300;
 export function StationPopup({
   station,
   reports,
+  onReportsChanged,
   onClose,
   onReport,
 }: {
   station: string;
   reports: UserReport[];
+  // Called after a vote or a delete inside nearbyReports below changes
+  // what's actually visible — lets the caller (app/page.tsx) re-fetch so
+  // this list and the map behind it both stay live.
+  onReportsChanged?: () => void;
   onClose: () => void;
   onReport: () => void;
 }) {
@@ -118,31 +124,14 @@ export function StationPopup({
         </div>
 
         {nearbyReports.length > 0 && (
-          <ul className="flex max-h-40 flex-col gap-2 overflow-y-auto border-t border-border pt-2">
+          <div className="flex max-h-48 flex-col overflow-y-auto border-t border-border pt-2">
             {nearbyReports.map((report) => {
               const meta = categories.find((c) => c.id === report.category);
               return (
-                <li key={report.id} className="flex items-start gap-2 text-xs">
-                  <span
-                    aria-hidden="true"
-                    className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
-                    style={{ backgroundColor: meta?.color ?? "#475569", color: "white" }}
-                  >
-                    {meta?.icon}
-                  </span>
-                  <div className="flex flex-1 flex-col">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium text-foreground">{meta?.label ?? report.category}</span>
-                      <span className="text-foreground/40">
-                        {new Date(report.createdAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
-                      </span>
-                    </div>
-                    {report.note && <span className="text-foreground/60">{report.note}</span>}
-                  </div>
-                </li>
+                <ReportRow key={report.id} report={report} meta={meta} t={t.reportPage} onVoted={onReportsChanged} onDeleted={onReportsChanged} />
               );
             })}
-          </ul>
+          </div>
         )}
 
         <button

@@ -118,6 +118,13 @@ function fromRow(row: UserReportRow): UserReport {
 }
 
 export async function submitUserReport(input: NewUserReport): Promise<UserReport> {
+  // Generated fresh per report, not tied to any device/voter identity —
+  // this is the only thing that can ever delete this specific row (see
+  // deleteOwnReport below and jomkomute.delete_own_report), so a
+  // reporter who clears localStorage or switches devices genuinely loses
+  // the ability to delete it, same tradeoff as VOTER_KEY_STORAGE below.
+  const ownerSecret = crypto.randomUUID();
+
   // supabaseBrowser() is untyped (no generated Database type wired up
   // for this project yet, see lib/supabase-client.ts), so
   // insert/select fall back to `never` — cast the payload rather than
@@ -135,6 +142,7 @@ export async function submitUserReport(input: NewUserReport): Promise<UserReport
         reporter_lat: input.reporterLat ?? null,
         reporter_lng: input.reporterLng ?? null,
         line_id: input.lineId ?? null,
+        owner_secret: ownerSecret,
       } as never)
       .select()
       .single());
@@ -145,7 +153,9 @@ export async function submitUserReport(input: NewUserReport): Promise<UserReport
   }
 
   if (error) throw classifySubmitError(error);
-  return fromRow(data as unknown as UserReportRow);
+  const report = fromRow(data as unknown as UserReportRow);
+  storeOwnedReport(report.id, ownerSecret);
+  return report;
 }
 
 // Reads from user_reports_visible rather than the base table — that view
@@ -225,5 +235,66 @@ export async function submitReportVote(reportId: string, vote: ReportVote): Prom
     const votes = getVotedReports();
     votes[reportId] = vote;
     window.localStorage.setItem(VOTED_REPORTS_STORAGE, JSON.stringify(votes));
+  }
+}
+
+const OWNED_REPORTS_STORAGE = "jomkomute:owned-reports";
+
+// report id -> the owner_secret submitUserReport generated for it — the
+// only record anywhere of which reports this device made, since reports
+// have no other author/account tie. Lost if localStorage is cleared;
+// that report just becomes un-deletable from then on, same as losing
+// VOTER_KEY_STORAGE loses your ability to change a vote.
+function getOwnedReports(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(window.localStorage.getItem(OWNED_REPORTS_STORAGE) ?? "{}") as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
+
+function storeOwnedReport(reportId: string, secret: string) {
+  if (typeof window === "undefined") return;
+  const owned = getOwnedReports();
+  owned[reportId] = secret;
+  window.localStorage.setItem(OWNED_REPORTS_STORAGE, JSON.stringify(owned));
+}
+
+// Whether this device made `reportId` — used to show a delete button
+// only on your own reports, not anyone else's.
+export function isOwnReport(reportId: string): boolean {
+  return reportId in getOwnedReports();
+}
+
+// Deletes a report this device made (e.g. an accidental tap) via
+// jomkomute.delete_own_report, a SECURITY DEFINER function that checks
+// the stored owner_secret matches server-side before deleting anything
+// — there's no RLS delete policy on the base table at all, so this RPC
+// is the only path. Throws ReportSubmitError("server", …) if this
+// device never had (or has lost) the secret for that report.
+export async function deleteOwnReport(reportId: string): Promise<void> {
+  const secret = getOwnedReports()[reportId];
+  if (!secret) {
+    throw new ReportSubmitError("server", "This report wasn't made from this device, so it can't be deleted here.");
+  }
+
+  let data: unknown;
+  let error: unknown;
+  try {
+    ({ data, error } = await supabaseBrowser().rpc("delete_own_report", { report_id: reportId, secret } as never));
+  } catch (thrown) {
+    throw classifySubmitError(thrown);
+  }
+
+  if (error) throw classifySubmitError(error);
+  if (data !== true) {
+    throw new ReportSubmitError("server", "That report was already gone.");
+  }
+
+  if (typeof window !== "undefined") {
+    const owned = getOwnedReports();
+    delete owned[reportId];
+    window.localStorage.setItem(OWNED_REPORTS_STORAGE, JSON.stringify(owned));
   }
 }
