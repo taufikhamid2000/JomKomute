@@ -27,6 +27,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Combobox } from "@/components/combobox";
+import { linesForStation } from "@/lib/lines";
+import { nearestStationTo } from "@/lib/nearest-station";
 import { reportCategoryMeta } from "@/lib/report-categories";
 import {
   nearestCorridorPoint,
@@ -110,6 +112,17 @@ export function ReportModal({
   // so the Combobox and the map always offer exactly the same stations.
   const stationOptions = useMemo(() => reportableStationOptions(legs), [legs]);
 
+  // Every station network-wide, as nearestStationTo's candidate list —
+  // the fallback used below to still tag a lineId when there's no active
+  // route (corridor empty), so line status/the operating-hours "N
+  // reports" breakdown isn't blind to reports made outside route context
+  // (the common case: the home screen's floating report button with no
+  // route selected).
+  const allStationPoints = useMemo(
+    () => Object.entries(STATION_COORDS).map(([name, coord]) => ({ name, coord })),
+    [],
+  );
+
   const [mode, setMode] = useState<"location" | "station">("location");
   const [station, setStation] = useState("");
   const [geo, setGeo] = useState<GeoState>({ status: "loading" });
@@ -176,7 +189,10 @@ export function ReportModal({
         setSubmitState({ status: "error", message: t.reportPage.error });
         return;
       }
-      const lineId = corridor.length > 0 ? (nearestCorridorPoint({ lat: coord[0], lng: coord[1] }, corridor)?.point.lineId ?? null) : null;
+      const lineId =
+        corridor.length > 0
+          ? nearestCorridorPoint({ lat: coord[0], lng: coord[1] }, corridor)?.point.lineId ?? null
+          : linesForStation(station)[0]?.id ?? null;
 
       setSubmitState({ status: "submitting" });
       try {
@@ -218,6 +234,9 @@ export function ReportModal({
         return;
       }
       lineId = nearest.point.lineId;
+    } else {
+      const nearestStation = nearestStationTo({ lat: geo.lat, lng: geo.lng }, allStationPoints);
+      lineId = nearestStation ? linesForStation(nearestStation)[0]?.id ?? null : null;
     }
 
     setSubmitState({ status: "submitting" });
