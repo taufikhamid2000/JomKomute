@@ -23,6 +23,25 @@ export class ReportSubmitError extends Error {
   }
 }
 
+// supabase-js's PostgrestError is a plain object (message/details/hint/code),
+// not an actual `Error` instance — `error instanceof Error` is false for it,
+// so a naive `String(error)` on it gives "[object Object]" instead of its
+// actual message. Pull the real text out regardless of which shape it is.
+function extractErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === "object") {
+    const obj = error as Record<string, unknown>;
+    const parts = [obj.message, obj.details, obj.hint].filter((p): p is string => typeof p === "string" && p.length > 0);
+    if (parts.length > 0) return parts.join(" — ");
+    try {
+      return JSON.stringify(error);
+    } catch {
+      // falls through to String(error) below
+    }
+  }
+  return String(error);
+}
+
 // Classifies whatever supabase-js hands back (a PostgrestError in `error`,
 // or a thrown network exception when the request never reached the
 // server at all) into the three buckets above.
@@ -30,13 +49,13 @@ function classifySubmitError(error: unknown): ReportSubmitError {
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
     return new ReportSubmitError("offline", "You're offline.");
   }
-  const message = error instanceof Error ? error.message : String(error);
+  const message = extractErrorMessage(error);
   if (/failed to fetch|networkerror|load failed|network request failed/i.test(message)) {
     return new ReportSubmitError("offline", message);
   }
   const code = (error as { code?: string } | null)?.code;
   if (code || /row-level security|permission denied|violates/i.test(message)) {
-    return new ReportSubmitError("server", message);
+    return new ReportSubmitError("server", `${message}${code ? ` [${code}]` : ""}`);
   }
   // Doesn't match either known pattern — the UI shows a generic message
   // for this bucket (see report-modal.tsx/report-map.tsx), so log the
