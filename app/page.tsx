@@ -267,11 +267,14 @@ export default function HomePage() {
     find: findRouteOptions,
   } = useRouteFinderOptions();
 
-  // Fetch nearby reports once route options become available — same
-  // "last 24h" scope getRecentUserReports already implements for
-  // app/report/page.tsx's list, no new query pattern needed.
+  // Fetched once, up front — same "last 24h" scope getRecentUserReports
+  // already implements for app/report/page.tsx's list, no new query
+  // pattern needed. Not gated on routeOptions: the idle home screen (no
+  // route searched yet) should already show existing reports once the
+  // "Live reports" layer toggle is on, not just after a route search or
+  // the reporter's own submit (which separately refetches on success,
+  // below).
   useEffect(() => {
-    if (!routeOptions || routeOptions.length === 0) return;
     let cancelled = false;
     getRecentUserReports()
       .then((r) => {
@@ -283,7 +286,7 @@ export default function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, [routeOptions]);
+  }, []);
 
   // Fetched once, up front (unlike reports above) — this is small, rarely
   // changing reference data, not something worth re-fetching per route
