@@ -35,6 +35,7 @@ export const ms: Dictionary = {
     modalDescription: "Pilih apa yang berlaku berdekatan anda — kami akan guna lokasi semasa anda, tiada keperluan ketik peta.",
     useMyLocation: "Lokasi saya",
     pickStation: "Pilih stesen",
+    pickLine: "Stesen ini disambungkan lebih daripada satu laluan — yang mana satu?",
     stationPlaceholder: "Pilih stesen",
     conceptBadge: "Prototaip — tanpa nama, tidak dimoderasi",
     pickPrompt: "Apa yang berlaku di situ?",

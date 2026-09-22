@@ -33,6 +33,7 @@ export const en = {
     modalDescription: "Pick what's happening near you — we'll use your current location, no need to tap a map.",
     useMyLocation: "My location",
     pickStation: "Pick a station",
+    pickLine: "This station is on more than one line — which one?",
     stationPlaceholder: "Select station",
     conceptBadge: "Prototype — anonymous, unmoderated",
     pickPrompt: "What's happening there?",

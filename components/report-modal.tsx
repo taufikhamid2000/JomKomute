@@ -128,6 +128,37 @@ export function ReportModal({
   const [geo, setGeo] = useState<GeoState>({ status: "loading" });
   const [note, setNote] = useState("");
   const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle" });
+  const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
+
+  // The station this report would land nearest to right now — the
+  // reporter's own pick in "station" mode, or wherever their GPS fix
+  // snaps to in "location" mode. Only used to figure out `candidateLines`
+  // below; the actual submitted lat/lng still comes from STATION_COORDS
+  // (station mode) or the live geo fix (location mode).
+  const resolvedStation = useMemo(() => {
+    if (mode === "station") return station || null;
+    if (geo.status !== "ready") return null;
+    return nearestStationTo({ lat: geo.lat, lng: geo.lng }, allStationPoints);
+  }, [mode, station, geo, allStationPoints]);
+
+  // With no route context, a report at a station shared by more than one
+  // line (e.g. Maluri — Ampang and Kajang both stop there) is genuinely
+  // ambiguous: picking "whichever line comes first" would silently
+  // misattribute it. Ask the reporter which line they mean instead.
+  // With route context, the corridor itself already disambiguates this,
+  // so no picker is needed regardless of how many lines share the name.
+  const candidateLines = useMemo(
+    () => (corridor.length === 0 && resolvedStation ? linesForStation(resolvedStation) : []),
+    [corridor, resolvedStation],
+  );
+  const needsLineChoice = candidateLines.length > 1;
+
+  // A change of station/mode/fix invalidates whatever line was picked for
+  // the previous one — otherwise a stale selectedLineId from an earlier
+  // station could silently ride along onto this one.
+  useEffect(() => {
+    setSelectedLineId(null);
+  }, [resolvedStation]);
 
   // A tap on the main map (relayed from app/page.tsx) always means "I
   // picked a station" — switch into that mode and adopt it, then tell
@@ -173,6 +204,7 @@ export function ReportModal({
 
   const canSubmit =
     (mode === "location" ? geo.status === "ready" : station !== "") &&
+    (!needsLineChoice || selectedLineId !== null) &&
     submitState.status !== "submitting" &&
     submitState.status !== "success";
 
@@ -192,7 +224,7 @@ export function ReportModal({
       const lineId =
         corridor.length > 0
           ? nearestCorridorPoint({ lat: coord[0], lng: coord[1] }, corridor)?.point.lineId ?? null
-          : linesForStation(station)[0]?.id ?? null;
+          : selectedLineId ?? candidateLines[0]?.id ?? null;
 
       setSubmitState({ status: "submitting" });
       try {
@@ -235,8 +267,7 @@ export function ReportModal({
       }
       lineId = nearest.point.lineId;
     } else {
-      const nearestStation = nearestStationTo({ lat: geo.lat, lng: geo.lng }, allStationPoints);
-      lineId = nearestStation ? linesForStation(nearestStation)[0]?.id ?? null : null;
+      lineId = selectedLineId ?? candidateLines[0]?.id ?? null;
     }
 
     setSubmitState({ status: "submitting" });
@@ -349,6 +380,28 @@ export function ReportModal({
           </div>
         ) : (
           <>
+            {needsLineChoice && (
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs text-foreground/60">{t.reportPage.pickLine}</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {candidateLines.map((line) => (
+                    <button
+                      key={line.id}
+                      type="button"
+                      onClick={() => setSelectedLineId(line.id)}
+                      className="cursor-pointer rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide text-white transition-opacity"
+                      style={{
+                        backgroundColor: line.color,
+                        opacity: selectedLineId === null || selectedLineId === line.id ? 1 : 0.4,
+                      }}
+                    >
+                      {line.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-3 gap-2">
               {categories.map((c) => (
                 <button
