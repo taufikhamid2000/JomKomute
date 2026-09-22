@@ -155,6 +155,13 @@ export const en = {
     noFollowedLines: "You haven't followed any lines yet — tap the star on a line to pin it here.",
     notifyFollowedLines: "Notify me about followed lines",
     notifyError: "Couldn't turn on notifications. Try again.",
+    reportHistory: "Report history",
+    reportHistoryLoading: "Loading…",
+    reportHistoryTotal: (count: number, days: number) =>
+      `${count === 1 ? "1 report" : `${count} reports`} in the last ${days} days`,
+    reportHistory30d: "30 days",
+    reportHistory90d: "90 days",
+    reportHistoryError: "Couldn't load report history.",
   },
   routeForm: {
     title: "Add a route",

@@ -157,6 +157,13 @@ export const ms: Dictionary = {
     noFollowedLines: "Anda belum ikuti sebarang laluan — ketik bintang pada laluan untuk sematkan di sini.",
     notifyFollowedLines: "Beritahu saya tentang laluan yang diikuti",
     notifyError: "Gagal menghidupkan pemberitahuan. Cuba lagi.",
+    reportHistory: "Sejarah laporan",
+    reportHistoryLoading: "Memuatkan…",
+    reportHistoryTotal: (count: number, days: number) =>
+      `${count === 1 ? "1 laporan" : `${count} laporan`} dalam ${days} hari lepas`,
+    reportHistory30d: "30 hari",
+    reportHistory90d: "90 hari",
+    reportHistoryError: "Gagal memuatkan sejarah laporan.",
   },
   routeForm: {
     title: "Tambah laluan",

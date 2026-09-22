@@ -10,9 +10,11 @@
 // locale from localStorage and the hours/status fetches run client-side.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { LineHistoryChart } from "@/components/line-history-chart";
 import { ReportRow } from "@/components/report-row";
 import { Shell } from "@/components/shell";
 import { useFollowedLines } from "@/lib/followed-lines";
+import { getLineHistory, type LineHistory } from "@/lib/line-history-client";
 import { LINES } from "@/lib/lines";
 import { lineStatusesByLine, recentReportsForLine, type LineStatus } from "@/lib/line-status";
 import { nearestStationTo } from "@/lib/nearest-station";
@@ -65,6 +67,39 @@ export function LineStatusContent() {
   const [followedOnly, setFollowedOnly] = useState(false);
   const { followed, toggleFollowed } = useFollowedLines();
   const categoryMeta = reportCategoryMeta(t.reportPage.categories);
+
+  // Report-volume history (components/line-history-chart.tsx) — one
+  // line's chart open at a time, same pattern as expandedLineId above.
+  // A single shared day-range preset rather than one per card: opening
+  // a second line's history should show the same window as the first,
+  // not force re-picking it (see the dataviz skill's "filters scope
+  // everything below them").
+  const [openHistoryLineId, setOpenHistoryLineId] = useState<string | null>(null);
+  const [historyDays, setHistoryDays] = useState<30 | 90>(30);
+  const [historyData, setHistoryData] = useState<LineHistory | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState(false);
+
+  useEffect(() => {
+    if (openHistoryLineId === null) return;
+    if (historyData?.days === historyDays) return;
+    let cancelled = false;
+    setHistoryLoading(true);
+    setHistoryError(false);
+    getLineHistory(historyDays)
+      .then((h) => {
+        if (!cancelled) setHistoryData(h);
+      })
+      .catch(() => {
+        if (!cancelled) setHistoryError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setHistoryLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [openHistoryLineId, historyDays, historyData]);
 
   // null while the initial check is in flight — kept separate from
   // false so the toggle doesn't flash "off" for a moment before the
@@ -369,6 +404,69 @@ export function LineStatusContent() {
                 )}
 
                 {hours?.holidayNote && <p className="text-[11px] text-foreground/50">{hours.holidayNote}</p>}
+
+                {(() => {
+                  const isHistoryOpen = openHistoryLineId === line.id;
+                  const lineHistory = historyData?.lines[line.id];
+                  const total = lineHistory?.reduce((sum, d) => sum + d.count, 0) ?? 0;
+                  return (
+                    <div className="flex flex-col gap-1.5 border-t border-border pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setOpenHistoryLineId(isHistoryOpen ? null : line.id)}
+                        aria-expanded={isHistoryOpen}
+                        className="flex cursor-pointer items-center gap-1.5 self-start text-xs text-foreground/50 hover:text-foreground/80"
+                      >
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 20 20"
+                          fill="none"
+                          aria-hidden="true"
+                          className={`transition-transform ${isHistoryOpen ? "rotate-180" : ""}`}
+                        >
+                          <path d="M5 8l5 5 5-5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        {t.operatingHoursPage.reportHistory}
+                      </button>
+
+                      {isHistoryOpen && (
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[11px] text-foreground/50">
+                              {historyLoading ? t.operatingHoursPage.reportHistoryLoading : t.operatingHoursPage.reportHistoryTotal(total, historyDays)}
+                            </span>
+                            <div className="flex gap-1">
+                              {([30, 90] as const).map((preset) => (
+                                <button
+                                  key={preset}
+                                  type="button"
+                                  onClick={() => setHistoryDays(preset)}
+                                  aria-pressed={historyDays === preset}
+                                  className={
+                                    historyDays === preset
+                                      ? "cursor-pointer rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground"
+                                      : "cursor-pointer rounded-full px-2 py-0.5 text-[10px] font-medium text-foreground/50 hover:bg-[var(--nav-hover-bg)]"
+                                  }
+                                >
+                                  {preset === 30 ? t.operatingHoursPage.reportHistory30d : t.operatingHoursPage.reportHistory90d}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {historyError ? (
+                            <p className="text-xs text-[var(--destructive)]">{t.operatingHoursPage.reportHistoryError}</p>
+                          ) : lineHistory ? (
+                            <LineHistoryChart data={lineHistory} color={line.color} />
+                          ) : (
+                            <div className="h-16 animate-pulse rounded-lg bg-muted" />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             );
           })}
