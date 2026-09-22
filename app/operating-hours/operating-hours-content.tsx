@@ -9,20 +9,49 @@
 // metadata — kept a client component since useDictionary() reads the
 // locale from localStorage and the hours/status fetches run client-side.
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Shell } from "@/components/shell";
 import { LINES } from "@/lib/lines";
-import { lineStatusesByLine, type LineStatus } from "@/lib/line-status";
+import { lineStatusesByLine, recentReportsForLine, type LineStatus } from "@/lib/line-status";
+import { nearestStationTo } from "@/lib/nearest-station";
 import { formatClockTime, getLineOperatingHours, isWeekend, type LineOperatingHours } from "@/lib/operating-hours-client";
 import { reportCategoryMeta } from "@/lib/report-categories";
+import { STATION_COORDS } from "@/lib/stations";
 import { useDictionary } from "@/lib/use-dictionary";
-import { getRecentUserReports } from "@/lib/user-reports-client";
+import { getRecentUserReports, type UserReport } from "@/lib/user-reports-client";
+
+// Groups `reports` by nearest station (out of `stations`, that line's own
+// station list — a report was tagged with this lineId via its nearest
+// corridor point at submit time, see route-corridor.ts, so scoping the
+// nearest-station lookup to the line's own stations rather than every
+// station in the network keeps it consistent with that). Sorted most-
+// affected station first; a report whose nearest match still comes back
+// null (STATION_COORDS missing an entry) is dropped rather than shown
+// under a fake station name.
+function groupReportsByStation(
+  reports: UserReport[],
+  stations: { name: string; coord: [number, number] }[],
+): { station: string; reports: UserReport[] }[] {
+  const byStation = new Map<string, UserReport[]>();
+  for (const report of reports) {
+    const name = nearestStationTo({ lat: report.lat, lng: report.lng }, stations);
+    if (!name) continue;
+    const list = byStation.get(name);
+    if (list) list.push(report);
+    else byStation.set(name, [report]);
+  }
+  return Array.from(byStation.entries())
+    .map(([station, stationReports]) => ({ station, reports: stationReports }))
+    .sort((a, b) => b.reports.length - a.reports.length);
+}
 
 export function OperatingHoursContent() {
   const { t } = useDictionary();
   const [hoursByLine, setHoursByLine] = useState<Map<string, LineOperatingHours> | null>(null);
+  const [reports, setReports] = useState<UserReport[]>([]);
   const [statusByLine, setStatusByLine] = useState<Map<string, LineStatus>>(new Map());
   const [today] = useState(() => new Date());
+  const [expandedLineId, setExpandedLineId] = useState<string | null>(null);
   const categoryMeta = reportCategoryMeta(t.reportPage.categories);
 
   useEffect(() => {
@@ -40,9 +69,10 @@ export function OperatingHoursContent() {
     // Best-effort here too — a failed fetch just leaves every line at
     // the default "normal service" status rather than breaking the page.
     getRecentUserReports()
-      .then((reports) => {
+      .then((r) => {
         if (cancelled) return;
-        setStatusByLine(lineStatusesByLine(reports));
+        setReports(r);
+        setStatusByLine(lineStatusesByLine(r));
       })
       .catch(() => {
         if (!cancelled) setStatusByLine(new Map());
@@ -53,6 +83,21 @@ export function OperatingHoursContent() {
   }, []);
 
   const weekend = isWeekend(today);
+
+  // Station coordinates per line, built once — the candidate set
+  // groupReportsByStation snaps each expanded line's reports onto.
+  const stationsByLine = useMemo(() => {
+    const map = new Map<string, { name: string; coord: [number, number] }[]>();
+    for (const line of LINES) {
+      const points: { name: string; coord: [number, number] }[] = [];
+      for (const name of line.stations) {
+        const coord = STATION_COORDS[name];
+        if (coord) points.push({ name, coord });
+      }
+      map.set(line.id, points);
+    }
+    return map;
+  }, []);
 
   return (
     <Shell>
@@ -74,21 +119,68 @@ export function OperatingHoursContent() {
                   <span className="truncate text-sm font-semibold text-foreground">{line.name}</span>
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  <span
-                    aria-hidden="true"
-                    className="h-1.5 w-1.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: status?.level === "reported" ? (worstMeta?.color ?? "#475569") : "#16a34a" }}
-                  />
-                  <span
-                    className={`text-xs font-medium ${status?.level === "reported" ? "" : "text-foreground/50"}`}
-                    style={status?.level === "reported" ? { color: worstMeta?.color } : undefined}
-                  >
-                    {status?.level === "reported" && status.worstCategory
-                      ? t.operatingHoursPage.statusReported(status.count, worstMeta?.label ?? status.worstCategory)
-                      : t.operatingHoursPage.statusNormal}
-                  </span>
-                </div>
+                {(() => {
+                  const isReported = status?.level === "reported" && !!status.worstCategory;
+                  const isExpanded = expandedLineId === line.id;
+                  const statusRow = (
+                    <>
+                      <span
+                        aria-hidden="true"
+                        className="h-1.5 w-1.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: isReported ? (worstMeta?.color ?? "#475569") : "#16a34a" }}
+                      />
+                      <span
+                        className={`text-xs font-medium ${isReported ? "" : "text-foreground/50"}`}
+                        style={isReported ? { color: worstMeta?.color } : undefined}
+                      >
+                        {isReported && status?.worstCategory
+                          ? t.operatingHoursPage.statusReported(status.count, worstMeta?.label ?? status.worstCategory)
+                          : t.operatingHoursPage.statusNormal}
+                      </span>
+                    </>
+                  );
+
+                  if (!isReported) {
+                    return <div className="flex items-center gap-1.5">{statusRow}</div>;
+                  }
+
+                  return (
+                    <div className="flex flex-col gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedLineId(isExpanded ? null : line.id)}
+                        aria-expanded={isExpanded}
+                        aria-label={isExpanded ? t.operatingHoursPage.collapseReports : t.operatingHoursPage.expandReports}
+                        className="flex cursor-pointer items-center gap-1.5 self-start rounded-md hover:opacity-80"
+                      >
+                        {statusRow}
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 20 20"
+                          fill="none"
+                          aria-hidden="true"
+                          className={`text-foreground/40 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                        >
+                          <path d="M5 8l5 5 5-5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+
+                      {isExpanded && (
+                        <ul className="flex flex-col gap-1.5 rounded-lg bg-[var(--nav-hover-bg)] p-2.5">
+                          {groupReportsByStation(recentReportsForLine(reports, line.id), stationsByLine.get(line.id) ?? []).map(
+                            ({ station, reports: stationReports }) => (
+                              <li key={station} className="flex items-center justify-between gap-2 text-xs">
+                                <span className="truncate text-foreground/80">{station}</span>
+                                <span className="shrink-0 text-foreground/50">{t.operatingHoursPage.reportCount(stationReports.length)}</span>
+                              </li>
+                            ),
+                          )}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {hoursByLine === null ? (
                   <div className="h-10 animate-pulse rounded-lg bg-muted" />

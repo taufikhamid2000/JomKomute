@@ -143,6 +143,9 @@ export const ms: Dictionary = {
     statusNormal: "Perkhidmatan normal",
     statusReported: (count: number, category: string) =>
       count === 1 ? `1 laporan ${category} dalam sejam lepas` : `${count} laporan ${category} dalam sejam lepas`,
+    expandReports: "Tunjukkan stesen",
+    collapseReports: "Sembunyikan butiran stesen",
+    reportCount: (count: number) => (count === 1 ? "1 laporan" : `${count} laporan`),
   },
   routeForm: {
     title: "Tambah laluan",

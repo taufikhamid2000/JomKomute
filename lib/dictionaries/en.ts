@@ -141,6 +141,9 @@ export const en = {
     statusNormal: "Normal service",
     statusReported: (count: number, category: string) =>
       count === 1 ? `1 report of ${category} in the last hour` : `${count} reports of ${category} in the last hour`,
+    expandReports: "Show which stations",
+    collapseReports: "Hide station details",
+    reportCount: (count: number) => (count === 1 ? "1 report" : `${count} reports`),
   },
   routeForm: {
     title: "Add a route",
