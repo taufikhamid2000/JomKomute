@@ -43,6 +43,8 @@ export const en = {
     submitting: "Sending…",
     success: "Thanks — your report is on the map.",
     error: "Couldn't send that report. Try again.",
+    errorOffline: "You're offline — check your connection and try again.",
+    errorServer: "The server rejected that report. Try again in a moment.",
     loadError: "Couldn't load recent reports.",
     locationLoading: "Getting your location…",
     locationDenied: "Location access was denied. Reports require your location so we can check you're nearby — allow it in your browser settings and reload.",

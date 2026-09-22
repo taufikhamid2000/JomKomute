@@ -8,6 +8,39 @@
 
 import { supabaseBrowser } from "@/lib/supabase-client";
 
+// Thrown by submitUserReport/submitReportVote instead of a bare Error so
+// callers (components/report-modal.tsx) can show a message that actually
+// says why it failed, rather than one generic "couldn't send" for every
+// case — offline, an actual Postgres/RLS rejection, and "something else
+// went wrong" all read very differently to a rider mid-commute.
+export type ReportSubmitReason = "offline" | "server" | "unknown";
+
+export class ReportSubmitError extends Error {
+  reason: ReportSubmitReason;
+  constructor(reason: ReportSubmitReason, message: string) {
+    super(message);
+    this.reason = reason;
+  }
+}
+
+// Classifies whatever supabase-js hands back (a PostgrestError in `error`,
+// or a thrown network exception when the request never reached the
+// server at all) into the three buckets above.
+function classifySubmitError(error: unknown): ReportSubmitError {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return new ReportSubmitError("offline", "You're offline.");
+  }
+  const message = error instanceof Error ? error.message : String(error);
+  if (/failed to fetch|networkerror|load failed|network request failed/i.test(message)) {
+    return new ReportSubmitError("offline", message);
+  }
+  const code = (error as { code?: string } | null)?.code;
+  if (code || /row-level security|permission denied|violates/i.test(message)) {
+    return new ReportSubmitError("server", message);
+  }
+  return new ReportSubmitError("unknown", message);
+}
+
 export type ReportCategory = "delay" | "accident" | "breakdown" | "crowded" | "other";
 
 export type UserReport = {
@@ -66,21 +99,29 @@ export async function submitUserReport(input: NewUserReport): Promise<UserReport
   // for this project yet, see lib/supabase-client.ts), so
   // insert/select fall back to `never` — cast the payload rather than
   // threading a Database type through just for this one table.
-  const { data, error } = await supabaseBrowser()
-    .from("jomkomute_user_reports")
-    .insert({
-      lat: input.lat,
-      lng: input.lng,
-      category: input.category,
-      note: input.note?.trim() ? input.note.trim().slice(0, 280) : null,
-      reporter_lat: input.reporterLat ?? null,
-      reporter_lng: input.reporterLng ?? null,
-      line_id: input.lineId ?? null,
-    } as never)
-    .select()
-    .single();
+  let data: unknown;
+  let error: unknown;
+  try {
+    ({ data, error } = await supabaseBrowser()
+      .from("jomkomute_user_reports")
+      .insert({
+        lat: input.lat,
+        lng: input.lng,
+        category: input.category,
+        note: input.note?.trim() ? input.note.trim().slice(0, 280) : null,
+        reporter_lat: input.reporterLat ?? null,
+        reporter_lng: input.reporterLng ?? null,
+        line_id: input.lineId ?? null,
+      } as never)
+      .select()
+      .single());
+  } catch (thrown) {
+    // The request never got a response at all (offline, DNS failure,
+    // CORS) — supabase-js throws rather than returning { error } here.
+    throw classifySubmitError(thrown);
+  }
 
-  if (error) throw new Error(`Failed to submit report: ${error.message}`);
+  if (error) throw classifySubmitError(error);
   return fromRow(data as unknown as UserReportRow);
 }
 
@@ -143,11 +184,16 @@ export function getMyVoteFor(reportId: string): ReportVote | null {
 // constraint the second time it votes on the same report.
 export async function submitReportVote(reportId: string, vote: ReportVote): Promise<void> {
   const voterKey = getVoterKey();
-  const { error } = await supabaseBrowser()
-    .from("jomkomute_user_report_votes")
-    .upsert({ report_id: reportId, voter_key: voterKey, vote } as never, { onConflict: "report_id,voter_key" });
+  let error: unknown;
+  try {
+    ({ error } = await supabaseBrowser()
+      .from("jomkomute_user_report_votes")
+      .upsert({ report_id: reportId, voter_key: voterKey, vote } as never, { onConflict: "report_id,voter_key" }));
+  } catch (thrown) {
+    throw classifySubmitError(thrown);
+  }
 
-  if (error) throw new Error(`Failed to submit vote: ${error.message}`);
+  if (error) throw classifySubmitError(error);
 
   if (typeof window !== "undefined") {
     const votes = getVotedReports();

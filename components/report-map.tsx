@@ -16,7 +16,7 @@ import { NETWORK_SEGMENTS } from "@/lib/network-segments";
 import { reportMarkerHtml, type ReportCategoryMeta } from "@/lib/report-categories";
 import { clusterReports } from "@/lib/report-clusters";
 import type { CorridorPoint } from "@/lib/route-corridor";
-import { getMyVoteFor, submitReportVote, type ReportVote, type UserReport } from "@/lib/user-reports-client";
+import { getMyVoteFor, ReportSubmitError, submitReportVote, type ReportVote, type UserReport } from "@/lib/user-reports-client";
 
 type ReportPageDictionary = (typeof en)["reportPage"];
 
@@ -57,11 +57,11 @@ function FitToCorridor({ points }: { points: [number, number][] }) {
 function ReportVoteRow({ report, t, onVoted }: { report: UserReport; t: ReportPageDictionary; onVoted?: () => void }) {
   const [vote, setVote] = useState<ReportVote | null>(() => getMyVoteFor(report.id));
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function handleVote(next: ReportVote) {
     setSubmitting(true);
-    setError(false);
+    setErrorMessage(null);
     try {
       await submitReportVote(report.id, next);
       setVote(next);
@@ -70,8 +70,12 @@ function ReportVoteRow({ report, t, onVoted }: { report: UserReport; t: ReportPa
       // drops off the map/list live instead of waiting for the next
       // unrelated refresh.
       onVoted?.();
-    } catch {
-      setError(true);
+    } catch (err) {
+      // Same offline/server/unknown split as components/report-modal.tsx's
+      // submitErrorMessage — voting hits the same failure modes a report
+      // submission does.
+      const reason = err instanceof ReportSubmitError ? err.reason : "unknown";
+      setErrorMessage(reason === "offline" ? t.errorOffline : reason === "server" ? t.errorServer : t.voteError);
     } finally {
       setSubmitting(false);
     }
@@ -105,7 +109,7 @@ function ReportVoteRow({ report, t, onVoted }: { report: UserReport; t: ReportPa
           </button>
         </div>
       )}
-      {error && <span className="text-xs text-[var(--destructive)]">{t.voteError}</span>}
+      {errorMessage && <span className="text-xs text-[var(--destructive)]">{errorMessage}</span>}
     </div>
   );
 }

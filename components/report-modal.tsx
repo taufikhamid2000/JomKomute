@@ -38,7 +38,7 @@ import {
 import { STATION_COORDS } from "@/lib/stations";
 import type { RouteLeg } from "@/lib/types";
 import { useDictionary } from "@/lib/use-dictionary";
-import { submitUserReport, type ReportCategory } from "@/lib/user-reports-client";
+import { ReportSubmitError, submitUserReport, type ReportCategory } from "@/lib/user-reports-client";
 
 // Same limit as the `jomkomute_user_reports` table's
 // `coalesce(length(note), 0) <= 280` check constraint — enforced
@@ -53,6 +53,17 @@ type GeoState =
   | { status: "unavailable" };
 
 type SubmitState = { status: "idle" } | { status: "submitting" } | { status: "success" } | { status: "error"; message: string };
+
+// submitUserReport throws a ReportSubmitError with a reason so this can
+// show why it failed instead of one generic message for every case —
+// offline, the server itself rejecting the write, and anything else.
+function submitErrorMessage(err: unknown, t: ReturnType<typeof useDictionary>["t"]): string {
+  if (err instanceof ReportSubmitError) {
+    if (err.reason === "offline") return t.reportPage.errorOffline;
+    if (err.reason === "server") return t.reportPage.errorServer;
+  }
+  return t.reportPage.error;
+}
 
 export function ReportModal({
   legs,
@@ -172,8 +183,8 @@ export function ReportModal({
           lineId,
         });
         setSubmitState({ status: "success" });
-      } catch {
-        setSubmitState({ status: "error", message: t.reportPage.error });
+      } catch (err) {
+        setSubmitState({ status: "error", message: submitErrorMessage(err, t) });
       }
       return;
     }
@@ -217,8 +228,8 @@ export function ReportModal({
         lineId,
       });
       setSubmitState({ status: "success" });
-    } catch {
-      setSubmitState({ status: "error", message: t.reportPage.error });
+    } catch (err) {
+      setSubmitState({ status: "error", message: submitErrorMessage(err, t) });
     }
   }
 
