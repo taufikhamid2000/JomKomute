@@ -1,8 +1,24 @@
-// Triggered by vercel.json's cron config every few minutes. Diffs each
-// line's current crowdsourced status (lib/line-status.ts — same "24h +
-// vote-confirmed" visibility every other page reads, no separate
-// timer) against jomkomute.line_status_notified's last-known level,
-// and pushes only on an actual transition (normal->reported or
+// Triggered by vercel.json's cron config — currently once a day
+// (10pm UTC / 6am MYT), because a Vercel Hobby-plan project's own
+// vercel.json cron REJECTS THE ENTIRE DEPLOYMENT at build time if any
+// schedule fires more than once a day (that actually happened here —
+// see git history around the "Web Push" commit: every deploy silently
+// failed for three commits until this was caught and fixed). Once a
+// day means this can miss same-day transitions entirely, which mostly
+// defeats the point of a near-real-time push — lib/line-status-alerts.ts's
+// in-app fallback is doing the real work until either this project
+// moves to Vercel Pro (lets vercel.json's own cron run every few
+// minutes) or something OUTSIDE Vercel's own cron mechanism (an
+// external scheduler like cron-job.org, GitHub Actions on a schedule,
+// etc., calling this URL with the same Authorization header) triggers
+// it more often — that path isn't limited by this plan restriction at
+// all, since it's just an ordinary authenticated HTTP call, not
+// vercel.json's cron feature.
+//
+// Diffs each line's current crowdsourced status (lib/line-status.ts —
+// same "24h + vote-confirmed" visibility every other page reads, no
+// separate timer) against jomkomute.line_status_notified's last-known
+// level, and pushes only on an actual transition (normal->reported or
 // reported->normal) to subscriptions that follow that line — not on
 // every run while a line just stays reported, and not on every new
 // report once it's already been announced.
@@ -10,8 +26,9 @@
 // Auth: this route has no session/cookie to check (cron calls it with
 // no browser attached), so it's gated by a shared secret instead —
 // see .env.example's CRON_SECRET. Vercel's own cron invocations send
-// it automatically (vercel.json's headers), but the route also accepts
-// a manual Authorization: Bearer <CRON_SECRET> call for testing.
+// it automatically, but the route also accepts a manual
+// Authorization: Bearer <CRON_SECRET> call from any other caller
+// (including the external-scheduler option above).
 import { NextRequest, NextResponse } from "next/server";
 import webpush from "web-push";
 import { LINES } from "@/lib/lines";
