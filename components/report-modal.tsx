@@ -60,7 +60,14 @@ type SubmitState = { status: "idle" } | { status: "submitting" } | { status: "su
 function submitErrorMessage(err: unknown, t: ReturnType<typeof useDictionary>["t"]): string {
   if (err instanceof ReportSubmitError) {
     if (err.reason === "offline") return t.reportPage.errorOffline;
-    if (err.reason === "server") return t.reportPage.errorServer;
+    // Appends the actual Postgres/network message onto the friendly one
+    // rather than hiding it behind a console.error only — this app has
+    // no error-tracking/logs to go look at, so the UI is the only place
+    // to see what actually failed without asking whoever hit it to open
+    // devtools for you.
+    const detail = err.message ? ` (${err.message})` : "";
+    if (err.reason === "server") return `${t.reportPage.errorServer}${detail}`;
+    return `${t.reportPage.error}${detail}`;
   }
   return t.reportPage.error;
 }

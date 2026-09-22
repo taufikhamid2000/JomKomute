@@ -72,10 +72,19 @@ function ReportVoteRow({ report, t, onVoted }: { report: UserReport; t: ReportPa
       onVoted?.();
     } catch (err) {
       // Same offline/server/unknown split as components/report-modal.tsx's
-      // submitErrorMessage — voting hits the same failure modes a report
-      // submission does.
-      const reason = err instanceof ReportSubmitError ? err.reason : "unknown";
-      setErrorMessage(reason === "offline" ? t.errorOffline : reason === "server" ? t.errorServer : t.voteError);
+      // submitErrorMessage, including surfacing the raw error message in
+      // the UI itself (no error tracking set up for this prototype, so
+      // devtools console isn't a reliable way to catch it after the fact).
+      if (err instanceof ReportSubmitError) {
+        if (err.reason === "offline") {
+          setErrorMessage(t.errorOffline);
+        } else {
+          const detail = err.message ? ` (${err.message})` : "";
+          setErrorMessage(`${err.reason === "server" ? t.errorServer : t.voteError}${detail}`);
+        }
+      } else {
+        setErrorMessage(t.voteError);
+      }
     } finally {
       setSubmitting(false);
     }
