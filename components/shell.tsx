@@ -18,13 +18,13 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const [authed, setAuthed] = useState<boolean | null>(null);
 
   const navLinks: NavItem[] = [
-    {
-      label: t.nav.myRoutes,
-      children: [
-        { href: "/routes", label: t.nav.routes },
-        { href: "/new", label: t.nav.addRoute },
-      ],
-    },
+    // "Add route" (/new) used to sit here as a second child — dropped
+    // since it's a form, not a destination worth permanent nav space
+    // (same reasoning /route's own detail view was never given a nav
+    // entry). It's reachable everywhere it actually matters instead:
+    // the routes list's own CTA, the home screen's empty/prompt states,
+    // and "Add return trip" on a route's detail page.
+    { href: "/routes", label: t.nav.myRoutes },
     { href: "/line-status", label: t.nav.operatingHours },
     { href: "/settings", label: t.nav.settings },
     { href: "/about", label: t.nav.about },
