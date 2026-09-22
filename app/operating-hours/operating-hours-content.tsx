@@ -11,6 +11,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Shell } from "@/components/shell";
+import { useFollowedLines } from "@/lib/followed-lines";
 import { LINES } from "@/lib/lines";
 import { lineStatusesByLine, recentReportsForLine, type LineStatus } from "@/lib/line-status";
 import { nearestStationTo } from "@/lib/nearest-station";
@@ -52,6 +53,8 @@ export function OperatingHoursContent() {
   const [statusByLine, setStatusByLine] = useState<Map<string, LineStatus>>(new Map());
   const [today] = useState(() => new Date());
   const [expandedLineId, setExpandedLineId] = useState<string | null>(null);
+  const [followedOnly, setFollowedOnly] = useState(false);
+  const { followed, toggleFollowed } = useFollowedLines();
   const categoryMeta = reportCategoryMeta(t.reportPage.categories);
 
   useEffect(() => {
@@ -99,6 +102,15 @@ export function OperatingHoursContent() {
     return map;
   }, []);
 
+  // Followed lines first (stable — Array.prototype.sort keeps each
+  // group's own relative order), so a rider who's marked their usual
+  // lines sees them at the top without losing the rest of the network
+  // below. followedOnly instead drops everything else entirely.
+  const orderedLines = useMemo(() => {
+    if (followedOnly) return LINES.filter((line) => followed.has(line.id));
+    return [...LINES].sort((a, b) => Number(followed.has(b.id)) - Number(followed.has(a.id)));
+  }, [followed, followedOnly]);
+
   return (
     <Shell>
       <div className="animate-page-in mx-auto flex w-full max-w-3xl flex-col gap-4 p-4 md:p-8">
@@ -107,8 +119,24 @@ export function OperatingHoursContent() {
           <p className="text-sm text-foreground/60">{t.operatingHoursPage.description}</p>
         </div>
 
+        <label className="flex w-fit cursor-pointer items-center gap-2 text-xs text-foreground/70">
+          <input
+            type="checkbox"
+            checked={followedOnly}
+            onChange={(e) => setFollowedOnly(e.target.checked)}
+            disabled={followed.size === 0}
+            className="h-3.5 w-3.5 cursor-pointer accent-primary disabled:cursor-not-allowed"
+          />
+          {t.operatingHoursPage.followedOnly}
+        </label>
+
         <div className="flex flex-col gap-3">
-          {LINES.map((line) => {
+          {orderedLines.length === 0 && (
+            <p className="rounded-xl border border-dashed border-border p-4 text-center text-xs text-foreground/50">
+              {t.operatingHoursPage.noFollowedLines}
+            </p>
+          )}
+          {orderedLines.map((line) => {
             const hours = hoursByLine?.get(line.id);
             const status = statusByLine.get(line.id);
             const worstMeta = status?.worstCategory ? categoryMeta.find((c) => c.id === status.worstCategory) : undefined;
@@ -117,6 +145,26 @@ export function OperatingHoursContent() {
                 <div className="flex items-center gap-2">
                   <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: line.color }} />
                   <span className="truncate text-sm font-semibold text-foreground">{line.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => toggleFollowed(line.id)}
+                    aria-pressed={followed.has(line.id)}
+                    aria-label={followed.has(line.id) ? t.operatingHoursPage.unfollow : t.operatingHoursPage.follow}
+                    className="ml-auto cursor-pointer rounded-full p-1 text-foreground/30 hover:bg-[var(--nav-hover-bg)] hover:text-foreground/60"
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 20 20"
+                      fill={followed.has(line.id) ? "currentColor" : "none"}
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinejoin="round"
+                      className={followed.has(line.id) ? "text-[#eab308]" : undefined}
+                    >
+                      <path d="M10 2.5l2.35 4.76 5.25.76-3.8 3.7.9 5.23L10 14.5l-4.7 2.45.9-5.23-3.8-3.7 5.25-.76L10 2.5Z" />
+                    </svg>
+                  </button>
                 </div>
 
                 {(() => {

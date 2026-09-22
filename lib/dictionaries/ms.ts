@@ -147,6 +147,10 @@ export const ms: Dictionary = {
     expandReports: "Tunjukkan stesen",
     collapseReports: "Sembunyikan butiran stesen",
     reportCount: (count: number) => (count === 1 ? "1 laporan" : `${count} laporan`),
+    follow: "Ikuti laluan ini",
+    unfollow: "Nyahikuti laluan ini",
+    followedOnly: "Tunjukkan laluan yang diikuti sahaja",
+    noFollowedLines: "Anda belum ikuti sebarang laluan — ketik bintang pada laluan untuk sematkan di sini.",
   },
   routeForm: {
     title: "Tambah laluan",

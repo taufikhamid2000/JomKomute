@@ -145,6 +145,10 @@ export const en = {
     expandReports: "Show which stations",
     collapseReports: "Hide station details",
     reportCount: (count: number) => (count === 1 ? "1 report" : `${count} reports`),
+    follow: "Follow this line",
+    unfollow: "Unfollow this line",
+    followedOnly: "Show followed lines only",
+    noFollowedLines: "You haven't followed any lines yet — tap the star on a line to pin it here.",
   },
   routeForm: {
     title: "Add a route",
