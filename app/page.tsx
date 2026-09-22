@@ -14,7 +14,10 @@ import { ReportModal } from "@/components/report-modal";
 import { Shell } from "@/components/shell";
 import { StationPopup } from "@/components/station-popup";
 import { mockCrowdFor, type CrowdMock } from "@/lib/crowd-mock";
+import { useFollowedLines } from "@/lib/followed-lines";
 import { distanceMeters } from "@/lib/geo-distance";
+import { lineStatusesByLine } from "@/lib/line-status";
+import { detectFollowedLineTransitions, type LineStatusTransition } from "@/lib/line-status-alerts";
 import { lineById } from "@/lib/lines";
 import { useMapLayerPrefs } from "@/lib/map-layer-prefs";
 import { computeNextRoute, type NextRoute } from "@/lib/next-route";
@@ -138,6 +141,13 @@ export default function HomePage() {
   // until the modal acknowledges it via onPickedStationConsumed.
   const [stationPopup, setStationPopup] = useState<string | null>(null);
   const [mapPickedStation, setMapPickedStation] = useState<string | null>(null);
+  // No-server-needed fallback for "tell me when a followed line's
+  // status changes" (see lib/line-status-alerts.ts's header) — catches
+  // a transition the moment reports below refresh, so it works even
+  // without Web Push configured (lib/push-notifications.ts) or often
+  // enough Vercel Cron invocations to notice.
+  const { followed: followedLines } = useFollowedLines();
+  const [lineAlerts, setLineAlerts] = useState<LineStatusTransition[]>([]);
   // Map layer toggles (station-clickable / live reports / station names)
   // — persisted across sessions, see lib/map-layer-prefs.ts.
   const { prefs: mapPrefs, setPref: setMapPref } = useMapLayerPrefs();
@@ -300,6 +310,19 @@ export default function HomePage() {
       cancelled = true;
     };
   }, []);
+
+  const lineStatusByLine = useMemo(() => lineStatusesByLine(reports), [reports]);
+
+  // Runs every time `reports` changes (initial load, a new submit, a
+  // vote, a delete) — detectFollowedLineTransitions is idempotent
+  // against its own localStorage record, so this only ever produces a
+  // transition the first time it actually happens, not on every
+  // refresh while a followed line stays reported.
+  useEffect(() => {
+    const levels = new Map(Array.from(lineStatusByLine.entries()).map(([lineId, status]) => [lineId, status.level]));
+    const transitions = detectFollowedLineTransitions(levels, followedLines);
+    if (transitions.length > 0) setLineAlerts((prev) => [...prev, ...transitions]);
+  }, [lineStatusByLine, followedLines]);
 
   // Fetched once, up front (unlike reports above) — this is small, rarely
   // changing reference data, not something worth re-fetching per route
@@ -1060,6 +1083,52 @@ export default function HomePage() {
           pickedStation={mapPickedStation}
           onPickedStationConsumed={() => setMapPickedStation(null)}
         />
+      )}
+      {lineAlerts.length > 0 && (
+        <div
+          role="alertdialog"
+          aria-modal="true"
+          aria-label={t.homePage.lineAlertsTitle}
+          className="animate-backdrop-in fixed inset-0 z-[1200] flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
+          onClick={() => setLineAlerts([])}
+        >
+          <div
+            className="animate-modal-in flex w-full max-w-sm flex-col gap-3 rounded-t-2xl border-t border-border bg-background p-5 sm:rounded-2xl sm:border"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-sm font-semibold text-foreground">{t.homePage.lineAlertsTitle}</h2>
+            <ul className="flex flex-col gap-2">
+              {lineAlerts.map((alert, i) => {
+                const line = lineById(alert.lineId);
+                const status = lineStatusByLine.get(alert.lineId);
+                const worstMeta = status?.worstCategory ? categoryMeta.find((c) => c.id === status.worstCategory) : undefined;
+                return (
+                  <li key={`${alert.lineId}-${i}`} className="flex items-start gap-2 text-sm">
+                    <span
+                      aria-hidden="true"
+                      className="mt-1 h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: alert.level === "reported" ? (worstMeta?.color ?? "#475569") : "#16a34a" }}
+                    />
+                    <span className="text-foreground">
+                      <span className="font-medium">{line?.name ?? alert.lineId}</span>
+                      {": "}
+                      {alert.level === "reported" && status?.worstCategory
+                        ? t.operatingHoursPage.statusReported(status.count, worstMeta?.label ?? status.worstCategory)
+                        : t.homePage.lineAlertRecovered}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+            <button
+              type="button"
+              onClick={() => setLineAlerts([])}
+              className="mt-1 cursor-pointer rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              {t.reportPage.close}
+            </button>
+          </div>
+        </div>
       )}
     </Shell>
   );

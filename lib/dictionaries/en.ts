@@ -130,6 +130,8 @@ export const en = {
     locateMe: "My location",
     hazardNearby: (category: string) => `${category} reported near this route`,
     lastTrainSoon: (time: string, line: string) => `Last train ~${time} on the ${line}`,
+    lineAlertsTitle: "Line status update",
+    lineAlertRecovered: "Back to normal service.",
   },
   operatingHoursPage: {
     title: "Line status",

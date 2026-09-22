@@ -132,6 +132,8 @@ export const ms: Dictionary = {
     locateMe: "Lokasi saya",
     hazardNearby: (category: string) => `${category} dilaporkan berhampiran laluan ini`,
     lastTrainSoon: (time: string, line: string) => `Tren terakhir ~${time} pada ${line}`,
+    lineAlertsTitle: "Kemas kini status laluan",
+    lineAlertRecovered: "Kembali kepada perkhidmatan normal.",
   },
   operatingHoursPage: {
     title: "Status laluan",
