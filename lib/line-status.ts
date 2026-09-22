@@ -1,6 +1,6 @@
 // Crowdsourced per-line status derived from recent visible user reports
 // (see lib/user-reports-client.ts's getRecentUserReports(), which already
-// reads from jomkomute_user_reports_visible — 24h RLS window plus
+// reads from the jomkomute.user_reports_visible view — 24h RLS window plus
 // dispute-voting applied). This narrows further to a short "right now"
 // window and aggregates by line_id for app/operating-hours/page.tsx's
 // per-line status badge.

@@ -126,7 +126,7 @@ export async function submitUserReport(input: NewUserReport): Promise<UserReport
   let error: unknown;
   try {
     ({ data, error } = await supabaseBrowser()
-      .from("jomkomute_user_reports")
+      .from("user_reports")
       .insert({
         lat: input.lat,
         lng: input.lng,
@@ -148,18 +148,21 @@ export async function submitUserReport(input: NewUserReport): Promise<UserReport
   return fromRow(data as unknown as UserReportRow);
 }
 
-// Reads from jomkomute_user_reports_visible rather than the base table —
-// that view (see supabase/migrations/20260919160000_jomkomute_user_report_votes.sql)
+// Reads from user_reports_visible rather than the base table — that view
+// (see supabase/migrations/20260919160000_jomkomute_user_report_votes.sql)
 // already applies the base table's 24h-recency select policy and layers
 // on "not net-disputed away by 3+ votes", so this is just fetching
 // everything that's actually visible right now.
 export async function getRecentUserReports(): Promise<UserReport[]> {
-  const { data, error } = await supabaseBrowser()
-    .from("jomkomute_user_reports_visible")
-    .select()
-    .order("created_at", { ascending: false });
+  let data: unknown;
+  let error: unknown;
+  try {
+    ({ data, error } = await supabaseBrowser().from("user_reports_visible").select().order("created_at", { ascending: false }));
+  } catch (thrown) {
+    throw classifySubmitError(thrown);
+  }
 
-  if (error) throw new Error(`Failed to load reports: ${error.message}`);
+  if (error) throw classifySubmitError(error);
   return ((data ?? []) as unknown as UserReportRow[]).map(fromRow);
 }
 
@@ -210,7 +213,7 @@ export async function submitReportVote(reportId: string, vote: ReportVote): Prom
   let error: unknown;
   try {
     ({ error } = await supabaseBrowser()
-      .from("jomkomute_user_report_votes")
+      .from("user_report_votes")
       .upsert({ report_id: reportId, voter_key: voterKey, vote } as never, { onConflict: "report_id,voter_key" }));
   } catch (thrown) {
     throw classifySubmitError(thrown);
