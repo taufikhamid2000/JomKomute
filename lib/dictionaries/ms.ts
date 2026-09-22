@@ -143,7 +143,7 @@ export const ms: Dictionary = {
     empty: "Waktu operasi belum tersedia.",
     statusNormal: "Perkhidmatan normal",
     statusReported: (count: number, category: string) =>
-      count === 1 ? `1 laporan ${category} dalam sejam lepas` : `${count} laporan ${category} dalam sejam lepas`,
+      count === 1 ? `1 laporan ${category} dalam 24 jam lepas` : `${count} laporan ${category} dalam 24 jam lepas`,
     expandReports: "Tunjukkan stesen",
     collapseReports: "Sembunyikan butiran stesen",
     reportCount: (count: number) => (count === 1 ? "1 laporan" : `${count} laporan`),

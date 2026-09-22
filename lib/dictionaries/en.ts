@@ -141,7 +141,7 @@ export const en = {
     empty: "Operating hours aren't available yet.",
     statusNormal: "Normal service",
     statusReported: (count: number, category: string) =>
-      count === 1 ? `1 report of ${category} in the last hour` : `${count} reports of ${category} in the last hour`,
+      count === 1 ? `1 report of ${category} in the last 24h` : `${count} reports of ${category} in the last 24h`,
     expandReports: "Show which stations",
     collapseReports: "Hide station details",
     reportCount: (count: number) => (count === 1 ? "1 report" : `${count} reports`),
