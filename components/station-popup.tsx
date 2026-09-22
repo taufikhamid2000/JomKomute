@@ -16,11 +16,20 @@
 // data already available: which lines serve the station, and live
 // crowdsourced status from recent reports on those lines.
 
+import { useMemo } from "react";
+import { distanceMeters } from "@/lib/geo-distance";
 import { linesForStation } from "@/lib/lines";
 import { stationStatusFor } from "@/lib/line-status";
 import { reportCategoryMeta } from "@/lib/report-categories";
+import { STATION_COORDS } from "@/lib/stations";
 import { useDictionary } from "@/lib/use-dictionary";
 import type { UserReport } from "@/lib/user-reports-client";
+
+// Same "near enough to count as this spot" radius
+// components/report-modal.tsx's route-corridor check uses — reports
+// aren't tagged with a station name, only lat/lng, so "reports at this
+// station" is a proximity filter rather than an exact match.
+const NEARBY_REPORT_METERS = 300;
 
 export function StationPopup({
   station,
@@ -38,6 +47,21 @@ export function StationPopup({
   const status = stationStatusFor(reports, station);
   const categories = reportCategoryMeta(t.reportPage.categories);
   const worstMeta = status.worstCategory ? categories.find((c) => c.id === status.worstCategory) : undefined;
+
+  // Every recent (24h — the same window jomkomute.user_reports_visible's
+  // RLS select policy already scopes `reports` to) report near this
+  // station's coordinates, newest first — not just the ones on its own
+  // lines within the last hour like the status pill above, so tapping a
+  // report marker's cluster (components/home-map.tsx's
+  // onSelectReportCluster) always shows at least the report that was
+  // tapped.
+  const coord = STATION_COORDS[station];
+  const nearbyReports = useMemo(() => {
+    if (!coord) return [];
+    return reports
+      .filter((r) => distanceMeters({ lat: r.lat, lng: r.lng }, { lat: coord[0], lng: coord[1] }) <= NEARBY_REPORT_METERS)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [reports, coord]);
 
   return (
     <div
@@ -92,6 +116,34 @@ export function StationPopup({
               : t.operatingHoursPage.statusNormal}
           </span>
         </div>
+
+        {nearbyReports.length > 0 && (
+          <ul className="flex max-h-40 flex-col gap-2 overflow-y-auto border-t border-border pt-2">
+            {nearbyReports.map((report) => {
+              const meta = categories.find((c) => c.id === report.category);
+              return (
+                <li key={report.id} className="flex items-start gap-2 text-xs">
+                  <span
+                    aria-hidden="true"
+                    className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+                    style={{ backgroundColor: meta?.color ?? "#475569", color: "white" }}
+                  >
+                    {meta?.icon}
+                  </span>
+                  <div className="flex flex-1 flex-col">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium text-foreground">{meta?.label ?? report.category}</span>
+                      <span className="text-foreground/40">
+                        {new Date(report.createdAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                    {report.note && <span className="text-foreground/60">{report.note}</span>}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
 
         <button
           type="button"

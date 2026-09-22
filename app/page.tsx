@@ -554,6 +554,7 @@ export default function HomePage() {
           onPickStation={
             !isReportModalOpen && !stationPopup && mapPrefs.stationsClickable ? (name) => setStationPopup(name) : undefined
           }
+          onSelectReportCluster={!isReportModalOpen ? (name) => setStationPopup(name) : undefined}
         />
 
         {/* Waze-style floating action button — opens the report modal in

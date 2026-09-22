@@ -225,6 +225,7 @@ export function HomeMap({
   showStationNames,
   showReports,
   myLocation,
+  onSelectReportCluster,
 }: {
   legs?: RouteLeg[];
   routeOptions?: RouteOption[];
@@ -257,6 +258,14 @@ export function HomeMap({
   // requestId lets pressing the button again re-fly even to an
   // unchanged position (see FlyToMyLocation above).
   myLocation?: { lat: number; lng: number; requestId: number } | null;
+  // Tapping a report marker (see nearbyReportClusters below) resolves it
+  // to its nearest station and reports that back — same "open the
+  // station popup" destination as onPickStation, just reachable from an
+  // existing report instead of tapping a station directly. Deliberately
+  // a separate prop rather than reusing onPickStation: viewing a report
+  // shouldn't depend on the "Station clickable" layer toggle app/page.tsx
+  // gates onPickStation behind.
+  onSelectReportCluster?: (station: string) => void;
 }) {
   const networkSegments = useMemo(() => NETWORK_SEGMENTS, []);
   const hasOptions = !!routeOptions && routeOptions.length > 0;
@@ -341,6 +350,14 @@ export function HomeMap({
   }, [reports, relevantRoutePoints]);
   const nearbyReportClusters = useMemo(() => clusterReports(nearbyReports), [nearbyReports]);
   const shouldShowReports = showReports !== false;
+
+  // Every station with known coordinates, regardless of pickableStations
+  // — a tapped report marker should resolve to its nearest station even
+  // when that station isn't part of the current pickable/route set.
+  const allStationPoints = useMemo(
+    () => Object.entries(STATION_COORDS).map(([name, coord]) => ({ name, coord })),
+    [],
+  );
 
   return (
     <MapContainer center={center} zoom={DEFAULT_ZOOM} scrollWheelZoom className="h-full w-full">
@@ -441,6 +458,16 @@ export function HomeMap({
             key={`report-${cluster.id}`}
             position={[cluster.lat, cluster.lng]}
             icon={reportIcon(cluster.category, cluster.reports.length)}
+            eventHandlers={
+              onSelectReportCluster
+                ? {
+                    click: () => {
+                      const station = nearestStationTo({ lat: cluster.lat, lng: cluster.lng }, allStationPoints);
+                      if (station) onSelectReportCluster(station);
+                    },
+                  }
+                : undefined
+            }
           />
         ))}
 
