@@ -44,7 +44,7 @@ export const ms: Dictionary = {
     cancel: "Batal",
     submitting: "Menghantar…",
     success: "Terima kasih — laporan anda kini di peta.",
-    error: "Gagal menghantar laporan. Cuba lagi.",
+    error: "Ada masalah menghantar laporan itu — bukan salah anda. Cuba lagi sebentar lagi.",
     errorOffline: "Anda luar talian — semak sambungan anda dan cuba lagi.",
     errorServer: "Pelayan menolak laporan itu. Cuba lagi sebentar lagi.",
     loadError: "Gagal memuatkan laporan terkini.",

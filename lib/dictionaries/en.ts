@@ -42,7 +42,7 @@ export const en = {
     cancel: "Cancel",
     submitting: "Sending…",
     success: "Thanks — your report is on the map.",
-    error: "Couldn't send that report. Try again.",
+    error: "Something went wrong sending that report — it's on our end, not yours. Try again in a moment.",
     errorOffline: "You're offline — check your connection and try again.",
     errorServer: "The server rejected that report. Try again in a moment.",
     loadError: "Couldn't load recent reports.",

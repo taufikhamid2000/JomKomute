@@ -38,6 +38,10 @@ function classifySubmitError(error: unknown): ReportSubmitError {
   if (code || /row-level security|permission denied|violates/i.test(message)) {
     return new ReportSubmitError("server", message);
   }
+  // Doesn't match either known pattern — the UI shows a generic message
+  // for this bucket (see report-modal.tsx/report-map.tsx), so log the
+  // real error here or it's otherwise invisible to whoever hit it.
+  console.error("Unclassified report submit error:", error);
   return new ReportSubmitError("unknown", message);
 }
 
