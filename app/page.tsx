@@ -557,35 +557,40 @@ export default function HomePage() {
     };
   }, [activeNext, activeLegs]);
 
-  // Boot-time check for the Home route specifically (mirrors
+  // Boot-time check for every saved route (mirrors
   // detectFollowedLineTransitions above) — the active-route effect only
-  // runs once the rider taps into a route, but a rider should learn their
-  // usual commute is exceptionally crowded just from opening the app, the
-  // same way a followed line's status reaches them without opening
-  // anything. Work isn't included: Home is the one route riders expect
-  // "just opening the app" to already know about (see the Home/Work
-  // quick-access cards this mirrors).
-  const homeNext: NextRoute | null = useMemo(
-    () => (homeRoute ? computeNextRoute([homeRoute], exceptions, new Date()) : null),
-    [homeRoute, exceptions],
-  );
+  // runs once the rider taps into a route, but a rider should learn any of
+  // their saved commutes is exceptionally crowded just from opening the
+  // app, the same way a followed line's status reaches them without
+  // opening anything. Not limited to Home/Work: a route saved for an
+  // occasional trip deserves the same heads-up as a daily commute.
+  const nextByRoute: NextRoute[] = useMemo(() => {
+    const results: NextRoute[] = [];
+    for (const route of routes) {
+      const next = computeNextRoute([route], exceptions, new Date());
+      if (next) results.push(next);
+    }
+    return results;
+  }, [routes, exceptions]);
 
   useEffect(() => {
-    if (!homeNext || homeNext.route.id === activeRoute?.id) return; // already covered by the active-route effect above
     let cancelled = false;
-    const station = homeNext.route.originStation;
-    const timeBucket = timeToMinutes(homeNext.route.departureTime);
-    getPingCounts(station, homeNext.date, timeBucket)
-      .then(({ count, suppressed }) => {
-        if (cancelled || suppressed || count === null) return;
-        maybeAlertExceptionalCrowd(homeNext.route.id, homeNext.route.label, homeNext.date, homeNext.route.departureTime, count);
-      })
-      .catch(() => {});
+    for (const next of nextByRoute) {
+      if (next.route.id === activeRoute?.id) continue; // already covered by the active-route effect above
+      const station = next.route.originStation;
+      const timeBucket = timeToMinutes(next.route.departureTime);
+      getPingCounts(station, next.date, timeBucket)
+        .then(({ count, suppressed }) => {
+          if (cancelled || suppressed || count === null) return;
+          maybeAlertExceptionalCrowd(next.route.id, next.route.label, next.date, next.route.departureTime, count);
+        })
+        .catch(() => {});
+    }
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [homeNext, activeRoute?.id]);
+  }, [nextByRoute, activeRoute?.id]);
 
   const activeDateLabel = activeNext
     ? activeNext.date === new Date().toISOString().slice(0, 10)

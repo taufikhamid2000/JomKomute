@@ -135,7 +135,7 @@ export const ms: Dictionary = {
     alertsTitle: "Makluman",
     lineAlertRecovered: "Kembali kepada perkhidmatan normal.",
     exceptionalCrowd: (count: number, time: string) => `bilangan penumpang yang luar biasa tinggi (${count}) merancang perjalanan ini sekitar ${time} hari ini`,
-    exceptionalCrowdSuggestion: "Pertimbangkan untuk bekerja dari rumah, guna mod pengangkutan lain, atau ubah waktu komuting anda.",
+    exceptionalCrowdSuggestion: "Pertimbangkan guna mod pengangkutan lain, atau ubah waktu perjalanan anda.",
   },
   operatingHoursPage: {
     title: "Status laluan",
@@ -186,6 +186,8 @@ export const ms: Dictionary = {
     daysLabel: "Hari",
     save: "Simpan laluan",
     saveChanges: "Simpan perubahan",
+    outsideOperatingHours: (lineName: string, dayType: string, first: string, last: string) =>
+      `${lineName} tidak beroperasi pada waktu ini pada hari ${dayType.toLowerCase()} — perkhidmatan dari ${first} hingga ${last}.`,
   },
   legsEditor: {
     from: "Dari",

@@ -133,7 +133,7 @@ export const en = {
     alertsTitle: "Alerts",
     lineAlertRecovered: "Back to normal service.",
     exceptionalCrowd: (count: number, time: string) => `an exceptionally high number of commuters (${count}) are planning this trip around ${time} today`,
-    exceptionalCrowdSuggestion: "Consider working from home, an alternate mode of transport, or shifting your commute time.",
+    exceptionalCrowdSuggestion: "Consider an alternate mode of transport, or shifting your travel time.",
   },
   operatingHoursPage: {
     title: "Line status",
@@ -184,6 +184,8 @@ export const en = {
     daysLabel: "Days",
     save: "Save route",
     saveChanges: "Save changes",
+    outsideOperatingHours: (lineName: string, dayType: string, first: string, last: string) =>
+      `${lineName} doesn't run at this time on a ${dayType.toLowerCase()} — service runs ${first}–${last}.`,
   },
   legsEditor: {
     from: "From",

@@ -1,12 +1,36 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Combobox } from "@/components/combobox";
+import { formatClockTime, getLineOperatingHours, type LineOperatingHours } from "@/lib/operating-hours-client";
+import { findRoute as findRouteLegs } from "@/lib/route-finder";
 import { useSavedRoutes } from "@/lib/store";
-import { type DayOfWeek } from "@/lib/types";
+import { type DayOfWeek, type RouteLeg } from "@/lib/types";
 import { useDictionary } from "@/lib/use-dictionary";
 import { useSingleRouteFinder } from "@/lib/use-route-finder";
+
+function timeToMinutes(time: string): number {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+}
+
+// Whether `timeMinutes` falls within [first, last] for one line/day-type,
+// treating a last-departure clock time earlier than first (e.g. first
+// 06:00, last 01:10) as running past midnight — same normalization as
+// lib/operating-hours-client.ts's minutesUntilLastTrain, but also checking
+// timeMinutes+1440 so a very-early-morning pick (e.g. 00:30) still reads
+// as "within" a late-night run that started the previous day.
+function isWithinWindow(first: string | null, last: string | null, timeMinutes: number): boolean {
+  if (!first || !last) return true; // unknown hours — don't warn on missing data
+  const firstMin = timeToMinutes(first);
+  const lastRaw = timeToMinutes(last);
+  const lastMin = lastRaw < firstMin ? lastRaw + 1440 : lastRaw;
+  return (
+    (timeMinutes >= firstMin && timeMinutes <= lastMin) ||
+    (timeMinutes + 1440 >= firstMin && timeMinutes + 1440 <= lastMin)
+  );
+}
 
 const WEEKDAYS: DayOfWeek[] = [1, 2, 3, 4, 5];
 const ALL_DAYS: DayOfWeek[] = [0, 1, 2, 3, 4, 5, 6];
@@ -50,6 +74,60 @@ export function RouteForm() {
     find: findRoute,
   } = useSingleRouteFinder();
   const [finderCollapsed, setFinderCollapsed] = useState(false);
+
+  // Recomputed from origin/destination directly (not from the finder's own
+  // find(), which only stores a boolean success) so it's available for the
+  // operating-hours check below regardless of whether the stations came
+  // from the manual finder, ?reverseOf, ?editId, or ?prefillOrigin.
+  const [legs, setLegs] = useState<RouteLeg[] | undefined>(undefined);
+  useEffect(() => {
+    setLegs(findOrigin && findDestination ? findRouteLegs(findOrigin, findDestination) : undefined);
+  }, [findOrigin, findDestination]);
+
+  const [operatingHours, setOperatingHours] = useState<LineOperatingHours[]>([]);
+  useEffect(() => {
+    getLineOperatingHours()
+      .then(setOperatingHours)
+      .catch(() => {});
+  }, []);
+
+  // Non-blocking warning: a rider can still save a route at a time no
+  // train actually runs (e.g. 3am when the last train is ~midnight) —
+  // this surfaces that rather than silently accepting it, without hard-
+  // blocking submission (holiday schedules and other edge cases can make
+  // the published hours not quite match reality).
+  const hoursWarnings = useMemo(() => {
+    if (!legs || legs.length === 0 || operatingHours.length === 0) return [];
+    const timeMinutes = timeToMinutes(time);
+    const hasWeekday = Array.from(days).some((d) => d >= 1 && d <= 5);
+    const hasWeekend = Array.from(days).some((d) => d === 0 || d === 6);
+    const lineIds = Array.from(new Set(legs.map((leg) => leg.line)));
+    const warnings: { lineName: string; dayType: string; first: string; last: string }[] = [];
+    for (const lineId of lineIds) {
+      const hours = operatingHours.find((h) => h.lineId === lineId);
+      if (!hours) continue;
+      if (hasWeekday && !isWithinWindow(hours.weekdayFirst, hours.weekdayLast, timeMinutes)) {
+        warnings.push({
+          lineName: hours.lineName ?? lineId,
+          dayType: t.operatingHoursPage.weekday,
+          first: hours.weekdayFirst ?? "?",
+          last: hours.weekdayLast ?? "?",
+        });
+      }
+      if (hasWeekend && !isWithinWindow(hours.weekendFirst, hours.weekendLast, timeMinutes)) {
+        warnings.push({
+          lineName: hours.lineName ?? lineId,
+          dayType: t.operatingHoursPage.weekend,
+          first: hours.weekendFirst ?? "?",
+          last: hours.weekendLast ?? "?",
+        });
+      }
+    }
+    return warnings;
+    // t.operatingHoursPage.weekday/weekend are stable string values off the
+    // dictionary, not worth listing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [legs, operatingHours, time, days]);
 
   useEffect(() => {
     if (prefillOriginParam) setFindOrigin(prefillOriginParam);
@@ -214,6 +292,11 @@ export function RouteForm() {
           onChange={(e) => setTime(e.target.value)}
           className="w-40 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
+        {hoursWarnings.map((w, i) => (
+          <p key={`${w.lineName}-${w.dayType}-${i}`} className="text-xs text-destructive">
+            {t.routeForm.outsideOperatingHours(w.lineName, w.dayType, formatClockTime(w.first), formatClockTime(w.last))}
+          </p>
+        ))}
       </div>
 
       <div className="flex flex-col gap-1.5">
