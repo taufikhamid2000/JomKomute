@@ -13,6 +13,7 @@ import { Combobox } from "@/components/combobox";
 import { ReportModal } from "@/components/report-modal";
 import { Shell } from "@/components/shell";
 import { StationPopup } from "@/components/station-popup";
+import { EXCEPTIONAL_CROWD_THRESHOLD, isNewExceptionalCrowd } from "@/lib/crowd-alerts";
 import { mockCrowdFor, type CrowdMock } from "@/lib/crowd-mock";
 import { useFollowedLines } from "@/lib/followed-lines";
 import { distanceMeters } from "@/lib/geo-distance";
@@ -43,6 +44,14 @@ function timeToMinutes(hhmm: string): number {
   const [h, m] = hhmm.split(":").map(Number);
   return h * 60 + m;
 }
+
+// The boot-time alert modal's two possible entries — a followed line's
+// status transition (lib/line-status-alerts.ts) or a saved route's crowd
+// count crossing lib/crowd-alerts.ts's exceptional threshold. One queue,
+// one modal, both kinds discriminated by `kind` when rendered.
+type CrowdBoardAlert = { kind: "crowd"; routeId: string; routeLabel: string; count: number; time: string };
+type LineBoardAlert = LineStatusTransition & { kind: "line" };
+type BoardAlert = LineBoardAlert | CrowdBoardAlert;
 
 // react-leaflet touches window/document at module load — dynamic-import
 // with ssr:false so next.config.ts's static export (prerendered with no
@@ -147,7 +156,11 @@ export default function HomePage() {
   // without Web Push configured (lib/push-notifications.ts) or often
   // enough Vercel Cron invocations to notice.
   const { followed: followedLines } = useFollowedLines();
-  const [lineAlerts, setLineAlerts] = useState<LineStatusTransition[]>([]);
+  // Boot-time alert modal — line-status transitions (above) and
+  // exceptionally-high crowd counts (below, near activeCrowd) both land
+  // in this one queue so the rider sees one combined alert dialog rather
+  // than two separate popups competing for attention.
+  const [boardAlerts, setBoardAlerts] = useState<BoardAlert[]>([]);
   // Map layer toggles (station-clickable / live reports / station names)
   // — persisted across sessions, see lib/map-layer-prefs.ts.
   const { prefs: mapPrefs, setPref: setMapPref } = useMapLayerPrefs();
@@ -321,7 +334,7 @@ export default function HomePage() {
   useEffect(() => {
     const levels = new Map(Array.from(lineStatusByLine.entries()).map(([lineId, status]) => [lineId, status.level]));
     const transitions = detectFollowedLineTransitions(levels, followedLines);
-    if (transitions.length > 0) setLineAlerts((prev) => [...prev, ...transitions]);
+    if (transitions.length > 0) setBoardAlerts((prev) => [...prev, ...transitions.map((t) => ({ kind: "line" as const, ...t }))]);
   }, [lineStatusByLine, followedLines]);
 
   // Fetched once, up front (unlike reports above) — this is small, rarely
@@ -495,6 +508,17 @@ export default function HomePage() {
 
   const [activeCrowd, setActiveCrowd] = useState<CrowdMock | null>(null);
 
+  // Shared by the active-route ping check below and the Home-route boot
+  // check further down — pushes a "crowd" board alert the first time a
+  // route+date's real (non-suppressed) ping count crosses
+  // EXCEPTIONAL_CROWD_THRESHOLD, deduped per route+date by
+  // isNewExceptionalCrowd. Never called with the mock fallback count.
+  function maybeAlertExceptionalCrowd(routeId: string, routeLabel: string, date: string, time: string, count: number) {
+    if (count < EXCEPTIONAL_CROWD_THRESHOLD) return;
+    if (!isNewExceptionalCrowd(routeId, date)) return;
+    setBoardAlerts((prev) => [...prev, { kind: "crowd", routeId, routeLabel, count, time }]);
+  }
+
   useEffect(() => {
     if (!activeNext || !activeLegs || activeLegs.length === 0) {
       setActiveCrowd(null);
@@ -522,6 +546,7 @@ export default function HomePage() {
       .then(({ count, suppressed }) => {
         if (cancelled || suppressed || count === null) return;
         setActiveCrowd({ count, busier: count > 150 });
+        maybeAlertExceptionalCrowd(activeNext.route.id, activeNext.route.label, activeNext.date, activeNext.route.departureTime, count);
       })
       .catch(() => {
         // Keep the mock fallback already set above.
@@ -531,6 +556,36 @@ export default function HomePage() {
       cancelled = true;
     };
   }, [activeNext, activeLegs]);
+
+  // Boot-time check for the Home route specifically (mirrors
+  // detectFollowedLineTransitions above) — the active-route effect only
+  // runs once the rider taps into a route, but a rider should learn their
+  // usual commute is exceptionally crowded just from opening the app, the
+  // same way a followed line's status reaches them without opening
+  // anything. Work isn't included: Home is the one route riders expect
+  // "just opening the app" to already know about (see the Home/Work
+  // quick-access cards this mirrors).
+  const homeNext: NextRoute | null = useMemo(
+    () => (homeRoute ? computeNextRoute([homeRoute], exceptions, new Date()) : null),
+    [homeRoute, exceptions],
+  );
+
+  useEffect(() => {
+    if (!homeNext || homeNext.route.id === activeRoute?.id) return; // already covered by the active-route effect above
+    let cancelled = false;
+    const station = homeNext.route.originStation;
+    const timeBucket = timeToMinutes(homeNext.route.departureTime);
+    getPingCounts(station, homeNext.date, timeBucket)
+      .then(({ count, suppressed }) => {
+        if (cancelled || suppressed || count === null) return;
+        maybeAlertExceptionalCrowd(homeNext.route.id, homeNext.route.label, homeNext.date, homeNext.route.departureTime, count);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [homeNext, activeRoute?.id]);
 
   const activeDateLabel = activeNext
     ? activeNext.date === new Date().toISOString().slice(0, 10)
@@ -1084,26 +1139,41 @@ export default function HomePage() {
           onPickedStationConsumed={() => setMapPickedStation(null)}
         />
       )}
-      {lineAlerts.length > 0 && (
+      {boardAlerts.length > 0 && (
         <div
           role="alertdialog"
           aria-modal="true"
-          aria-label={t.homePage.lineAlertsTitle}
+          aria-label={t.homePage.alertsTitle}
           className="animate-backdrop-in fixed inset-0 z-[1200] flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
-          onClick={() => setLineAlerts([])}
+          onClick={() => setBoardAlerts([])}
         >
           <div
             className="animate-modal-in flex w-full max-w-sm flex-col gap-3 rounded-t-2xl border-t border-border bg-background p-5 sm:rounded-2xl sm:border"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-sm font-semibold text-foreground">{t.homePage.lineAlertsTitle}</h2>
-            <ul className="flex flex-col gap-2">
-              {lineAlerts.map((alert, i) => {
+            <h2 className="text-sm font-semibold text-foreground">{t.homePage.alertsTitle}</h2>
+            <ul className="flex flex-col gap-3">
+              {boardAlerts.map((alert, i) => {
+                if (alert.kind === "crowd") {
+                  return (
+                    <li key={`crowd-${alert.routeId}-${i}`} className="flex flex-col gap-1 text-sm">
+                      <span className="flex items-start gap-2">
+                        <span aria-hidden="true" className="mt-1 h-2 w-2 shrink-0 rounded-full bg-destructive" />
+                        <span className="text-foreground">
+                          <span className="font-medium">{alert.routeLabel}</span>
+                          {": "}
+                          {t.homePage.exceptionalCrowd(alert.count, alert.time)}
+                        </span>
+                      </span>
+                      <span className="pl-4 text-xs text-foreground/60">{t.homePage.exceptionalCrowdSuggestion}</span>
+                    </li>
+                  );
+                }
                 const line = lineById(alert.lineId);
                 const status = lineStatusByLine.get(alert.lineId);
                 const worstMeta = status?.worstCategory ? categoryMeta.find((c) => c.id === status.worstCategory) : undefined;
                 return (
-                  <li key={`${alert.lineId}-${i}`} className="flex items-start gap-2 text-sm">
+                  <li key={`line-${alert.lineId}-${i}`} className="flex items-start gap-2 text-sm">
                     <span
                       aria-hidden="true"
                       className="mt-1 h-2 w-2 shrink-0 rounded-full"
@@ -1122,7 +1192,7 @@ export default function HomePage() {
             </ul>
             <button
               type="button"
-              onClick={() => setLineAlerts([])}
+              onClick={() => setBoardAlerts([])}
               className="mt-1 cursor-pointer rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
             >
               {t.reportPage.close}

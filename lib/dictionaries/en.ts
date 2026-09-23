@@ -130,8 +130,10 @@ export const en = {
     locateMe: "My location",
     hazardNearby: (category: string) => `${category} reported near this route`,
     lastTrainSoon: (time: string, line: string) => `Last train ~${time} on the ${line}`,
-    lineAlertsTitle: "Line status update",
+    alertsTitle: "Alerts",
     lineAlertRecovered: "Back to normal service.",
+    exceptionalCrowd: (count: number, time: string) => `an exceptionally high number of commuters (${count}) are planning this trip around ${time} today`,
+    exceptionalCrowdSuggestion: "Consider working from home, an alternate mode of transport, or shifting your commute time.",
   },
   operatingHoursPage: {
     title: "Line status",
