@@ -708,7 +708,7 @@ export default function HomePage() {
         ) : activeRoute ? (
           <div
             style={panelDragStyle}
-            className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-2 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4"
+            className="absolute inset-x-0 bottom-0 z-[1000] flex max-h-[75dvh] flex-col gap-2 overflow-y-auto rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4"
           >
             <button
               type="button"
@@ -789,7 +789,7 @@ export default function HomePage() {
         ) : routeOptions ? (
           <div
             style={panelDragStyle}
-            className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-3 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4"
+            className="absolute inset-x-0 bottom-0 z-[1000] flex max-h-[75dvh] flex-col gap-3 overflow-y-auto rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4"
           >
             <button
               type="button"
@@ -911,7 +911,7 @@ export default function HomePage() {
         ) : oneTimeRoute ? (
           <div
             style={panelDragStyle}
-            className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-2 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4"
+            className="absolute inset-x-0 bottom-0 z-[1000] flex max-h-[75dvh] flex-col gap-2 overflow-y-auto rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4"
           >
             <button
               type="button"
@@ -946,7 +946,7 @@ export default function HomePage() {
         ) : (
           <div
             style={panelDragStyle}
-            className="absolute inset-x-0 bottom-0 z-[1000] flex flex-col gap-3 rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4"
+            className="absolute inset-x-0 bottom-0 z-[1000] flex max-h-[75dvh] flex-col gap-3 overflow-y-auto rounded-t-2xl border-t border-border bg-background p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] md:mx-auto md:max-w-2xl md:rounded-2xl md:border md:mb-4"
           >
             <button
               type="button"
