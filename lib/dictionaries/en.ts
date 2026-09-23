@@ -133,8 +133,7 @@ export const en = {
     alertsTitle: "Alerts",
     lineAlertRecovered: "Back to normal service.",
     exceptionalCrowd: (count: number, time: string) => `an exceptionally high number of commuters (${count}) are planning this trip around ${time} today`,
-    exceptionalCrowdSuggestion: "Consider an alternate mode of transport, or shifting your travel time.",
-    exceptionalCrowdSuggestionWork: "Consider working from home, an alternate mode of transport, or shifting your commute time.",
+    changeTravelTime: "Change travel time",
   },
   operatingHoursPage: {
     title: "Line status",

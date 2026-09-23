@@ -29,12 +29,12 @@ import {
   minutesUntilLastTrain,
   type LineOperatingHours,
 } from "@/lib/operating-hours-client";
-import { getPingCounts, putPing } from "@/lib/pings-client";
+import { deletePing, getPingCounts, putPing } from "@/lib/pings-client";
 import { reportCategoryMeta } from "@/lib/report-categories";
 import { reportableStationOptions } from "@/lib/route-corridor";
 import { findRoute, findRouteOptions as findRouteOptionsFor, type RouteOption } from "@/lib/route-finder";
 import { STATION_COORDS } from "@/lib/stations";
-import { useAllExceptions, useSavedRoutes } from "@/lib/store";
+import { addExceptionRecord, useAllExceptions, useSavedRoutes } from "@/lib/store";
 import type { RouteLeg, SavedRoute } from "@/lib/types";
 import { useDictionary } from "@/lib/use-dictionary";
 import { useRouteFinderOptions } from "@/lib/use-route-finder";
@@ -49,7 +49,16 @@ function timeToMinutes(hhmm: string): number {
 // status transition (lib/line-status-alerts.ts) or a saved route's crowd
 // count crossing lib/crowd-alerts.ts's exceptional threshold. One queue,
 // one modal, both kinds discriminated by `kind` when rendered.
-type CrowdBoardAlert = { kind: "crowd"; routeId: string; routeLabel: string; count: number; time: string; isWork: boolean };
+type CrowdBoardAlert = {
+  kind: "crowd";
+  routeId: string;
+  routeLabel: string;
+  station: string;
+  date: string;
+  count: number;
+  time: string;
+  isWork: boolean;
+};
 type LineBoardAlert = LineStatusTransition & { kind: "line" };
 type BoardAlert = LineBoardAlert | CrowdBoardAlert;
 
@@ -516,6 +525,7 @@ export default function HomePage() {
   function maybeAlertExceptionalCrowd(
     routeId: string,
     routeLabel: string,
+    station: string,
     date: string,
     time: string,
     count: number,
@@ -523,7 +533,47 @@ export default function HomePage() {
   ) {
     if (count < EXCEPTIONAL_CROWD_THRESHOLD) return;
     if (!isNewExceptionalCrowd(routeId, date)) return;
-    setBoardAlerts((prev) => [...prev, { kind: "crowd", routeId, routeLabel, count, time, isWork }]);
+    setBoardAlerts((prev) => [...prev, { kind: "crowd", routeId, routeLabel, station, date, count, time, isWork }]);
+  }
+
+  // Which crowd alert (by routeId) is showing its inline "change travel
+  // time" picker, and the time being typed into it — null/"" when none is
+  // open. Keyed by routeId rather than array index since boardAlerts can
+  // be filtered (an action removes its own alert) between renders.
+  const [crowdTimeEditRouteId, setCrowdTimeEditRouteId] = useState<string | null>(null);
+  const [crowdTimeEditValue, setCrowdTimeEditValue] = useState("");
+
+  function dismissCrowdAlert(routeId: string) {
+    setBoardAlerts((prev) => prev.filter((a) => !(a.kind === "crowd" && a.routeId === routeId)));
+    if (crowdTimeEditRouteId === routeId) setCrowdTimeEditRouteId(null);
+  }
+
+  // "Work from home" / "Alternate transport" both mean the rider isn't
+  // making this specific trip by rail today — same skip-exception system
+  // components/change-plan-modal.tsx already uses (so it also correctly
+  // skips the return-trip route later in exceptions/forecast UI), plus
+  // deleting this device's own ping so the crowd count this alert was
+  // built from actually reflects the change, not just a stale signal.
+  function respondToCrowdAlert(alert: CrowdBoardAlert, reason: "wfh" | "drive") {
+    addExceptionRecord({ routeId: alert.routeId, type: "skip", date: alert.date, reason });
+    deletePing(alert.routeId, alert.date).catch(() => {});
+    dismissCrowdAlert(alert.routeId);
+  }
+
+  function submitCrowdTimeChange(alert: CrowdBoardAlert) {
+    const newTime = crowdTimeEditValue;
+    if (!newTime) return;
+    deletePing(alert.routeId, alert.date)
+      .catch(() => {})
+      .finally(() => {
+        putPing({
+          routeId: alert.routeId,
+          station: alert.station,
+          tripDate: alert.date,
+          timeBucket: timeToMinutes(newTime),
+        }).catch(() => {});
+      });
+    dismissCrowdAlert(alert.routeId);
   }
 
   useEffect(() => {
@@ -556,6 +606,7 @@ export default function HomePage() {
         maybeAlertExceptionalCrowd(
           activeNext.route.id,
           activeNext.route.label,
+          station,
           activeNext.date,
           activeNext.route.departureTime,
           count,
@@ -599,6 +650,7 @@ export default function HomePage() {
           maybeAlertExceptionalCrowd(
             next.route.id,
             next.route.label,
+            station,
             next.date,
             next.route.departureTime,
             count,
@@ -1181,8 +1233,9 @@ export default function HomePage() {
             <ul className="flex flex-col gap-3">
               {boardAlerts.map((alert, i) => {
                 if (alert.kind === "crowd") {
+                  const isEditingTime = crowdTimeEditRouteId === alert.routeId;
                   return (
-                    <li key={`crowd-${alert.routeId}-${i}`} className="flex flex-col gap-1 text-sm">
+                    <li key={`crowd-${alert.routeId}-${i}`} className="flex flex-col gap-2 text-sm">
                       <span className="flex items-start gap-2">
                         <span aria-hidden="true" className="mt-1 h-2 w-2 shrink-0 rounded-full bg-destructive" />
                         <span className="text-foreground">
@@ -1191,9 +1244,61 @@ export default function HomePage() {
                           {t.homePage.exceptionalCrowd(alert.count, alert.time)}
                         </span>
                       </span>
-                      <span className="pl-4 text-xs text-foreground/60">
-                        {alert.isWork ? t.homePage.exceptionalCrowdSuggestionWork : t.homePage.exceptionalCrowdSuggestion}
-                      </span>
+                      {isEditingTime ? (
+                        <span className="flex items-center gap-2 pl-4">
+                          <input
+                            type="time"
+                            autoFocus
+                            value={crowdTimeEditValue}
+                            onChange={(e) => setCrowdTimeEditValue(e.target.value)}
+                            className="rounded-lg border border-border bg-background px-2 py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => submitCrowdTimeChange(alert)}
+                            disabled={!crowdTimeEditValue}
+                            className="cursor-pointer rounded-lg bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {t.reportPage.confirmVote}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCrowdTimeEditRouteId(null)}
+                            className="cursor-pointer text-xs text-foreground/50 hover:text-foreground"
+                          >
+                            {t.changePlanModal.cancel}
+                          </button>
+                        </span>
+                      ) : (
+                        <span className="flex flex-wrap gap-1.5 pl-4">
+                          {alert.isWork && (
+                            <button
+                              type="button"
+                              onClick={() => respondToCrowdAlert(alert, "wfh")}
+                              className="cursor-pointer rounded-full border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-muted"
+                            >
+                              {t.changePlanModal.wfh}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => respondToCrowdAlert(alert, "drive")}
+                            className="cursor-pointer rounded-full border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-muted"
+                          >
+                            {t.changePlanModal.drive}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCrowdTimeEditValue(alert.time);
+                              setCrowdTimeEditRouteId(alert.routeId);
+                            }}
+                            className="cursor-pointer rounded-full border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-muted"
+                          >
+                            {t.homePage.changeTravelTime}
+                          </button>
+                        </span>
+                      )}
                     </li>
                   );
                 }
