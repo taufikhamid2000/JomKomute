@@ -12,6 +12,8 @@
 // "how do I undo this".
 
 import { useState } from "react";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { useToast } from "@/components/toast-provider";
 import type { en } from "@/lib/dictionaries/en";
 import type { ReportCategoryMeta } from "@/lib/report-categories";
 import {
@@ -23,6 +25,7 @@ import {
   type ReportVote,
   type UserReport,
 } from "@/lib/user-reports-client";
+import { useDictionary } from "@/lib/use-dictionary";
 
 type ReportPageDictionary = (typeof en)["reportPage"];
 
@@ -55,10 +58,13 @@ export function ReportRow({
   onVoted?: () => void;
   onDeleted?: () => void;
 }) {
+  const { t: fullT } = useDictionary();
+  const { showToast } = useToast();
   const [vote, setVote] = useState<ReportVote | null>(() => getMyVoteFor(report.id));
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const own = isOwnReport(report.id);
 
   async function handleVote(next: ReportVote) {
@@ -80,6 +86,7 @@ export function ReportRow({
     setErrorMessage(null);
     try {
       await deleteOwnReport(report.id);
+      showToast(fullT.toast.reportDeleted);
       onDeleted?.();
     } catch (err) {
       setErrorMessage(actionErrorMessage(err, t, t.deleteError));
@@ -112,7 +119,7 @@ export function ReportRow({
           <button
             type="button"
             disabled={deleting}
-            onClick={handleDelete}
+            onClick={() => setConfirmingDelete(true)}
             aria-label={t.deleteReport}
             title={t.deleteReport}
             className="shrink-0 cursor-pointer rounded p-1 text-foreground/40 hover:bg-[var(--nav-hover-bg)] hover:text-[var(--destructive)] disabled:cursor-not-allowed disabled:opacity-50"
@@ -129,6 +136,16 @@ export function ReportRow({
           </button>
         )}
       </div>
+
+      {confirmingDelete && (
+        <ConfirmDialog
+          title={t.deleteConfirmTitle}
+          description={t.deleteConfirmDescription}
+          confirmLabel={t.deleteReport}
+          onConfirm={handleDelete}
+          onClose={() => setConfirmingDelete(false)}
+        />
+      )}
 
       <div className="flex items-center justify-between gap-2">
         {vote ? (

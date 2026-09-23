@@ -61,6 +61,8 @@ export const ms: Dictionary = {
     youDisputed: "Anda kata ini tidak berlaku",
     voteError: "Gagal menyimpan undi anda. Cuba lagi.",
     deleteReport: "Padam laporan ini",
+    deleteConfirmTitle: "Padam laporan ini?",
+    deleteConfirmDescription: "Tindakan ini tidak boleh dibatalkan.",
     deleteError: "Gagal memadam laporan itu. Cuba lagi.",
     categories: {
       delay: "Kelewatan",
@@ -209,6 +211,8 @@ export const ms: Dictionary = {
     crowdingAt: (time: string, label: string, level: number) => `Pada ${time}: ${label} (${level}%)`,
     crowdingNote: "Model sementara berdasarkan corak waktu puncak biasa — belum menggunakan data penumpang sebenar.",
     delete: "Padam laluan ini",
+    deleteConfirmTitle: "Padam laluan ini?",
+    deleteConfirmDescription: "Tindakan ini tidak boleh dibatalkan.",
     setHome: "Jadikan Utama",
     unsetHome: "Buang sebagai Utama",
     isHome: "Laluan utama",
@@ -227,6 +231,14 @@ export const ms: Dictionary = {
     eventPlaceholder: "cth. Perlawanan Bukit Jalil",
     add: "Tambah",
     remove: "Buang",
+    removeConfirmTitle: "Buang acara ini?",
+  },
+  toast: {
+    routeSaved: "Laluan disimpan",
+    routeUpdated: "Perubahan disimpan",
+    routeDeleted: "Laluan dipadam",
+    eventRemoved: "Acara dibuang",
+    reportDeleted: "Laporan dipadam",
   },
   settings: {
     title: "Tetapan",

@@ -59,6 +59,8 @@ export const en = {
     youDisputed: "You said this isn't happening",
     voteError: "Couldn't save your vote. Try again.",
     deleteReport: "Delete this report",
+    deleteConfirmTitle: "Delete this report?",
+    deleteConfirmDescription: "This can't be undone.",
     deleteError: "Couldn't delete that report. Try again.",
     categories: {
       delay: "Delay",
@@ -207,6 +209,8 @@ export const en = {
     crowdingAt: (time: string, label: string, level: number) => `At ${time}: ${label} (${level}%)`,
     crowdingNote: "Placeholder model based on typical rush-hour patterns — not yet backed by real ridership data.",
     delete: "Delete this route",
+    deleteConfirmTitle: "Delete this route?",
+    deleteConfirmDescription: "This can't be undone.",
     setHome: "Set as Home",
     unsetHome: "Remove as Home",
     isHome: "Home route",
@@ -225,6 +229,14 @@ export const en = {
     eventPlaceholder: "e.g. Bukit Jalil match",
     add: "Add",
     remove: "Remove",
+    removeConfirmTitle: "Remove this event?",
+  },
+  toast: {
+    routeSaved: "Route saved",
+    routeUpdated: "Changes saved",
+    routeDeleted: "Route deleted",
+    eventRemoved: "Event removed",
+    reportDeleted: "Report deleted",
   },
   settings: {
     title: "Settings",

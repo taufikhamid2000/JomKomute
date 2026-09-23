@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { useToast } from "@/components/toast-provider";
 import { useExceptions } from "@/lib/store";
 import type { DayOfWeek } from "@/lib/types";
 import { useDictionary } from "@/lib/use-dictionary";
@@ -11,9 +13,11 @@ function todayIso(): string {
 
 export function ExceptionPanel({ routeId, routeDays }: { routeId: string; routeDays: DayOfWeek[] }) {
   const { t } = useDictionary();
+  const { showToast } = useToast();
   const { exceptions, addException, removeException } = useExceptions(routeId);
   const [eventDate, setEventDate] = useState("");
   const [eventNote, setEventNote] = useState("");
+  const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null);
 
   const today = todayIso();
   const skippedToday = exceptions.some((e) => e.type === "skip" && e.date === today);
@@ -36,6 +40,11 @@ export function ExceptionPanel({ routeId, routeDays }: { routeId: string; routeD
     addException({ routeId, type: "event", date: eventDate, note: eventNote.trim() });
     setEventDate("");
     setEventNote("");
+  }
+
+  function handleRemoveEvent(id: string) {
+    removeException(id);
+    showToast(t.toast.eventRemoved);
   }
 
   const recurringSkips = exceptions.filter((e) => e.type === "recurring-skip");
@@ -119,7 +128,7 @@ export function ExceptionPanel({ routeId, routeDays }: { routeId: string; routeD
                 </span>
                 <button
                   type="button"
-                  onClick={() => removeException(e.id)}
+                  onClick={() => setConfirmingRemoveId(e.id)}
                   className="cursor-pointer text-xs text-foreground/40 underline-offset-4 hover:text-destructive hover:underline"
                 >
                   {t.exceptionPanel.remove}
@@ -129,6 +138,15 @@ export function ExceptionPanel({ routeId, routeDays }: { routeId: string; routeD
           </ul>
         )}
       </div>
+
+      {confirmingRemoveId && (
+        <ConfirmDialog
+          title={t.exceptionPanel.removeConfirmTitle}
+          confirmLabel={t.exceptionPanel.remove}
+          onConfirm={() => handleRemoveEvent(confirmingRemoveId)}
+          onClose={() => setConfirmingRemoveId(null)}
+        />
+      )}
     </div>
   );
 }

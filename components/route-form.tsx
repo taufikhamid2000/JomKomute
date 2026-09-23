@@ -3,6 +3,7 @@
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Combobox } from "@/components/combobox";
+import { useToast } from "@/components/toast-provider";
 import { formatClockTime, getLineOperatingHours, type LineOperatingHours } from "@/lib/operating-hours-client";
 import { findRoute as findRouteLegs } from "@/lib/route-finder";
 import { useSavedRoutes } from "@/lib/store";
@@ -38,6 +39,7 @@ const ALL_DAYS: DayOfWeek[] = [0, 1, 2, 3, 4, 5, 6];
 export function RouteForm() {
   const { t } = useDictionary();
   const router = useRouter();
+  const { showToast } = useToast();
   const { routes, addRoute, updateRoute } = useSavedRoutes();
   // ?reverseOf=<id> — "Add return trip" on the route detail page links
   // here so the form starts pre-filled with that route's origin/
@@ -198,11 +200,13 @@ export function RouteForm() {
 
     if (editId) {
       updateRoute(editId, patch);
+      showToast(t.toast.routeUpdated);
       router.push(`/route?id=${editId}`);
       return;
     }
 
     const route = addRoute(patch);
+    showToast(t.toast.routeSaved);
     router.push(`/route?id=${route.id}`);
   }
 

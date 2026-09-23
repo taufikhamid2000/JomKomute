@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { ExceptionPanel } from "@/components/exception-panel";
 import { ForecastBars } from "@/components/forecast-bars";
 import { LegSummary } from "@/components/leg-summary";
 import { Shell } from "@/components/shell";
+import { useToast } from "@/components/toast-provider";
 import { crowdLevelKey, forecastEntryForTime, useForecast } from "@/lib/forecast";
 import { findRouteOptions } from "@/lib/route-finder";
 import { estimatedArrival, legArrivalTimes } from "@/lib/schedule";
@@ -32,8 +34,10 @@ function RouteDetail() {
   const { t } = useDictionary();
   const id = useSearchParams().get("id");
   const router = useRouter();
+  const { showToast } = useToast();
   const { routes, removeRoute, setHomeRoute, clearHomeRoute, setWorkRoute, clearWorkRoute } = useSavedRoutes();
   const route = routes.find((r) => r.id === id);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   // Set right before removeRoute + router.push in handleDelete — removing
   // the route triggers a synchronous re-render (useSyncExternalStore) that
   // lands before the navigation away completes, so without this guard the
@@ -90,6 +94,7 @@ function RouteDetail() {
     if (!route) return;
     setIsDeleting(true);
     removeRoute(route.id);
+    showToast(t.toast.routeDeleted);
     router.push("/routes");
   }
 
@@ -167,11 +172,21 @@ function RouteDetail() {
 
       <button
         type="button"
-        onClick={handleDelete}
+        onClick={() => setConfirmingDelete(true)}
         className="w-fit cursor-pointer text-xs text-foreground/40 underline-offset-4 hover:text-destructive hover:underline"
       >
         {t.routeDetail.delete}
       </button>
+
+      {confirmingDelete && (
+        <ConfirmDialog
+          title={t.routeDetail.deleteConfirmTitle}
+          description={t.routeDetail.deleteConfirmDescription}
+          confirmLabel={t.routeDetail.delete}
+          onConfirm={handleDelete}
+          onClose={() => setConfirmingDelete(false)}
+        />
+      )}
     </div>
   );
 }
