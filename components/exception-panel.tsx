@@ -24,8 +24,13 @@ export function ExceptionPanel({ routeId, routeDays }: { routeId: string; routeD
 
   function toggleSkipToday() {
     const existing = exceptions.find((e) => e.type === "skip" && e.date === today);
-    if (existing) removeException(existing.id);
-    else addException({ routeId, type: "skip", date: today });
+    if (existing) {
+      removeException(existing.id);
+      showToast(t.toast.skipTodayCleared);
+    } else {
+      addException({ routeId, type: "skip", date: today });
+      showToast(t.toast.skipTodaySet);
+    }
   }
 
   function toggleRecurringSkip(day: DayOfWeek) {

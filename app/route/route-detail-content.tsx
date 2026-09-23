@@ -113,7 +113,15 @@ function RouteDetail() {
           <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
-              onClick={() => (route.isHome ? clearHomeRoute(route.id) : setHomeRoute(route.id))}
+              onClick={() => {
+                if (route.isHome) {
+                  clearHomeRoute(route.id);
+                  showToast(t.toast.homeRemoved);
+                } else {
+                  setHomeRoute(route.id);
+                  showToast(t.toast.homeSet);
+                }
+              }}
               className={
                 route.isHome
                   ? "whitespace-nowrap rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90"
@@ -124,7 +132,15 @@ function RouteDetail() {
             </button>
             <button
               type="button"
-              onClick={() => (route.isWork ? clearWorkRoute(route.id) : setWorkRoute(route.id))}
+              onClick={() => {
+                if (route.isWork) {
+                  clearWorkRoute(route.id);
+                  showToast(t.toast.workRemoved);
+                } else {
+                  setWorkRoute(route.id);
+                  showToast(t.toast.workSet);
+                }
+              }}
               className={
                 route.isWork
                   ? "whitespace-nowrap rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90"

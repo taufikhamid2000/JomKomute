@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { LineHistoryChart } from "@/components/line-history-chart";
 import { ReportRow } from "@/components/report-row";
 import { Shell } from "@/components/shell";
+import { useToast } from "@/components/toast-provider";
 import { useFollowedLines } from "@/lib/followed-lines";
 import { getLineHistory, type LineHistory } from "@/lib/line-history-client";
 import { LINES } from "@/lib/lines";
@@ -66,6 +67,13 @@ export function LineStatusContent() {
   const [expandedStation, setExpandedStation] = useState<string | null>(null);
   const [followedOnly, setFollowedOnly] = useState(false);
   const { followed, toggleFollowed } = useFollowedLines();
+  const { showToast } = useToast();
+
+  function handleToggleFollowed(lineId: string, lineName: string) {
+    const willFollow = !followed.has(lineId);
+    toggleFollowed(lineId);
+    showToast(willFollow ? t.toast.lineFollowed(lineName) : t.toast.lineUnfollowed(lineName));
+  }
   const categoryMeta = reportCategoryMeta(t.reportPage.categories);
 
   // Report-volume history (components/line-history-chart.tsx) — one
@@ -253,7 +261,7 @@ export function LineStatusContent() {
                   <span className="truncate text-sm font-semibold text-foreground">{line.name}</span>
                   <button
                     type="button"
-                    onClick={() => toggleFollowed(line.id)}
+                    onClick={() => handleToggleFollowed(line.id, line.name)}
                     aria-pressed={followed.has(line.id)}
                     aria-label={followed.has(line.id) ? t.operatingHoursPage.unfollow : t.operatingHoursPage.follow}
                     className="ml-auto cursor-pointer rounded-full p-1 text-foreground/30 hover:bg-[var(--nav-hover-bg)] hover:text-foreground/60"
