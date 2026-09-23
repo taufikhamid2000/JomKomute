@@ -151,6 +151,13 @@ export function useSavedRoutes() {
     return next;
   }, []);
 
+  const updateRoute = useCallback((id: string, patch: Partial<Omit<SavedRoute, "id" | "createdAt">>) => {
+    setCached(
+      ROUTES_KEY,
+      getCached<SavedRoute>(ROUTES_KEY).map((r) => (r.id === id ? { ...r, ...patch } : r))
+    );
+  }, []);
+
   const removeRoute = useCallback((id: string) => {
     setCached(
       ROUTES_KEY,
@@ -196,7 +203,7 @@ export function useSavedRoutes() {
     );
   }, []);
 
-  return { routes, addRoute, removeRoute, setHomeRoute, clearHomeRoute, setWorkRoute, clearWorkRoute };
+  return { routes, addRoute, updateRoute, removeRoute, setHomeRoute, clearHomeRoute, setWorkRoute, clearWorkRoute };
 }
 
 // Not routeId-scoped — used by the dashboard's "Change plan" modal, which

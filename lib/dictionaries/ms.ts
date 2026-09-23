@@ -167,6 +167,7 @@ export const ms: Dictionary = {
   },
   routeForm: {
     title: "Tambah laluan",
+    editTitle: "Sunting laluan",
     reversePrefilled:
       "Diisi automatik dengan perjalanan pulang — asal dan destinasi ditukar, hari dan waktu berlepas sama untuk anda laraskan di bawah.",
     reverseLoading: "Memuatkan laluan untuk dibalikkan…",
@@ -182,6 +183,7 @@ export const ms: Dictionary = {
     timeLabel: "Waktu berlepas biasa",
     daysLabel: "Hari",
     save: "Simpan laluan",
+    saveChanges: "Simpan perubahan",
   },
   legsEditor: {
     from: "Dari",
@@ -196,6 +198,7 @@ export const ms: Dictionary = {
     notFound: "Laluan tidak dijumpai.",
     backToRoutes: "Kembali ke laluan anda",
     addReturnTrip: "Tambah perjalanan pulang",
+    edit: "Sunting",
     backupRoute: "Laluan sandaran",
     expectedArrival: (time: string) => `Anggaran tiba ${time}`,
     crowdingTitle: "Kesesakan biasa mengikut jam",

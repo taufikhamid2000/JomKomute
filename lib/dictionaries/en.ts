@@ -165,6 +165,7 @@ export const en = {
   },
   routeForm: {
     title: "Add a route",
+    editTitle: "Edit route",
     reversePrefilled:
       "Pre-filled with the return trip — origin and destination swapped, same days and departure time to adjust below.",
     reverseLoading: "Loading the route to reverse…",
@@ -180,6 +181,7 @@ export const en = {
     timeLabel: "Usual departure time",
     daysLabel: "Days",
     save: "Save route",
+    saveChanges: "Save changes",
   },
   legsEditor: {
     from: "From",
@@ -194,6 +196,7 @@ export const en = {
     notFound: "Route not found.",
     backToRoutes: "Back to your routes",
     addReturnTrip: "Add return trip",
+    edit: "Edit",
     backupRoute: "Backup route",
     expectedArrival: (time: string) => `Expected arrival ${time}`,
     crowdingTitle: "Typical crowding by hour",

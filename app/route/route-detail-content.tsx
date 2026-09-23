@@ -134,6 +134,12 @@ function RouteDetail() {
             >
               {t.routeDetail.addReturnTrip}
             </Link>
+            <Link
+              href={`/new?editId=${route.id}`}
+              className="whitespace-nowrap rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+            >
+              {t.routeDetail.edit}
+            </Link>
           </div>
         </div>
         {legs && <LegSummary legs={legs} arrivalTimes={legArrivals} />}

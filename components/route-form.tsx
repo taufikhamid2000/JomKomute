@@ -14,13 +14,18 @@ const ALL_DAYS: DayOfWeek[] = [0, 1, 2, 3, 4, 5, 6];
 export function RouteForm() {
   const { t } = useDictionary();
   const router = useRouter();
-  const { routes, addRoute } = useSavedRoutes();
+  const { routes, addRoute, updateRoute } = useSavedRoutes();
   // ?reverseOf=<id> — "Add return trip" on the route detail page links
   // here so the form starts pre-filled with that route's origin/
   // destination swapped, instead of making you rebuild the same commute
   // from scratch.
   const searchParams = useSearchParams();
   const reverseOfId = searchParams.get("reverseOf");
+  // ?editId=<id> — the route detail page's "Edit" link lands here with an
+  // existing route's id so this form doubles as the edit form instead of
+  // needing a separate one; same fields, submit calls updateRoute instead
+  // of addRoute and returns to the same route's detail page.
+  const editId = searchParams.get("editId");
   // ?prefillOrigin=<station>&prefillDestination=<station> — the home
   // screen's one-time "Where to?" finder hands off here with its
   // ephemeral (never-saved) origin/destination, so "Save as a regular
@@ -75,6 +80,21 @@ export function RouteForm() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routes, reverseOfId, prefilled]);
 
+  useEffect(() => {
+    if (!editId || prefilled) return;
+    const source = routes.find((r) => r.id === editId);
+    if (!source) return; // routes hasn't loaded from localStorage yet — retry next render
+
+    setLabel(source.label);
+    setFindOrigin(source.originStation);
+    setFindDestination(source.destinationStation);
+    setFinderCollapsed(true);
+    setDays(new Set(source.days));
+    setTime(source.departureTime);
+    setPrefilled(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routes, editId, prefilled]);
+
   function toggleDay(day: DayOfWeek) {
     setDays((prev) => {
       const next = new Set(prev);
@@ -90,13 +110,21 @@ export function RouteForm() {
     e.preventDefault();
     if (!canSubmit) return;
 
-    const route = addRoute({
+    const patch = {
       label: label.trim() || `${findOrigin} → ${findDestination}`,
       originStation: findOrigin,
       destinationStation: findDestination,
       departureTime: time,
       days: Array.from(days).sort(),
-    });
+    };
+
+    if (editId) {
+      updateRoute(editId, patch);
+      router.push(`/route?id=${editId}`);
+      return;
+    }
+
+    const route = addRoute(patch);
     router.push(`/route?id=${route.id}`);
   }
 
@@ -214,7 +242,7 @@ export function RouteForm() {
         disabled={!canSubmit}
         className="mt-2 w-fit cursor-pointer rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {t.routeForm.save}
+        {editId ? t.routeForm.saveChanges : t.routeForm.save}
       </button>
     </form>
   );
