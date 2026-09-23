@@ -574,7 +574,7 @@ export default function HomePage() {
 
   return (
     <Shell>
-      <div className="relative h-[calc(100vh-3.5rem)] w-full overflow-hidden">
+      <div className="relative h-[calc(100dvh-3.5rem)] w-full overflow-hidden">
         <HomeMap
           legs={reportableLegs}
           routeOptions={routeOptions ?? undefined}

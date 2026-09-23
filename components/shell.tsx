@@ -145,7 +145,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </nav>
         </aside>
 
-        <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-56 shrink-0 flex-col border-r border-[var(--nav-border)] bg-[var(--nav-bg)] px-4 py-6 md:flex">
+        <aside className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] w-56 shrink-0 flex-col border-r border-[var(--nav-border)] bg-[var(--nav-bg)] px-4 py-6 md:flex">
           <nav className="flex flex-1 flex-col gap-1">
             <NavLinks links={navLinks} pathname={pathname} />
           </nav>
