@@ -136,6 +136,7 @@ export const ms: Dictionary = {
     lineAlertRecovered: "Kembali kepada perkhidmatan normal.",
     exceptionalCrowd: (count: number, time: string) => `bilangan penumpang yang luar biasa tinggi (${count}) merancang perjalanan ini sekitar ${time} hari ini`,
     exceptionalCrowdSuggestion: "Pertimbangkan guna mod pengangkutan lain, atau ubah waktu perjalanan anda.",
+    exceptionalCrowdSuggestionWork: "Pertimbangkan untuk bekerja dari rumah, guna mod pengangkutan lain, atau ubah waktu komuting anda.",
   },
   operatingHoursPage: {
     title: "Status laluan",

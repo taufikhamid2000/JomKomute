@@ -49,7 +49,7 @@ function timeToMinutes(hhmm: string): number {
 // status transition (lib/line-status-alerts.ts) or a saved route's crowd
 // count crossing lib/crowd-alerts.ts's exceptional threshold. One queue,
 // one modal, both kinds discriminated by `kind` when rendered.
-type CrowdBoardAlert = { kind: "crowd"; routeId: string; routeLabel: string; count: number; time: string };
+type CrowdBoardAlert = { kind: "crowd"; routeId: string; routeLabel: string; count: number; time: string; isWork: boolean };
 type LineBoardAlert = LineStatusTransition & { kind: "line" };
 type BoardAlert = LineBoardAlert | CrowdBoardAlert;
 
@@ -513,10 +513,17 @@ export default function HomePage() {
   // route+date's real (non-suppressed) ping count crosses
   // EXCEPTIONAL_CROWD_THRESHOLD, deduped per route+date by
   // isNewExceptionalCrowd. Never called with the mock fallback count.
-  function maybeAlertExceptionalCrowd(routeId: string, routeLabel: string, date: string, time: string, count: number) {
+  function maybeAlertExceptionalCrowd(
+    routeId: string,
+    routeLabel: string,
+    date: string,
+    time: string,
+    count: number,
+    isWork: boolean,
+  ) {
     if (count < EXCEPTIONAL_CROWD_THRESHOLD) return;
     if (!isNewExceptionalCrowd(routeId, date)) return;
-    setBoardAlerts((prev) => [...prev, { kind: "crowd", routeId, routeLabel, count, time }]);
+    setBoardAlerts((prev) => [...prev, { kind: "crowd", routeId, routeLabel, count, time, isWork }]);
   }
 
   useEffect(() => {
@@ -546,7 +553,14 @@ export default function HomePage() {
       .then(({ count, suppressed }) => {
         if (cancelled || suppressed || count === null) return;
         setActiveCrowd({ count, busier: count > 150 });
-        maybeAlertExceptionalCrowd(activeNext.route.id, activeNext.route.label, activeNext.date, activeNext.route.departureTime, count);
+        maybeAlertExceptionalCrowd(
+          activeNext.route.id,
+          activeNext.route.label,
+          activeNext.date,
+          activeNext.route.departureTime,
+          count,
+          !!activeNext.route.isWork,
+        );
       })
       .catch(() => {
         // Keep the mock fallback already set above.
@@ -582,7 +596,14 @@ export default function HomePage() {
       getPingCounts(station, next.date, timeBucket)
         .then(({ count, suppressed }) => {
           if (cancelled || suppressed || count === null) return;
-          maybeAlertExceptionalCrowd(next.route.id, next.route.label, next.date, next.route.departureTime, count);
+          maybeAlertExceptionalCrowd(
+            next.route.id,
+            next.route.label,
+            next.date,
+            next.route.departureTime,
+            count,
+            !!next.route.isWork,
+          );
         })
         .catch(() => {});
     }
@@ -1170,7 +1191,9 @@ export default function HomePage() {
                           {t.homePage.exceptionalCrowd(alert.count, alert.time)}
                         </span>
                       </span>
-                      <span className="pl-4 text-xs text-foreground/60">{t.homePage.exceptionalCrowdSuggestion}</span>
+                      <span className="pl-4 text-xs text-foreground/60">
+                        {alert.isWork ? t.homePage.exceptionalCrowdSuggestionWork : t.homePage.exceptionalCrowdSuggestion}
+                      </span>
                     </li>
                   );
                 }
