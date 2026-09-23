@@ -185,7 +185,7 @@ export default function HomePage() {
   // route-options, active-route) rather than being wired into just one —
   // see the shared `panelSummary` computed further down for what the
   // collapsed strip shows per state.
-  const [isPanelCollapsed, setIsPanelCollapsed] = useState(false);
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(true);
 
   // Physical drag-to-collapse/expand on top of the tap-to-toggle above.
   // `dragOffset` is a live pixel translateY applied to whichever panel
