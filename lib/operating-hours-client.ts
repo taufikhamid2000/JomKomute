@@ -83,6 +83,30 @@ export function minutesUntilLastTrain(hours: LineOperatingHours, now: Date): num
   return diff;
 }
 
+// Union of first/last across every line in `linesHours` for the given
+// day-type, as whole hours a chart can filter against — the widest span
+// covering every leg of a (possibly multi-line) journey. A last-departure
+// earlier than first is treated as running past midnight (see
+// minutesUntilLastTrain above), so e.g. first 06:00/last 01:10 becomes
+// { start: 6, end: 25 } (1am the next calendar day), not a nonsense
+// negative range. Returns null if no line in the list has hours data.
+export function operatingWindowHours(linesHours: LineOperatingHours[], weekend: boolean): { start: number; end: number } | null {
+  let start: number | null = null;
+  let end: number | null = null;
+  for (const hours of linesHours) {
+    const firstStr = weekend ? hours.weekendFirst : hours.weekdayFirst;
+    const lastStr = weekend ? hours.weekendLast : hours.weekdayLast;
+    const firstMin = toMinutesSinceMidnight(firstStr);
+    let lastMin = toMinutesSinceMidnight(lastStr);
+    if (firstMin === null || lastMin === null) continue;
+    if (lastMin < firstMin) lastMin += 24 * 60;
+    if (start === null || firstMin < start) start = firstMin;
+    if (end === null || lastMin > end) end = lastMin;
+  }
+  if (start === null || end === null) return null;
+  return { start: Math.floor(start / 60), end: Math.ceil(end / 60) };
+}
+
 // "HH:MM:SS" -> "11:45pm", for display.
 export function formatClockTime(time: string): string {
   const [h, m] = time.split(":").map(Number);

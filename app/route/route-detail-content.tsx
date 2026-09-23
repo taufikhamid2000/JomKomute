@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { ExceptionPanel } from "@/components/exception-panel";
 import { ForecastBars } from "@/components/forecast-bars";
@@ -10,6 +10,7 @@ import { LegSummary } from "@/components/leg-summary";
 import { Shell } from "@/components/shell";
 import { useToast } from "@/components/toast-provider";
 import { crowdLevelKey, forecastEntryForTime, useForecast } from "@/lib/forecast";
+import { getLineOperatingHours, isWeekend, operatingWindowHours, type LineOperatingHours } from "@/lib/operating-hours-client";
 import { findRouteOptions } from "@/lib/route-finder";
 import { estimatedArrival, legArrivalTimes } from "@/lib/schedule";
 import { useSavedRoutes } from "@/lib/store";
@@ -63,12 +64,41 @@ function RouteDetail() {
   );
   const legs = routeOptions?.[0]?.legs;
   const alternateLegs = routeOptions?.[1]?.legs;
+
+  const [operatingHours, setOperatingHours] = useState<LineOperatingHours[]>([]);
+  useEffect(() => {
+    getLineOperatingHours()
+      .then(setOperatingHours)
+      .catch(() => {});
+  }, []);
+
+  // Which hours the crowding chart below should actually show — the
+  // synthetic curve (lib/forecast.ts) fills all 24 hours including ones
+  // no train runs in (e.g. 1am-5am), which reads as real activity at a
+  // time there's no service at all. Clamped to the union of every used
+  // line's published operating hours for today's day-type; null (no
+  // hours data loaded yet, or none matched) falls back to showing every
+  // hour rather than hiding the chart.
+  const serviceWindow = useMemo(() => {
+    if (!legs || legs.length === 0 || operatingHours.length === 0) return null;
+    const lineIds = new Set(legs.map((leg) => leg.line));
+    const linesHours = operatingHours.filter((h) => lineIds.has(h.lineId));
+    return operatingWindowHours(linesHours, isWeekend(new Date()));
+  }, [legs, operatingHours]);
+
   // useForecast must run on every render regardless of whether `route` is
   // defined yet (rules of hooks) — it briefly goes undefined during
   // hydration and right after a delete, so this falls back to placeholder
   // args rather than being called from inside the `if (!route)` branch
   // below, which previously threw "Rendered fewer hooks than expected."
   const forecast = useForecast(route?.id ?? "", route?.originStation ?? "", today);
+  const visibleForecast = useMemo(() => {
+    if (!serviceWindow) return forecast;
+    return forecast.filter((entry) => {
+      const h = entry.hour < serviceWindow.start ? entry.hour + 24 : entry.hour;
+      return h >= serviceWindow.start && h <= serviceWindow.end;
+    });
+  }, [forecast, serviceWindow]);
 
   // Renders once with an empty snapshot during hydration (localStorage isn't
   // read server-side), then useSyncExternalStore corrects it on the client
@@ -180,7 +210,7 @@ function RouteDetail() {
             {t.routeDetail.crowdingAt(route.departureTime, t.forecast[crowdLevelKey(crowdLevel)], crowdLevel)}
           </span>
         </div>
-        <ForecastBars data={forecast} highlightHour={hour} />
+        <ForecastBars data={visibleForecast} highlightHour={hour} />
         <p className="text-xs text-foreground/40">{t.routeDetail.crowdingNote}</p>
       </div>
 
