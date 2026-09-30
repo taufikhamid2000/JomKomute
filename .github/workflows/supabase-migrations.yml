@@ -16,5 +16,5 @@ on:
 
 jobs:
   migrate:
-    uses: taufikhamid2000/template/.github/workflows/supabase-migrate.yml@master
+    uses: taufikhamid2000/template/.github/workflows/supabase-migrate.yml@main
     secrets: inherit
