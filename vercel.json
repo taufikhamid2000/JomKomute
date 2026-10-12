@@ -9,5 +9,8 @@
       "path": "/api/push/check",
       "schedule": "0 22 * * *"
     }
+  ],
+  "regions": [
+    "sin1"
   ]
 }
