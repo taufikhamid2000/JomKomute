@@ -23,7 +23,7 @@ const DESCRIPTION =
 // deployment (see README.md's Deploy section) rather than whatever host
 // a preview/local build happens to run on.
 export const metadata: Metadata = {
-  metadataBase: new URL("https://jomkomute.vercel.app"),
+  metadataBase: new URL("https://jomkomute.taufikhamid.com"),
   title: {
     default: "JomKomute — Klang Valley rail commute companion",
     template: "%s · JomKomute",

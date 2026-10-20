@@ -10,7 +10,7 @@ Malaysia's Klang Valley. Two things working together:
   crowding, reported and voted on by other riders on a live map, the same
   way Waze crowdsources road conditions for drivers.
 
-Live at [jomkomute.vercel.app](https://jomkomute.vercel.app).
+Live at [jomkomute.taufikhamid.com](https://jomkomute.taufikhamid.com).
 
 Prototype stage: saved routes live in the browser (`localStorage`, no
 account needed), and the crowding forecast is a placeholder model, not real
@@ -121,7 +121,7 @@ Actions): `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`.
 
 ## Deploy
 
-Live at [jomkomute.vercel.app](https://jomkomute.vercel.app). Deploys
+Live at [jomkomute.taufikhamid.com](https://jomkomute.taufikhamid.com). Deploys
 automatically on every push to `main` via Vercel's GitHub integration.
 
 ## Working on this repo

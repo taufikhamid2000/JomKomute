@@ -34,7 +34,7 @@ const JSON_LD = {
   name: "JomKomute",
   applicationCategory: "TravelApplication",
   operatingSystem: "Any (web)",
-  url: "https://jomkomute.vercel.app",
+  url: "https://jomkomute.taufikhamid.com",
   description:
     "Save your usual KTM/LRT/MRT commute, see how crowded it typically gets, and get live rider-reported delays, accidents, and breakdowns on your line — Waze-style crowdsourced reporting for Klang Valley rail transit.",
   offers: {

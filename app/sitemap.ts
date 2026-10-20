@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const BASE_URL = "https://jomkomute.vercel.app";
+const BASE_URL = "https://jomkomute.taufikhamid.com";
 
 // Served at /sitemap.xml. Only the pages that are actually useful to
 // land on from a search result or an AI agent browsing cold — leaves

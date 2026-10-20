@@ -14,6 +14,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/login", "/signup", "/new", "/route"],
     },
-    sitemap: "https://jomkomute.vercel.app/sitemap.xml",
+    sitemap: "https://jomkomute.taufikhamid.com/sitemap.xml",
   };
 }
