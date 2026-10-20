@@ -15,7 +15,7 @@ Live at [jomkomute.vercel.app](https://jomkomute.vercel.app).
 Prototype stage: saved routes live in the browser (`localStorage`, no
 account needed), and the crowding forecast is a placeholder model, not real
 ridership data. Design system carried over from
-[DuitDuit](https://github.com/taufikhamid2000/duitduit).
+[JomDuit](https://github.com/taufikhamid2000/JomDuit).
 
 ## Features
 
