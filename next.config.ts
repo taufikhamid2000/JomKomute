@@ -11,6 +11,13 @@ const nextConfig: NextConfig = {
   // removed GitHub Pages deployment), so a server-side redirect works here.
   async redirects() {
     return [
+      // Old *.vercel.app address -> the custom domain.
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "jomkomute.vercel.app" }],
+        destination: "https://jomkomute.taufikhamid.com/:path*",
+        permanent: false,
+      },
       {
         source: "/dashboard",
         destination: "/",
