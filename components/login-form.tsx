@@ -17,6 +17,16 @@ const JOM_ID_SIGNUP_URL =
   "https://akaun.taufikhamid.com/signup?next=" +
   encodeURIComponent("https://jomkomute.taufikhamid.com/");
 
+// Signing in also works through the portal: /continue sends the user straight
+// back here (to the same "/" the email/password flow lands on) once signed in.
+const JOM_ID_CONTINUE_URL = "https://akaun.taufikhamid.com/continue";
+const FALLBACK_ORIGIN = "https://jomkomute.taufikhamid.com";
+const POST_LOGIN_PATH = "/";
+
+function jomIdHref(origin: string): string {
+  return `${JOM_ID_CONTINUE_URL}?next=${encodeURIComponent(origin + POST_LOGIN_PATH)}`;
+}
+
 // This app has no server actions (see lib/store.ts's client-only,
 // localStorage-backed pattern) so — unlike DuitDuit's useActionState +
 // Server Action login — this calls supabase.auth.signInWithPassword()
@@ -109,6 +119,18 @@ export function LoginForm() {
             <span className="text-xs text-foreground/40">or</span>
             <div className="h-px flex-1 bg-border" />
           </div>
+
+          <a
+            href={jomIdHref(FALLBACK_ORIGIN)}
+            onClick={(e) => {
+              // Use the real origin (preview/localhost) when running in a browser.
+              e.preventDefault();
+              window.location.assign(jomIdHref(window.location.origin));
+            }}
+            className="mb-3 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-border bg-background px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            Continue with Jom ID
+          </a>
 
           <DemoButton />
 
