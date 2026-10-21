@@ -69,7 +69,7 @@ export function LoginForm() {
         </Link>
 
         <div className="w-full max-w-sm rounded-2xl border border-border bg-background p-8 animate-page-in">
-          <h1 className="text-xl font-semibold text-foreground">Log in</h1>
+          <h1 className="text-xl font-semibold text-foreground">Sign in</h1>
           <p className="mb-6 text-sm text-foreground/60">
             Sign in to sync your account across devices.
           </p>
@@ -110,7 +110,7 @@ export function LoginForm() {
               className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
               {pending && <Spinner />}
-              {pending ? "Logging in…" : "Log in"}
+              {pending ? "Signing in…" : "Sign in"}
             </button>
           </form>
 
