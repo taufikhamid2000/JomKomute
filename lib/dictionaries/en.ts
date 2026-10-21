@@ -9,7 +9,7 @@ export const en = {
     about: "About",
     openMenu: "Open menu",
     closeMenu: "Close menu",
-    logIn: "Log in",
+    logIn: "Sign in",
     logOut: "Log out",
   },
   days: {

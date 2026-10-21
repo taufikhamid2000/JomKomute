@@ -13,7 +13,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   // Same session check as components/auth-gate.tsx (getSession on mount +
   // onAuthStateChange subscription) — the sidebar used to hardcode a
-  // static "Log in" link that never looked at auth state at all, so it
+  // static "Sign in" link that never looked at auth state at all, so it
   // kept showing even once "Try the demo" signed the user in anonymously.
   const [authed, setAuthed] = useState<boolean | null>(null);
 
