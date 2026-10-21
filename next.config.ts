@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Jom ID: expose the Vercel env to the browser bundle so the shared
+  // .taufikhamid.com cookie is only used in production
+  // (see lib/supabase/cookie-options.ts).
+  env: {
+    NEXT_PUBLIC_VERCEL_ENV: process.env.NEXT_PUBLIC_VERCEL_ENV ?? process.env.VERCEL_ENV ?? "",
+  },
   images: {
     unoptimized: true,
   },

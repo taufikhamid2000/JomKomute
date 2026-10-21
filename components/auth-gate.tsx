@@ -4,9 +4,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase-client";
 
-// This app has no middleware/server actions (static-friendly, client-only
-// auth — see lib/supabase-client.ts and lib/store.ts's comments), so the
-// login gate is enforced here instead of in middleware.ts: every page is
+// proxy.ts only refreshes the (cookie-based, Jom ID shared) session — it
+// doesn't protect routes — so the login gate is enforced here: every page is
 // wrapped in this client component (see app/layout.tsx) which checks for a
 // Supabase session (real or anonymous, from "Try the demo" — see
 // components/demo-button.tsx) on mount and redirects to /login if there

@@ -10,6 +10,13 @@ import { PasswordInput } from "@/components/password-input";
 import { Spinner } from "@/components/spinner";
 import { supabaseBrowser } from "@/lib/supabase-client";
 
+// Jom ID: accounts are shared across *.taufikhamid.com and created on the
+// portal, which sends the user back here signed in (shared cookie). The
+// local /signup page still works but isn't linked from here.
+const JOM_ID_SIGNUP_URL =
+  "https://akaun.taufikhamid.com/signup?next=" +
+  encodeURIComponent("https://jomkomute.taufikhamid.com/");
+
 // This app has no server actions (see lib/store.ts's client-only,
 // localStorage-backed pattern) so — unlike DuitDuit's useActionState +
 // Server Action login — this calls supabase.auth.signInWithPassword()
@@ -107,9 +114,9 @@ export function LoginForm() {
 
           <p className="mt-6 text-center text-sm text-foreground/60">
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="font-medium text-primary underline-offset-4 hover:underline">
+            <a href={JOM_ID_SIGNUP_URL} className="font-medium text-primary underline-offset-4 hover:underline">
               Sign up
-            </Link>
+            </a>
           </p>
         </div>
       </div>
