@@ -10,7 +10,7 @@ export const en = {
     openMenu: "Open menu",
     closeMenu: "Close menu",
     logIn: "Sign in",
-    logOut: "Log out",
+    logOut: "Sign out",
   },
   days: {
     0: "Sun",
