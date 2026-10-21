@@ -144,7 +144,9 @@ export async function submitUserReport(input: NewUserReport): Promise<UserReport
         line_id: input.lineId ?? null,
         owner_secret: ownerSecret,
       } as never)
-      .select()
+      // Explicit columns: owner_secret and user_id aren't readable by
+      // clients (column-level grants), so select("*") would be denied.
+      .select("id, lat, lng, category, note, created_at, line_id")
       .single());
   } catch (thrown) {
     // The request never got a response at all (offline, DNS failure,
