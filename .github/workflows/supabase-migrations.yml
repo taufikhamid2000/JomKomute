@@ -1,20 +1,62 @@
 name: Apply Supabase migrations
 
-# Trigger lives here (GitHub Actions requires that — it has to be
-# defined in the repo receiving the push), but the actual migration
-# steps live in taufikhamid2000/template's reusable workflow, shared
-# across every project with a supabase/migrations directory. See that
-# workflow's own header for why it uses `db query -f` per file rather
-# than `db push` (master_db is shared with duitduit and others, each
-# with a separate migration history `db push` would step on).
+# Applies only the migration files added or changed by the push, with
+# `supabase db query -f` (never `db push`, since master_db is shared with
+# other apps that keep their own migration histories).
+#
+# Not the shared template/.github/workflows/supabase-migrate.yml, which
+# re-runs every file on every push: JomKomute's early migrations created
+# tables in `public` that 20260922120000 later moved into `jomkomute`, so
+# replaying them recreated empty duplicates in `public` and the move then
+# failed with `relation "jomkomute_user_reports_pkey" already exists`.
+#
+# Manual run: pass one file path to (re)apply just that file.
 on:
   push:
     branches: [main]
     paths:
       - "supabase/migrations/**"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      file:
+        description: "Migration file to apply, e.g. supabase/migrations/20261021120000_x.sql"
+        required: true
 
 jobs:
   migrate:
-    uses: taufikhamid2000/template/.github/workflows/supabase-migrate.yml@main
-    secrets: inherit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+
+      - name: Apply new/changed migrations
+        run: |
+          set -euo pipefail
+          if [ -n "${INPUT_FILE:-}" ]; then
+            files="$INPUT_FILE"
+          else
+            files=$(git diff --name-only --diff-filter=AM "$BEFORE" "$GITHUB_SHA" -- 'supabase/migrations/*.sql' | sort)
+          fi
+          if [ -z "$files" ]; then
+            echo "No new or changed migration files — nothing to do."
+            exit 0
+          fi
+          for f in $files; do
+            echo "Applying $f"
+            supabase db query --linked -f "$f"
+          done
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          BEFORE: ${{ github.event.before }}
+          INPUT_FILE: ${{ inputs.file }}
