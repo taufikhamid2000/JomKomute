@@ -31,6 +31,13 @@ export function RouteDetailContent() {
   );
 }
 
+function useRouteOptions(origin: string | undefined, destination: string | undefined) {
+  return useMemo(
+    () => (origin !== undefined && destination !== undefined ? findRouteOptions(origin, destination) : undefined),
+    [origin, destination],
+  );
+}
+
 function RouteDetail() {
   const { t } = useDictionary();
   const id = useSearchParams().get("id");
@@ -55,13 +62,10 @@ function RouteDetail() {
   // options are recomputed for the same route.id/origin/destination on
   // every render; useMemo just avoids redoing the Dijkstra search on
   // renders that don't change those.
-  const routeOptions = useMemo(
-    () => (route ? findRouteOptions(route.originStation, route.destinationStation) : undefined),
-    // routes.find() above returns a fresh object each render — depend on
-    // the two fields that actually determine the search, not the object
-    // reference, so this doesn't redo the Dijkstra search every render.
-    [route?.originStation, route?.destinationStation],
-  );
+  // routes.find() above returns a fresh object each render — depend on
+  // the two fields that actually determine the search, not the object
+  // reference, so this doesn't redo the Dijkstra search every render.
+  const routeOptions = useRouteOptions(route?.originStation, route?.destinationStation);
   const legs = routeOptions?.[0]?.legs;
   const alternateLegs = routeOptions?.[1]?.legs;
 

@@ -74,17 +74,19 @@ export function RouteForm() {
     setDestination: setFindDestination,
     stationNames,
     find: findRoute,
-  } = useSingleRouteFinder();
-  const [finderCollapsed, setFinderCollapsed] = useState(false);
+    // ?prefillOrigin/?prefillDestination only seed the initial state —
+    // not re-applied as the user edits the fields afterward.
+  } = useSingleRouteFinder({ origin: prefillOriginParam, destination: prefillDestinationParam });
+  const [finderCollapsed, setFinderCollapsed] = useState(() => !!(prefillOriginParam && prefillDestinationParam));
 
   // Recomputed from origin/destination directly (not from the finder's own
   // find(), which only stores a boolean success) so it's available for the
   // operating-hours check below regardless of whether the stations came
   // from the manual finder, ?reverseOf, ?editId, or ?prefillOrigin.
-  const [legs, setLegs] = useState<RouteLeg[] | undefined>(undefined);
-  useEffect(() => {
-    setLegs(findOrigin && findDestination ? findRouteLegs(findOrigin, findDestination) : undefined);
-  }, [findOrigin, findDestination]);
+  const legs = useMemo<RouteLeg[] | undefined>(
+    () => (findOrigin && findDestination ? findRouteLegs(findOrigin, findDestination) : undefined),
+    [findOrigin, findDestination],
+  );
 
   const [operatingHours, setOperatingHours] = useState<LineOperatingHours[]>([]);
   useEffect(() => {
@@ -98,6 +100,8 @@ export function RouteForm() {
   // this surfaces that rather than silently accepting it, without hard-
   // blocking submission (holiday schedules and other edge cases can make
   // the published hours not quite match reality).
+  const weekdayLabel = t.operatingHoursPage.weekday;
+  const weekendLabel = t.operatingHoursPage.weekend;
   const hoursWarnings = useMemo(() => {
     if (!legs || legs.length === 0 || operatingHours.length === 0) return [];
     const timeMinutes = timeToMinutes(time);
@@ -111,7 +115,7 @@ export function RouteForm() {
       if (hasWeekday && !isWithinWindow(hours.weekdayFirst, hours.weekdayLast, timeMinutes)) {
         warnings.push({
           lineName: hours.lineName ?? lineId,
-          dayType: t.operatingHoursPage.weekday,
+          dayType: weekdayLabel,
           first: hours.weekdayFirst ?? "?",
           last: hours.weekdayLast ?? "?",
         });
@@ -119,61 +123,43 @@ export function RouteForm() {
       if (hasWeekend && !isWithinWindow(hours.weekendFirst, hours.weekendLast, timeMinutes)) {
         warnings.push({
           lineName: hours.lineName ?? lineId,
-          dayType: t.operatingHoursPage.weekend,
+          dayType: weekendLabel,
           first: hours.weekendFirst ?? "?",
           last: hours.weekendLast ?? "?",
         });
       }
     }
     return warnings;
-    // t.operatingHoursPage.weekday/weekend are stable string values off the
-    // dictionary, not worth listing.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [legs, operatingHours, time, days]);
-
-  useEffect(() => {
-    if (prefillOriginParam) setFindOrigin(prefillOriginParam);
-    if (prefillDestinationParam) setFindDestination(prefillDestinationParam);
-    if (prefillOriginParam && prefillDestinationParam) setFinderCollapsed(true);
-    // Only meant to seed initial state from the URL once, on mount — not
-    // meant to re-run as the user edits the fields afterward.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [legs, operatingHours, time, days, weekdayLabel, weekendLabel]);
 
   function handleFindRoute() {
     const result = findRoute();
     if (result) setFinderCollapsed(true);
   }
 
-  useEffect(() => {
-    if (!reverseOfId || prefilled) return;
-    const source = routes.find((r) => r.id === reverseOfId);
-    if (!source) return; // routes hasn't loaded from localStorage yet — retry next render
-
-    setFindOrigin(source.destinationStation);
-    setFindDestination(source.originStation);
-    setFinderCollapsed(true);
-    setDays(new Set(source.days));
-    setPrefilled(true);
-    // setFindOrigin/setFindDestination are stable from useSingleRouteFinder's
-    // local useState setters, not worth listing.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routes, reverseOfId, prefilled]);
-
-  useEffect(() => {
-    if (!editId || prefilled) return;
-    const source = routes.find((r) => r.id === editId);
-    if (!source) return; // routes hasn't loaded from localStorage yet — retry next render
-
-    setLabel(source.label);
-    setFindOrigin(source.originStation);
-    setFindDestination(source.destinationStation);
-    setFinderCollapsed(true);
-    setDays(new Set(source.days));
-    setTime(source.departureTime);
-    setPrefilled(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routes, editId, prefilled]);
+  // One-time prefill from ?reverseOf / ?editId, applied during render
+  // (React's "adjust state when a prop changes" pattern) as soon as the
+  // source route shows up in `routes` — it isn't there on the server /
+  // hydration render, before localStorage is read.
+  if (!prefilled) {
+    const reverseSource = reverseOfId ? routes.find((r) => r.id === reverseOfId) : undefined;
+    const editSource = editId ? routes.find((r) => r.id === editId) : undefined;
+    if (reverseSource) {
+      setFindOrigin(reverseSource.destinationStation);
+      setFindDestination(reverseSource.originStation);
+      setFinderCollapsed(true);
+      setDays(new Set(reverseSource.days));
+    }
+    if (editSource) {
+      setLabel(editSource.label);
+      setFindOrigin(editSource.originStation);
+      setFindDestination(editSource.destinationStation);
+      setFinderCollapsed(true);
+      setDays(new Set(editSource.days));
+      setTime(editSource.departureTime);
+    }
+    if (reverseSource || editSource) setPrefilled(true);
+  }
 
   function toggleDay(day: DayOfWeek) {
     setDays((prev) => {

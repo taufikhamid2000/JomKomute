@@ -346,7 +346,6 @@ export function HomeMap({
     if (!reports || reports.length === 0) return [];
     if (relevantRoutePoints.length === 0) return reports;
     return reports.filter((r) => isNearRoute([r.lat, r.lng], relevantRoutePoints));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reports, relevantRoutePoints]);
   const nearbyReportClusters = useMemo(() => clusterReports(nearbyReports), [nearbyReports]);
   const shouldShowReports = showReports !== false;

@@ -25,7 +25,7 @@ export function LiveReportsDiagram() {
       <div className="relative h-24 w-full px-1">
         <div className="absolute top-1/2 right-0 left-0 h-px -translate-y-1/2 bg-[var(--border)]" aria-hidden="true" />
 
-        {PINS.map((pin, i) => (
+        {PINS.map((pin) => (
           <span
             key={pin.left}
             className="animate-report-pin absolute top-1/2 -translate-x-1/2 -translate-y-1/2"

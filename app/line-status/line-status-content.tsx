@@ -85,24 +85,33 @@ export function LineStatusContent() {
   const [openHistoryLineId, setOpenHistoryLineId] = useState<string | null>(null);
   const [historyDays, setHistoryDays] = useState<30 | 90>(30);
   const [historyData, setHistoryData] = useState<LineHistory | null>(null);
-  const [historyLoading, setHistoryLoading] = useState(false);
+  // Cleared whenever a line is opened or the range changes (the only
+  // things that start a new fetch), so a retry starts from "loading".
   const [historyError, setHistoryError] = useState(false);
+  const historyLoading = openHistoryLineId !== null && historyData?.days !== historyDays && !historyError;
+
+  function handleToggleHistory(lineId: string, isOpen: boolean) {
+    setHistoryError(false);
+    setOpenHistoryLineId(isOpen ? null : lineId);
+  }
+
+  function handleHistoryDays(days: 30 | 90) {
+    // Re-picking the active preset doesn't refetch, so keep its error.
+    if (days === historyDays) return;
+    setHistoryError(false);
+    setHistoryDays(days);
+  }
 
   useEffect(() => {
     if (openHistoryLineId === null) return;
     if (historyData?.days === historyDays) return;
     let cancelled = false;
-    setHistoryLoading(true);
-    setHistoryError(false);
     getLineHistory(historyDays)
       .then((h) => {
         if (!cancelled) setHistoryData(h);
       })
       .catch(() => {
         if (!cancelled) setHistoryError(true);
-      })
-      .finally(() => {
-        if (!cancelled) setHistoryLoading(false);
       });
     return () => {
       cancelled = true;
@@ -421,7 +430,7 @@ export function LineStatusContent() {
                     <div className="flex flex-col gap-1.5 border-t border-border pt-2">
                       <button
                         type="button"
-                        onClick={() => setOpenHistoryLineId(isHistoryOpen ? null : line.id)}
+                        onClick={() => handleToggleHistory(line.id, isHistoryOpen)}
                         aria-expanded={isHistoryOpen}
                         className="flex cursor-pointer items-center gap-1.5 self-start text-xs text-foreground/50 hover:text-foreground/80"
                       >
@@ -449,7 +458,7 @@ export function LineStatusContent() {
                                 <button
                                   key={preset}
                                   type="button"
-                                  onClick={() => setHistoryDays(preset)}
+                                  onClick={() => handleHistoryDays(preset)}
                                   aria-pressed={historyDays === preset}
                                   className={
                                     historyDays === preset

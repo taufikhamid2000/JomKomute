@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useHydrated } from "@/lib/use-hydrated";
 import {
   ACCENT_CUSTOM_BG_STORAGE_KEY,
   ACCENT_CUSTOM_DEFAULT_BG,
@@ -61,7 +62,22 @@ function readStored() {
   };
 }
 
+const DEFAULT_STORED: ReturnType<typeof readStored> = {
+  theme: "system",
+  accent: "default",
+  customBg: ACCENT_CUSTOM_DEFAULT_BG,
+  customFg: ACCENT_CUSTOM_DEFAULT_FG,
+};
+
 export function AppearanceForm() {
+  // Server-rendered HTML has no localStorage to read, so the real saved
+  // values only exist after hydration — until then, treat nothing as
+  // dirty. Keyed so the form re-initializes from storage once hydrated.
+  const mounted = useHydrated();
+  return <AppearanceFormInner key={mounted ? "client" : "server"} mounted={mounted} />;
+}
+
+function AppearanceFormInner({ mounted }: { mounted: boolean }) {
   const { t } = useDictionary();
   const THEME_LABEL: Record<Theme, string> = {
     light: t.settings.themeLight,
@@ -77,32 +93,17 @@ export function AppearanceForm() {
     custom: t.settings.accentCustom,
   };
 
-  // Server-rendered HTML has no localStorage to read, so the real saved
-  // values only exist after mount — until then, treat nothing as dirty.
-  const [mounted, setMounted] = useState(false);
+  const [stored] = useState(() => (mounted ? readStored() : DEFAULT_STORED));
 
-  const [savedTheme, setSavedTheme] = useState<Theme>("system");
-  const [savedAccent, setSavedAccent] = useState<AccentId>("default");
-  const [savedCustomBg, setSavedCustomBg] = useState(ACCENT_CUSTOM_DEFAULT_BG);
-  const [savedCustomFg, setSavedCustomFg] = useState(ACCENT_CUSTOM_DEFAULT_FG);
+  const [savedTheme, setSavedTheme] = useState<Theme>(stored.theme);
+  const [savedAccent, setSavedAccent] = useState<AccentId>(stored.accent);
+  const [savedCustomBg, setSavedCustomBg] = useState(stored.customBg);
+  const [savedCustomFg, setSavedCustomFg] = useState(stored.customFg);
 
-  const [theme, setThemeLocal] = useState<Theme>("system");
-  const [accent, setAccentLocal] = useState<AccentId>("default");
-  const [customBg, setCustomBg] = useState(ACCENT_CUSTOM_DEFAULT_BG);
-  const [customFg, setCustomFg] = useState(ACCENT_CUSTOM_DEFAULT_FG);
-
-  useEffect(() => {
-    const stored = readStored();
-    setSavedTheme(stored.theme);
-    setSavedAccent(stored.accent);
-    setSavedCustomBg(stored.customBg);
-    setSavedCustomFg(stored.customFg);
-    setThemeLocal(stored.theme);
-    setAccentLocal(stored.accent);
-    setCustomBg(stored.customBg);
-    setCustomFg(stored.customFg);
-    setMounted(true);
-  }, []);
+  const [theme, setThemeLocal] = useState<Theme>(stored.theme);
+  const [accent, setAccentLocal] = useState<AccentId>(stored.accent);
+  const [customBg, setCustomBg] = useState(stored.customBg);
+  const [customFg, setCustomFg] = useState(stored.customFg);
 
   useEffect(() => {
     if (!mounted) return;

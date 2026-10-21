@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 
 // A typeable, filterable <select> replacement — plain HTML selects don't
 // scale to a 187-station list. Follows the standard ARIA combobox +
@@ -30,16 +30,21 @@ export function Combobox({
   // Stay in sync with `value` changing from outside (line switched, form
   // reset, etc.) — but not while the dropdown is open and the user is
   // mid-type, or every keystroke would get clobbered.
-  useEffect(() => {
+  const [prevSync, setPrevSync] = useState({ value, open });
+  if (prevSync.value !== value || prevSync.open !== open) {
+    setPrevSync({ value, open });
     if (!open) setQuery(value);
-  }, [value, open]);
+  }
 
   const trimmed = query.trim().toLowerCase();
   const filtered = trimmed ? options.filter((o) => o.toLowerCase().includes(trimmed)) : options;
 
-  useEffect(() => {
+  // Reset the highlight whenever the filter text or open state changes.
+  const [prevHighlightKey, setPrevHighlightKey] = useState({ query, open });
+  if (prevHighlightKey.query !== query || prevHighlightKey.open !== open) {
+    setPrevHighlightKey({ query, open });
     setHighlighted(0);
-  }, [query, open]);
+  }
 
   function select(option: string) {
     onChange(option);

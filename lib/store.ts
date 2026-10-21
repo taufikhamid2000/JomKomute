@@ -43,7 +43,9 @@ function isLegacyLegsRoute(value: unknown): value is LegacyLegsRoute {
 function migrateRoute(value: unknown): unknown {
   if (!isLegacyLegsRoute(value)) return value;
   const legs = value.legs;
-  const { legs: _legs, alternateLegs: _alternateLegs, ...rest } = value as LegacyLegsRoute & Record<string, unknown>;
+  const rest: Record<string, unknown> = { ...(value as LegacyLegsRoute & Record<string, unknown>) };
+  delete rest.legs;
+  delete rest.alternateLegs;
   return {
     ...rest,
     originStation: legs[0].originStation,

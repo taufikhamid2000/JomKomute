@@ -28,7 +28,7 @@ export function AuthBrandingPanel() {
 
       <div className="relative">
         <p className="text-2xl font-semibold leading-snug text-balance">
-          Track your usual commute and know how crowded it'll be before you leave.
+          Track your usual commute and know how crowded it&apos;ll be before you leave.
         </p>
         <ul className="mt-6 flex flex-col gap-3 text-sm text-primary-foreground/80">
           {[

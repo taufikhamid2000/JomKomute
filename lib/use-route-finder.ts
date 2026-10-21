@@ -12,9 +12,11 @@ import { useState } from "react";
 import { allStationNames, findRoute, findRouteOptions, type RouteOption } from "@/lib/route-finder";
 import type { RouteLeg } from "@/lib/types";
 
-function useFinderFields() {
-  const [origin, setOriginRaw] = useState("");
-  const [destination, setDestinationRaw] = useState("");
+type FinderInitial = { origin?: string | null; destination?: string | null };
+
+function useFinderFields(initial?: FinderInitial) {
+  const [origin, setOriginRaw] = useState(() => initial?.origin || "");
+  const [destination, setDestinationRaw] = useState(() => initial?.destination || "");
   const [notFound, setNotFound] = useState(false);
   const stationNames = allStationNames();
 
@@ -49,8 +51,9 @@ export function useRouteFinderOptions() {
 
 // components/route-form.tsx's /new page finder — a single best result via
 // findRoute(), feeding directly into the leg-by-leg LegsEditor.
-export function useSingleRouteFinder() {
-  const fields = useFinderFields();
+// `initial` only seeds the first render (e.g. from URL params).
+export function useSingleRouteFinder(initial?: FinderInitial) {
+  const fields = useFinderFields(initial);
 
   function find(): RouteLeg[] | undefined {
     if (!fields.origin || !fields.destination) return undefined;

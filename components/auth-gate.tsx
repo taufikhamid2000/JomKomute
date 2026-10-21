@@ -47,7 +47,6 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       cancelled = true;
       subscription.unsubscribe();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [publicPath, router]);
 
   // Avoid flashing gated content before the session check resolves — the

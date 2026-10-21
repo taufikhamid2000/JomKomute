@@ -311,19 +311,38 @@ export default function HomePage() {
   // list (components/report-row.tsx) — any of those can change what's
   // actually visible (see jomkomute.user_reports_visible), so they all
   // just re-run this rather than each keeping its own fetch logic.
+  //
+  // Every arrival of fresh reports (initial load, a new submit, a vote, a
+  // delete) also checks followed lines for a status transition —
+  // detectFollowedLineTransitions is idempotent against its own
+  // localStorage record, so this only ever produces a transition the
+  // first time it actually happens, not on every refresh while a
+  // followed line stays reported. followedLines is read through a ref so
+  // this callback stays stable.
+  const followedLinesRef = useRef(followedLines);
+  useEffect(() => {
+    followedLinesRef.current = followedLines;
+  }, [followedLines]);
+  const applyReports = useCallback((r: UserReport[]) => {
+    setReports(r);
+    const levels = new Map(Array.from(lineStatusesByLine(r).entries()).map(([lineId, status]) => [lineId, status.level]));
+    const transitions = detectFollowedLineTransitions(levels, followedLinesRef.current);
+    if (transitions.length > 0) setBoardAlerts((prev) => [...prev, ...transitions.map((t) => ({ kind: "line" as const, ...t }))]);
+  }, []);
+
   const refreshReports = useCallback(() => {
     return getRecentUserReports()
-      .then((r) => setReports(r))
+      .then((r) => applyReports(r))
       .catch(() => {
         // Best-effort overlay — a failed fetch just means no hazard chip/markers, not a broken screen.
       });
-  }, []);
+  }, [applyReports]);
 
   useEffect(() => {
     let cancelled = false;
     getRecentUserReports()
       .then((r) => {
-        if (!cancelled) setReports(r);
+        if (!cancelled) applyReports(r);
       })
       .catch(() => {
         // Best-effort overlay — a failed fetch just means no hazard chip/markers, not a broken screen.
@@ -331,20 +350,9 @@ export default function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [applyReports]);
 
   const lineStatusByLine = useMemo(() => lineStatusesByLine(reports), [reports]);
-
-  // Runs every time `reports` changes (initial load, a new submit, a
-  // vote, a delete) — detectFollowedLineTransitions is idempotent
-  // against its own localStorage record, so this only ever produces a
-  // transition the first time it actually happens, not on every
-  // refresh while a followed line stays reported.
-  useEffect(() => {
-    const levels = new Map(Array.from(lineStatusByLine.entries()).map(([lineId, status]) => [lineId, status.level]));
-    const transitions = detectFollowedLineTransitions(levels, followedLines);
-    if (transitions.length > 0) setBoardAlerts((prev) => [...prev, ...transitions.map((t) => ({ kind: "line" as const, ...t }))]);
-  }, [lineStatusByLine, followedLines]);
 
   // Fetched once, up front (unlike reports above) — this is small, rarely
   // changing reference data, not something worth re-fetching per route
@@ -432,7 +440,6 @@ export default function HomePage() {
       }
     }
     return best?.report ?? null;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routeOptions, selectedOptionIndex, reports]);
 
   // Soonest-closing line among the selected option's legs, if any of them
@@ -458,7 +465,6 @@ export default function HomePage() {
       }
     }
     return best;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routeOptions, selectedOptionIndex, operatingHours]);
 
   // "Last train ~11:45pm on the X Line" — only surfaced when the selected
@@ -477,7 +483,6 @@ export default function HomePage() {
     if (!time) return null;
     const line = lineById(lastLeg.line);
     return { time: formatClockTime(time), lineName: line?.name ?? lastLeg.line };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routeOptions, selectedOptionIndex, operatingHours]);
 
   const homeRoute = routes.find((r) => r.isHome);
@@ -515,7 +520,20 @@ export default function HomePage() {
   );
   const activeAlternateLegs = activeRouteOptions?.[1]?.legs;
 
-  const [activeCrowd, setActiveCrowd] = useState<CrowdMock | null>(null);
+  // Real ping count for the active route, tagged with the exact
+  // activeNext/activeLegs it was fetched for — anything else (nothing
+  // fetched yet, a failed/suppressed fetch, or a stale answer for a
+  // previous selection) falls back to the illustrative mock below.
+  const [fetchedCrowd, setFetchedCrowd] = useState<{
+    next: NextRoute;
+    legs: RouteLeg[];
+    crowd: CrowdMock;
+  } | null>(null);
+  const activeCrowd = useMemo<CrowdMock | null>(() => {
+    if (!activeNext || !activeLegs || activeLegs.length === 0) return null;
+    if (fetchedCrowd && fetchedCrowd.next === activeNext && fetchedCrowd.legs === activeLegs) return fetchedCrowd.crowd;
+    return mockCrowdFor(activeNext.route.id, activeNext.date);
+  }, [activeNext, activeLegs, fetchedCrowd]);
 
   // Shared by the active-route ping check below and the Home-route boot
   // check further down — pushes a "crowd" board alert the first time a
@@ -577,15 +595,10 @@ export default function HomePage() {
   }
 
   useEffect(() => {
-    if (!activeNext || !activeLegs || activeLegs.length === 0) {
-      setActiveCrowd(null);
-      return;
-    }
+    if (!activeNext || !activeLegs || activeLegs.length === 0) return;
 
     const station = activeNext.route.originStation;
     const timeBucket = timeToMinutes(activeNext.route.departureTime);
-    const fallback = mockCrowdFor(activeNext.route.id, activeNext.date);
-    setActiveCrowd(fallback);
 
     let cancelled = false;
 
@@ -602,7 +615,7 @@ export default function HomePage() {
     getPingCounts(station, activeNext.date, timeBucket)
       .then(({ count, suppressed }) => {
         if (cancelled || suppressed || count === null) return;
-        setActiveCrowd({ count, busier: count > 150 });
+        setFetchedCrowd({ next: activeNext, legs: activeLegs, crowd: { count, busier: count > 150 } });
         maybeAlertExceptionalCrowd(
           activeNext.route.id,
           activeNext.route.label,
@@ -614,7 +627,7 @@ export default function HomePage() {
         );
       })
       .catch(() => {
-        // Keep the mock fallback already set above.
+        // Keep the mock fallback.
       });
 
     return () => {
@@ -662,7 +675,6 @@ export default function HomePage() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nextByRoute, activeRoute?.id]);
 
   const activeDateLabel = activeNext

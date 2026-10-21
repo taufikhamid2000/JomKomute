@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getHourlyPingCounts, type HourlyPingCount } from "@/lib/pings-client";
 
 // Synthetic baseline — deterministic, not real data. Still the whole
@@ -96,20 +96,26 @@ export function mergePingForecast(base: HourForecast[], pings: HourlyPingCount[]
 // count: no backend, an unreachable API, or a static export all just
 // leave the synthetic curve standing.
 export function useForecast(routeId: string, station: string, date: string): HourForecast[] {
-  const [forecast, setForecast] = useState<HourForecast[]>(() => hourlyForecast(routeId));
+  const base = useMemo(() => hourlyForecast(routeId), [routeId]);
+  // Pings tagged with the inputs they were fetched for, so a stale
+  // answer never applies to a different route/station/date — those just
+  // show the synthetic baseline until their own fetch lands.
+  const [pingResult, setPingResult] = useState<{
+    routeId: string;
+    station: string;
+    date: string;
+    pings: HourlyPingCount[];
+  } | null>(null);
 
   useEffect(() => {
-    const base = hourlyForecast(routeId);
-    setForecast(base);
-
     let cancelled = false;
     getHourlyPingCounts(station, date)
       .then((pings) => {
         if (cancelled) return;
-        setForecast(mergePingForecast(base, pings));
+        setPingResult({ routeId, station, date, pings });
       })
       .catch(() => {
-        // Keep the synthetic baseline already set above.
+        // Keep the synthetic baseline.
       });
 
     return () => {
@@ -117,5 +123,10 @@ export function useForecast(routeId: string, station: string, date: string): Hou
     };
   }, [routeId, station, date]);
 
-  return forecast;
+  return useMemo(() => {
+    if (!pingResult || pingResult.routeId !== routeId || pingResult.station !== station || pingResult.date !== date) {
+      return base;
+    }
+    return mergePingForecast(base, pingResult.pings);
+  }, [base, pingResult, routeId, station, date]);
 }

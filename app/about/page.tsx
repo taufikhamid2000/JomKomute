@@ -51,7 +51,7 @@ const JSON_LD = {
 export default function AboutPage() {
   return (
     <>
-      {/* eslint-disable-next-line react/no-danger -- trusted, locally-defined JSON, not user input */}
+      {/* trusted, locally-defined JSON, not user input */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }} />
       <AboutContent />
     </>

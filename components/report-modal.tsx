@@ -25,7 +25,7 @@
 // goes through this modal, opened from the home screen's floating report
 // button (app/page.tsx).
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Combobox } from "@/components/combobox";
 import { linesForStation } from "@/lib/lines";
 import { nearestStationTo } from "@/lib/nearest-station";
@@ -53,6 +53,9 @@ type GeoState =
   | { status: "ready"; lat: number; lng: number }
   | { status: "denied" }
   | { status: "unavailable" };
+
+const GEO_UNAVAILABLE: GeoState = { status: "unavailable" };
+const subscribeNoop = () => () => {};
 
 type SubmitState = { status: "idle" } | { status: "submitting" } | { status: "success" } | { status: "error"; message: string };
 
@@ -125,7 +128,15 @@ export function ReportModal({
 
   const [mode, setMode] = useState<"location" | "station">("location");
   const [station, setStation] = useState("");
-  const [geo, setGeo] = useState<GeoState>({ status: "loading" });
+  const [geoFix, setGeo] = useState<GeoState>({ status: "loading" });
+  // No Geolocation API at all (server snapshot assumes there is one, so
+  // the hydration render still shows "loading").
+  const geoSupported = useSyncExternalStore(
+    subscribeNoop,
+    () => typeof navigator !== "undefined" && !!navigator.geolocation,
+    () => true,
+  );
+  const geo = geoSupported ? geoFix : GEO_UNAVAILABLE;
   const [note, setNote] = useState("");
   const [submitState, setSubmitState] = useState<SubmitState>({ status: "idle" });
   const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
@@ -156,25 +167,30 @@ export function ReportModal({
   // A change of station/mode/fix invalidates whatever line was picked for
   // the previous one — otherwise a stale selectedLineId from an earlier
   // station could silently ride along onto this one.
-  useEffect(() => {
+  const [prevResolvedStation, setPrevResolvedStation] = useState(resolvedStation);
+  if (resolvedStation !== prevResolvedStation) {
+    setPrevResolvedStation(resolvedStation);
     setSelectedLineId(null);
-  }, [resolvedStation]);
+  }
 
   // A tap on the main map (relayed from app/page.tsx) always means "I
   // picked a station" — switch into that mode and adopt it, then tell
   // the parent it's been consumed.
+  const [prevPickedStation, setPrevPickedStation] = useState<string | null | undefined>(null);
+  if (pickedStation !== prevPickedStation) {
+    setPrevPickedStation(pickedStation);
+    if (pickedStation) {
+      setMode("station");
+      setStation(pickedStation);
+    }
+  }
   useEffect(() => {
     if (!pickedStation) return;
-    setMode("station");
-    setStation(pickedStation);
     onPickedStationConsumed?.();
   }, [pickedStation, onPickedStationConsumed]);
 
   useEffect(() => {
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setGeo({ status: "unavailable" });
-      return;
-    }
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       (pos) => setGeo({ status: "ready", lat: pos.coords.latitude, lng: pos.coords.longitude }),
       (err) => setGeo({ status: err.code === err.PERMISSION_DENIED ? "denied" : "unavailable" }),

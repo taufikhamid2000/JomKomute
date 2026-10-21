@@ -65,7 +65,7 @@ export function reportCategoryMeta(labels: Record<ReportCategory, string>): Repo
       id,
       label: labels[id],
       color,
-      // eslint-disable-next-line react/no-danger -- same trusted, locally-defined SVG string used for the map marker
+      // same trusted, locally-defined SVG string used for the map marker
       icon: <span aria-hidden="true" dangerouslySetInnerHTML={{ __html: svg }} />,
       svg,
     };
