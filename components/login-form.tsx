@@ -120,6 +120,7 @@ export function LoginForm() {
             <div className="h-px flex-1 bg-border" />
           </div>
 
+          <div className="flex flex-col gap-3">
           <a
             href={jomIdHref(FALLBACK_ORIGIN)}
             onClick={(e) => {
@@ -127,12 +128,13 @@ export function LoginForm() {
               e.preventDefault();
               window.location.assign(jomIdHref(window.location.origin));
             }}
-            className="mb-3 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-border bg-background px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
             Continue with Jom ID
           </a>
 
-          <DemoButton />
+            <DemoButton />
+          </div>
 
           <p className="mt-6 text-center text-sm text-foreground/60">
             Don&apos;t have an account?{" "}
@@ -141,6 +143,20 @@ export function LoginForm() {
             </a>
           </p>
         </div>
+
+        {/* AuthBrandingPanel (with the footnote) is hidden below md, so
+            repeat it here for mobile. */}
+        <p className="text-center text-xs text-foreground/40 md:hidden">
+          Your daily commute, minus the surprises.{" "}
+          <a
+            href="https://taufikhamid.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline-offset-2 hover:underline hover:text-foreground/60"
+          >
+            A project by Muhammad Taufik &rarr;
+          </a>
+        </p>
       </div>
     </div>
   );
