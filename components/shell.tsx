@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase-client";
 import { useDictionary } from "@/lib/use-dictionary";
+import { Footer } from "@/components/footer";
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const { t } = useDictionary();
@@ -151,7 +152,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </nav>
         </aside>
 
-        <main className="flex flex-1 flex-col">{children}</main>
+        <main className="flex flex-1 flex-col">{children}<Footer /></main>
       </div>
     </div>
   );
