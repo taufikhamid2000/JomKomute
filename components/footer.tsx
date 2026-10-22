@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 // Vercel sets VERCEL_GIT_COMMIT_SHA automatically at build time (read
 // server-side only). Off Vercel, a deploy script may set GIT_COMMIT_SHA;
 // otherwise this falls back to "dev".
@@ -25,6 +27,9 @@ export function Footer() {
           ) : (
             <span className="font-mono text-xs text-[var(--nav-fg-muted)]">{version}</span>
           )}
+          <Link href="/api-docs" className={"text-xs text-[var(--nav-fg-muted)] underline-offset-4 transition-colors hover:text-[var(--nav-fg)] hover:underline"}>
+            API
+          </Link>
           <a
             href="https://jomid.taufikhamid.com"
             target="_blank"
