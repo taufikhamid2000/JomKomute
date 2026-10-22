@@ -27,6 +27,9 @@ export function Footer() {
           ) : (
             <span className="font-mono text-xs text-[var(--nav-fg-muted)]">{version}</span>
           )}
+          <Link href="/about" className={"text-xs text-[var(--nav-fg-muted)] underline-offset-4 transition-colors hover:text-[var(--nav-fg)] hover:underline"}>
+            About
+          </Link>
           <Link href="/api-docs" className={"text-xs text-[var(--nav-fg-muted)] underline-offset-4 transition-colors hover:text-[var(--nav-fg)] hover:underline"}>
             API
           </Link>
