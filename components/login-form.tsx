@@ -14,12 +14,12 @@ import { supabaseBrowser } from "@/lib/supabase-client";
 // portal, which sends the user back here signed in (shared cookie). The
 // local /signup page still works but isn't linked from here.
 const JOM_ID_SIGNUP_URL =
-  "https://akaun.taufikhamid.com/signup?next=" +
+  "https://jomid.taufikhamid.com/signup?next=" +
   encodeURIComponent("https://jomkomute.taufikhamid.com/");
 
 // Signing in also works through the portal: /continue sends the user straight
 // back here (to the same "/" the email/password flow lands on) once signed in.
-const JOM_ID_CONTINUE_URL = "https://akaun.taufikhamid.com/continue";
+const JOM_ID_CONTINUE_URL = "https://jomid.taufikhamid.com/continue";
 const FALLBACK_ORIGIN = "https://jomkomute.taufikhamid.com";
 const POST_LOGIN_PATH = "/";
 
