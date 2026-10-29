@@ -45,7 +45,8 @@ export async function GET(request: NextRequest) {
     .lte("time_bucket", bucket + window);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[api/pings/counts] database error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 
   const total = count ?? 0;

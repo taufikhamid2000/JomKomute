@@ -32,7 +32,8 @@ export async function GET(request: NextRequest) {
     .eq("trip_date", date);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[api/pings/hourly] database error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 
   const countsByHour = new Array(HOURS_PER_DAY).fill(0) as number[];

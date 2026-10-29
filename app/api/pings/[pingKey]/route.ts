@@ -73,7 +73,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   );
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[api/pings/[pingKey]] database error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 
   return new NextResponse(null, { status: 204 });
@@ -91,7 +92,8 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
   const { error } = await supabase.from("planned_trip_pings").delete().eq("ping_key", pingKey);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[api/pings/[pingKey]] database error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 
   return new NextResponse(null, { status: 204 });

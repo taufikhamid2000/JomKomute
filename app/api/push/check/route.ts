@@ -30,6 +30,7 @@
 // Authorization: Bearer <CRON_SECRET> call from any other caller
 // (including the external-scheduler option above).
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "crypto";
 import webpush from "web-push";
 import { LINES } from "@/lib/lines";
 import { lineStatusesByLine } from "@/lib/line-status";
@@ -68,7 +69,9 @@ export async function GET(request: NextRequest) {
   if (!secret) {
     return NextResponse.json({ error: "CRON_SECRET isn't configured on this deployment" }, { status: 500 });
   }
-  if (request.headers.get("authorization") !== `Bearer ${secret}`) {
+  const provided = Buffer.from(request.headers.get("authorization") ?? "");
+  const expected = Buffer.from(`Bearer ${secret}`);
+  if (provided.length !== expected.length || !timingSafeEqual(provided, expected)) {
     return unauthorized();
   }
 
@@ -87,8 +90,14 @@ export async function GET(request: NextRequest) {
     supabase.from("line_status_notified").select("line_id, level"),
   ]);
 
-  if (reportsError) return NextResponse.json({ error: reportsError.message }, { status: 500 });
-  if (notifiedError) return NextResponse.json({ error: notifiedError.message }, { status: 500 });
+  if (reportsError) {
+    console.error("[api/push/check] database error:", reportsError);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+  if (notifiedError) {
+    console.error("[api/push/check] database error:", notifiedError);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 
   const reports: UserReport[] = ((reportRows ?? []) as ReportRow[]).map((r) => ({
     id: r.id,
@@ -135,7 +144,10 @@ export async function GET(request: NextRequest) {
   const { data: subscriptionRows, error: subsError } = await supabase
     .from("push_subscriptions")
     .select("endpoint, p256dh, auth, line_ids");
-  if (subsError) return NextResponse.json({ error: subsError.message }, { status: 500 });
+  if (subsError) {
+    console.error("[api/push/check] database error:", subsError);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 
   let pushed = 0;
   const deadEndpoints = new Set<string>();

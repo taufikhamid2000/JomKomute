@@ -22,7 +22,8 @@ export async function POST(request: NextRequest) {
   const { error } = await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[api/push/unsubscribe] database error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 
   return new NextResponse(null, { status: 204 });

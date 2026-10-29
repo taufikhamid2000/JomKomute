@@ -10,6 +10,26 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  // Baseline security headers for every route. Deliberately NOT set:
+  //  - a full Content-Security-Policy: the app uses inline scripts/styles,
+  //    map tiles, Supabase and web push, and a CSP can't be validated
+  //    safely without a browser test pass, so only frame-ancestors is set.
+  //  - Permissions-Policy: geolocation (maps) and web push must keep working.
+  // No page is meant to be embedded in an iframe by another site.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+        ],
+      },
+    ];
+  },
   // /dashboard was folded into the Home screen (app/page.tsx) — its "next
   // trip" card is now shown there when a Home/Work/recent route is active.
   // Redirect any bookmarked/external links rather than 404ing. This app is

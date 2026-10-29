@@ -38,7 +38,8 @@ export async function GET(request: NextRequest) {
     .not("line_id", "is", null);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[api/line-history] database error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 
   // Zero-filled per line so a day with no reports still gets a bar at
