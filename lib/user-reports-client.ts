@@ -217,16 +217,18 @@ export function getMyVoteFor(reportId: string): ReportVote | null {
   return getVotedReports()[reportId] ?? null;
 }
 
-// Upsert on (report_id, voter_key) so a device can change its mind
-// (confirm -> dispute or back) rather than erroring on the unique
-// constraint the second time it votes on the same report.
+// cast_vote() upserts on (report_id, voter_key) so a device can change its
+// mind (confirm -> dispute or back); clients have no direct write access to
+// the votes table.
 export async function submitReportVote(reportId: string, vote: ReportVote): Promise<void> {
   const voterKey = getVoterKey();
   let error: unknown;
   try {
-    ({ error } = await supabaseBrowser()
-      .from("user_report_votes")
-      .upsert({ report_id: reportId, voter_key: voterKey, vote } as never, { onConflict: "report_id,voter_key" }));
+    ({ error } = await supabaseBrowser().rpc("cast_vote", {
+      p_report_id: reportId,
+      p_voter_key: voterKey,
+      p_vote: vote,
+    } as never));
   } catch (thrown) {
     throw classifySubmitError(thrown);
   }
