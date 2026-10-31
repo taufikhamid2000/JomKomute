@@ -94,5 +94,6 @@ Start with one line and two stations. A small, concrete result is more convincin
 JomKomute is an independent concept. It isn't affiliated with or endorsed by Prasarana or MyRapid. It was designed and built by Taufik Hamid as a portfolio project, and is offered as input for PULSE.
 
 - Prototype: [jomkomute.taufikhamid.com](https://jomkomute.taufikhamid.com)
+- Source code (MIT): [github.com/taufikhamid2000/JomKomute](https://github.com/taufikhamid2000/JomKomute)
 - Portfolio: [taufikhamid.com](https://taufikhamid.com)
 - Contact: [taufikhamid2000@gmail.com](mailto:taufikhamid2000@gmail.com)
