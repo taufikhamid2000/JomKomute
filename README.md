@@ -1,5 +1,12 @@
 # JomKomute
 
+> **Should I take MRT Maluri, LRT Maluri, or work from home today?**
+> JomKomute is a working prototype that answers that question each morning, and a
+> pitch for building the same features into MyRapid PULSE.
+> Read the [pitch](https://jomkomute.taufikhamid.com/pitch) ([source](docs/PITCH.md)) ·
+> try the [live app](https://jomkomute.taufikhamid.com) · MIT licensed.
+> Independent concept, not affiliated with Prasarana or MyRapid.
+
 A Waze-style companion for KTM Komuter, LRT, MRT, and KL Monorail riders in
 Malaysia's Klang Valley. Two things working together:
 
@@ -19,6 +26,8 @@ ridership data. Design system carried over from
 
 ## Features
 
+- **Today's verdict** (`/today`) — one answer for a saved commute: go as
+  usual, switch to the line with no rider reports, or work from home.
 - **Map-first home screen** — a full-screen map with a "Where to?" bottom
   sheet, Home/Work quick access, and a floating report button, closer to
   Waze's own layout than a typical transit-schedule app.
@@ -130,3 +139,7 @@ Solo project, no collaborators — agents should commit and push straight
 to `main` rather than opening feature branches/PRs. `main` deploying
 straight to production (see Deploy above) is the intended workflow here,
 not a risk to route around.
+
+## Licence
+
+[MIT](LICENSE) © 2026 Taufik Hamid
