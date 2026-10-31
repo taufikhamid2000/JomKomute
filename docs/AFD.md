@@ -4,11 +4,11 @@
 
 ## Route map
 - **Public:** `/login`, `/signup`, `/api-docs`
-- **Behind the auth gate:** `/` (home map), `/new`, `/route`, `/routes`, `/report`, `/line-status`, `/settings`, `/about`
+- **Behind the auth gate:** `/` (home map), `/today`, `/new`, `/route`, `/routes`, `/report`, `/line-status`, `/settings`, `/about`
 - **API:** `/api/pings/counts`, `/api/pings/hourly`, `/api/pings/[pingKey]`, `/api/line-history`, `/api/push/{subscribe,unsubscribe,check}`
 - **Redirects:** `/dashboard` to `/`, `/operating-hours` to `/line-status`
 
-Nav (`components/shell.tsx`): My routes, Line status, Settings, About.
+Nav (`components/shell.tsx`): Today, My routes, Line status, Settings, About.
 
 ## Flow 1 — Entry
 ```
@@ -32,6 +32,15 @@ Home "Where to?" sheet (or Home/Work) ──► pick destination ──► route
 Exceptions: skip a day, recurring WFH day, nearby event ("Change plan")
 ```
 Saved routes are not stored on the server.
+
+## Flow 3b — Today's verdict
+```
+Home sheet "Today's verdict" / nav "Today" ──► /today ──► defaults to the next saved commute (chips to pick another)
+   route-finder alternatives (up to 3) × rider reports per line (lib/verdict.ts)
+   usual route clear or only crowded ──► "Go as usual" (crowded: tip a clean alternative)
+   usual route delayed/breakdown/accident, another route clear ──► "Take <line> instead"
+   every route disrupted ──► "Consider working from home" (one tap applies the WFH skip to every saved route that day)
+```
 
 ## Flow 4 — Report an issue
 ```

@@ -30,6 +30,7 @@ Transit apps show schedules but not what is happening right now or how crowded a
 | Home | Full-screen map, "Where to?" sheet, Home/Work quick access, report button | `/` |
 | Report issues | Report delay / accident / breakdown / crowded / other from location or a picked station; vote "still happening?"; clustered markers | `/report`, report modal |
 | Line status | First/last train per line, live crowdsourced status, followable lines, history chart, push "Notify me" | `/line-status` |
+| Today's verdict | For a saved commute: go as usual, switch to the line with no reports, or work from home. Built from route alternatives plus live rider reports; not official status | `/today` |
 | Route planning | Fewest-transfer routing, same-line backup route | `/new`, `/route` |
 | My routes | Saved commutes, crowd forecast, exceptions | `/routes`, `/route` |
 | Settings | Appearance (theme, accent), language | `/settings` |

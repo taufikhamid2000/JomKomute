@@ -220,7 +220,14 @@ function nodePathToLegs(nodePath: NodeKey[]): RouteLeg[] {
     }
   }
   legs.push({ line: legStart.lineId, originStation: legStart.station, destinationStation: stops[stops.length - 1].station });
-  return legs;
+  // Yen's spur paths can start on one line at the origin and transfer to
+  // another line at the same station before moving (e.g. "MRT Kajang:
+  // Maluri > Maluri", then LRT Ampang from Maluri). A leg that boards and
+  // alights at the same station isn't a ride, so drop it. Without this the
+  // rider sees a phantom leg and an extra transfer, and lib/verdict.ts
+  // would think every Maluri option uses the MRT.
+  const rides = legs.filter((leg) => leg.originStation !== leg.destinationStation);
+  return rides.length > 0 ? rides : legs;
 }
 
 export type RouteOption = {

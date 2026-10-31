@@ -25,6 +25,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     // entry). It's reachable everywhere it actually matters instead:
     // the routes list's own CTA, the home screen's empty/prompt states,
     // and "Add return trip" on a route's detail page.
+    { href: "/today", label: t.nav.today },
     { href: "/routes", label: t.nav.myRoutes },
     { href: "/line-status", label: t.nav.operatingHours },
     { href: "/settings", label: t.nav.settings },

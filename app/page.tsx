@@ -1136,6 +1136,16 @@ export default function HomePage() {
               {finderNotFound && <p className="text-xs text-destructive">{t.homePage.finderNotFound}</p>}
             </div>
 
+            {routes.length > 0 && (
+              <Link
+                href="/today"
+                className="flex items-center justify-between gap-2 rounded-xl border border-border px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-muted"
+              >
+                {t.todayPage.title}
+                <span aria-hidden="true" className="text-foreground/50">→</span>
+              </Link>
+            )}
+
             {homeRoute || workRoute ? (
               <div className="flex gap-2">
                 {homeRoute ? (
