@@ -307,6 +307,10 @@ export const en = {
     save: "Save",
   },
   about: {
+    pitchKicker: "Pitch for MyRapid PULSE",
+    pitchTitle: "Should I take MRT Maluri, LRT Maluri, or work from home today?",
+    pitchBody: "JomKomute is a working prototype of features PULSE could adopt: save your commute once, get one answer every morning.",
+    pitchCta: "Read the pitch",
     kicker: "The idea",
     headline: "Know what's happening on your line before you're stuck in it",
     subheadline:

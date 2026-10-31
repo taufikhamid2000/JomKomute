@@ -3,7 +3,7 @@
 > Drafted from the codebase routes and components.
 
 ## Route map
-- **Public:** `/login`, `/signup`, `/api-docs`
+- **Public:** `/login`, `/signup`, `/api-docs`, `/pitch` (renders `docs/PITCH.md`; linked from the top of `/about`)
 - **Behind the auth gate:** `/` (home map), `/today`, `/new`, `/route`, `/routes`, `/report`, `/line-status`, `/settings`, `/about`
 - **API:** `/api/pings/counts`, `/api/pings/hourly`, `/api/pings/[pingKey]`, `/api/line-history`, `/api/push/{subscribe,unsubscribe,check}`
 - **Redirects:** `/dashboard` to `/`, `/operating-hours` to `/line-status`

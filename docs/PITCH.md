@@ -95,5 +95,4 @@ JomKomute is an independent concept. It isn't affiliated with or endorsed by Pra
 
 - Prototype: [jomkomute.taufikhamid.com](https://jomkomute.taufikhamid.com)
 - Portfolio: [taufikhamid.com](https://taufikhamid.com)
-
-**Open question:** add the contact details you want Prasarana to use, and say whether the source code can be shared on request.
+- Contact: [taufikhamid2000@gmail.com](mailto:taufikhamid2000@gmail.com)

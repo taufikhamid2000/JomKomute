@@ -67,6 +67,18 @@ export function AboutContent() {
   return (
     <Shell>
       <div className="animate-page-in mx-auto flex w-full max-w-2xl flex-col gap-10 p-4 md:p-8">
+        <Link
+          href="/pitch"
+          className="group flex flex-col gap-2 rounded-2xl bg-primary p-5 text-primary-foreground shadow-lg transition-opacity hover:opacity-95 sm:p-6"
+        >
+          <span className="text-xs font-semibold tracking-wide uppercase opacity-80">{t.about.pitchKicker}</span>
+          <span className="text-xl leading-snug font-semibold text-balance sm:text-2xl">{t.about.pitchTitle}</span>
+          <span className="text-sm opacity-85">{t.about.pitchBody}</span>
+          <span className="mt-2 w-fit rounded-lg bg-primary-foreground px-4 py-2 text-sm font-semibold text-primary">
+            {t.about.pitchCta} <span aria-hidden="true" className="inline-block transition-transform group-hover:translate-x-0.5">→</span>
+          </span>
+        </Link>
+
         <section className="flex flex-col items-center gap-4 pt-4 text-center">
           <span className="text-xs font-semibold tracking-wide text-primary uppercase">{t.about.kicker}</span>
           <h1 className="text-2xl leading-tight font-semibold text-balance text-foreground sm:text-3xl">

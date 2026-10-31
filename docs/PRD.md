@@ -34,7 +34,7 @@ Transit apps show schedules but not what is happening right now or how crowded a
 | Route planning | Fewest-transfer routing, same-line backup route | `/new`, `/route` |
 | My routes | Saved commutes, crowd forecast, exceptions | `/routes`, `/route` |
 | Settings | Appearance (theme, accent), language | `/settings` |
-| Public | About (SEO/JSON-LD), login, signup, API docs | `/about`, `/login`, `/signup`, `/api-docs` |
+| Public | About (SEO/JSON-LD, pitch card on top), MyRapid PULSE pitch rendered from `docs/PITCH.md`, login, signup, API docs | `/about`, `/pitch`, `/login`, `/signup`, `/api-docs` |
 | API | Planned-trip ping counts, line history, push subscribe | `/api/pings/*`, `/api/line-history`, `/api/push/*` |
 | PWA | Web manifest, service worker for push | `app/manifest.ts`, `public/sw.js` |
 

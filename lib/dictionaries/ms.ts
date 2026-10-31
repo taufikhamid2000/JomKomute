@@ -309,6 +309,10 @@ export const ms: Dictionary = {
     save: "Simpan",
   },
   about: {
+    pitchKicker: "Cadangan untuk MyRapid PULSE",
+    pitchTitle: "Naik MRT Maluri, LRT Maluri, atau kerja dari rumah hari ni?",
+    pitchBody: "JomKomute ialah prototaip berfungsi untuk ciri yang boleh diguna pakai oleh PULSE: simpan perjalanan sekali, dapat satu jawapan setiap pagi.",
+    pitchCta: "Baca cadangan",
     kicker: "Ideanya",
     headline: "Tahu apa yang berlaku di laluan anda sebelum anda terperangkap di dalamnya",
     subheadline:

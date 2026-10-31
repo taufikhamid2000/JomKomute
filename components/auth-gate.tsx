@@ -10,7 +10,7 @@ import { supabaseBrowser } from "@/lib/supabase-client";
 // Supabase session (real or anonymous, from "Try the demo" — see
 // components/demo-button.tsx) on mount and redirects to /login if there
 // isn't one. /login and /signup are excluded so the gate doesn't loop.
-const PUBLIC_PATHS = ["/login", "/signup", "/api-docs"];
+const PUBLIC_PATHS = ["/login", "/signup", "/api-docs", "/pitch"];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
