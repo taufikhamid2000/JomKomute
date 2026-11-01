@@ -11,7 +11,8 @@ import { useDictionary } from "@/lib/use-dictionary";
 // sheet overlapping it, and the mobile bottom tab bar (rendered by Shell,
 // which also reserves its bottom padding). The home dashboard, /today,
 // /line-status, /routes, /route, /settings, /about and /pitch use it. The
-// full-screen map, the planner, /login, /signup, /report and /new do not.
+// full-screen map, the planner, /login and /signup do not. /report, /new
+// (no tab bar) and /api-docs use it too.
 const WIDTHS = {
   sm: "max-w-lg",
   md: "max-w-xl",

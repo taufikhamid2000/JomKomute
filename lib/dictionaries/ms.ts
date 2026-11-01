@@ -348,6 +348,18 @@ export const ms: Dictionary = {
     cancel: "Batal",
     save: "Simpan",
   },
+  apiDocs: {
+    title: "API",
+    intro: "API REST awam untuk JomKomute (laporan penumpang secara langsung dan status laluan kereta api) sedang dirancang. Halaman ini hanyalah pemegang tempat sementara.",
+    placeholderTitle: "Pemegang tempat, belum awam.",
+    placeholderBody: "API ini ialah pemegang tempat dan belum awam atau stabil. Titik akhir bertanda Langsung wujud dalam aplikasi hari ini, tetapi ia dalaman, tidak didokumenkan untuk pihak ketiga dan boleh berubah tanpa notis. Semua yang bertanda Dirancang ialah pelan hala tuju dan belum boleh dipanggil.",
+    authTitle: "Pengesahan",
+    authBody: "Kunci API belum tersedia. Apabila ia dilancarkan, permintaan akan menggunakan token bearer:",
+    live: "Langsung",
+    planned: "Dirancang",
+    authLabel: "Pengesahan",
+    responseLabel: "Respons",
+  },
   about: {
     pitchKicker: "Cadangan untuk MyRapid PULSE",
     pitchTitle: "Naik MRT Maluri, LRT Maluri, atau kerja dari rumah hari ni?",

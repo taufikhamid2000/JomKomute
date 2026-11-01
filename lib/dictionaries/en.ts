@@ -346,6 +346,18 @@ export const en = {
     cancel: "Cancel",
     save: "Save",
   },
+  apiDocs: {
+    title: "API",
+    intro: "A public REST API for JomKomute (live commuter reports and train line status) is being planned. This page is a temporary placeholder.",
+    placeholderTitle: "Placeholder, not yet public.",
+    placeholderBody: "This API is a placeholder and is not yet public or stable. Endpoints marked Live exist in the app today, but they are internal, not documented for third parties and may change without notice. Everything marked Planned is a roadmap and cannot be called yet.",
+    authTitle: "Authenticating",
+    authBody: "API keys are not available yet. When they ship, requests will use a bearer token:",
+    live: "Live",
+    planned: "Planned",
+    authLabel: "Auth",
+    responseLabel: "Response",
+  },
   about: {
     pitchKicker: "Pitch for MyRapid PULSE",
     pitchTitle: "Should I take MRT Maluri, LRT Maluri, or work from home today?",

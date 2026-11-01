@@ -17,8 +17,7 @@
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { Shell } from "@/components/shell";
+import { AppShell } from "@/components/app-shell";
 import { useDictionary } from "@/lib/use-dictionary";
 import { reportCategoryMeta } from "@/lib/report-categories";
 import { routeCorridorPoints, type CorridorPoint } from "@/lib/route-corridor";
@@ -42,11 +41,9 @@ const ReportMap = dynamic(() => import("@/components/report-map").then((m) => m.
 // app/route/page.tsx's ?id= reader.
 export function ReportContent() {
   return (
-    <Shell tabBar={false}>
-      <Suspense fallback={null}>
-        <ReportPageContent />
-      </Suspense>
-    </Shell>
+    <Suspense fallback={null}>
+      <ReportPageContent />
+    </Suspense>
   );
 }
 
@@ -87,41 +84,33 @@ function ReportPageContent() {
   }, [refresh]);
 
   return (
-    <div className="animate-page-in flex w-full flex-1 flex-col gap-4 p-4 pb-[max(2rem,env(safe-area-inset-bottom))] md:p-8">
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-2">
-      <Link
-        href="/"
-        className="flex min-h-11 w-fit items-center gap-1 rounded-lg pr-3 text-sm font-medium text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-      >
-        <span aria-hidden="true">←</span> {t.homeScreen.back}
-      </Link>
-        <div className="flex items-center gap-2">
-          <h1 className="text-lg font-semibold text-foreground">{t.reportPage.title}</h1>
+    <AppShell title={t.reportPage.title} subtitle={t.reportPage.description} back={{ href: "/", label: t.homeScreen.back }} width="lg">
+      <div className="animate-page-in flex w-full flex-col gap-4">
+        <div className="flex flex-col items-start gap-2">
           <span
             className="rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase"
             style={{ backgroundColor: "color-mix(in srgb, var(--destructive) 12%, transparent)", color: "var(--destructive)" }}
           >
             {t.reportPage.conceptBadge}
           </span>
+          {loadError ? <p className="text-sm text-[var(--destructive)]">{t.reportPage.loadError}</p> : null}
         </div>
-        <p className="max-w-lg text-sm text-foreground/60">{t.reportPage.description}</p>
-        {loadError ? <p className="text-sm text-[var(--destructive)]">{t.reportPage.loadError}</p> : null}
-      </div>
 
-      <div className="relative mx-auto h-[60vh] w-full max-w-2xl overflow-hidden rounded-2xl border border-border">
-        <ReportMap reports={reports} categories={categories} onVoted={refresh} corridor={corridor} t={t.reportPage} />
-      </div>
+        <div className="app-card relative h-[60vh] w-full overflow-hidden">
+          <ReportMap reports={reports} categories={categories} onVoted={refresh} corridor={corridor} t={t.reportPage} />
+        </div>
 
-      <div className="mx-auto flex w-full max-w-2xl flex-wrap gap-3 text-xs text-foreground/50">
-        {categories.map((c) => (
-          <span key={c.id} className="flex items-center gap-1.5">
-            <span className="flex h-4 w-4 items-center justify-center rounded-full" style={{ backgroundColor: c.color, color: "white" }}>
-              <span className="scale-[0.6]">{c.icon}</span>
+        <div className="flex w-full flex-wrap gap-3 text-xs text-foreground/60">
+          {categories.map((c) => (
+            <span key={c.id} className="flex items-center gap-1.5">
+              <span className="flex h-4 w-4 items-center justify-center rounded-full" style={{ backgroundColor: c.color, color: "white" }}>
+                <span className="scale-[0.6]">{c.icon}</span>
+              </span>
+              {c.label}
             </span>
-            {c.label}
-          </span>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
+    </AppShell>
   );
 }

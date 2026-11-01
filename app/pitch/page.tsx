@@ -12,13 +12,13 @@ import { Markdown } from "./markdown";
 export const dynamic = "force-static";
 
 export const metadata: Metadata = {
-  title: "Pitch: JomKomute × MyRapid PULSE",
+  title: "Pitch: JomKomute",
   description:
     "A commute-companion layer for MyRapid PULSE: save your usual trip once and get one answer each morning: go, leave early, switch line, or stay home.",
   alternates: { canonical: "/pitch" },
   openGraph: {
     url: "/pitch",
-    title: "JomKomute × MyRapid PULSE: A Commute Companion Pitch",
+    title: "JomKomute: A Commute Companion Pitch",
     description: "Should I take MRT Maluri, LRT Maluri, or work from home today? A pitch for answering that inside PULSE.",
   },
 };

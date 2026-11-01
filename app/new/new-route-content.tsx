@@ -1,34 +1,33 @@
 "use client";
 
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { AppShell } from "@/components/app-shell";
 import { RouteForm } from "@/components/route-form";
-import { Shell } from "@/components/shell";
 import { useDictionary } from "@/lib/use-dictionary";
 
+// Focused form view: AppShell without the bottom tab bar, back to /routes.
 export function NewRouteContent() {
-  const { t } = useDictionary();
   return (
-    <Shell tabBar={false}>
-      <div className="animate-page-in mx-auto flex w-full max-w-lg flex-col gap-4 p-4 pb-[max(2rem,env(safe-area-inset-bottom))] md:p-8">
-      <Link
-        href="/routes"
-        className="flex min-h-11 w-fit items-center gap-1 rounded-lg pr-3 text-sm font-medium text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-      >
-        <span aria-hidden="true">←</span> {t.homeScreen.close}
-      </Link>
-        <Suspense fallback={null}>
-          <NewRouteTitle />
-          <RouteForm />
-        </Suspense>
-      </div>
-    </Shell>
+    <Suspense fallback={null}>
+      <NewRouteShell />
+    </Suspense>
   );
 }
 
-function NewRouteTitle() {
+function NewRouteShell() {
   const { t } = useDictionary();
   const isEdit = !!useSearchParams().get("editId");
-  return <h1 className="text-lg font-semibold text-foreground">{isEdit ? t.routeForm.editTitle : t.routeForm.title}</h1>;
+  return (
+    <AppShell
+      title={isEdit ? t.routeForm.editTitle : t.routeForm.title}
+      back={{ href: "/routes", label: t.homeScreen.close }}
+      width="sm"
+      tabBar={false}
+    >
+      <div className="animate-page-in flex w-full flex-col gap-4">
+        <RouteForm />
+      </div>
+    </AppShell>
+  );
 }
