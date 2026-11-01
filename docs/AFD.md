@@ -10,7 +10,7 @@
 
 Nav (`components/shell.tsx`): Today, My routes, Line status, Settings, About.
 
-Home on mobile (`components/home-dashboard.tsx`, screenshot in `docs/screenshots/home-mobile.jpg`): indigo header (alerts link, Live badge, Line status / Rail map toggle), "Plan your journey" bar, mini-map card (tap opens the full map; a back button returns), "Explore more" tiles, and nearby stations with per-line status. Nearby stations start as demo data and switch to geolocation once permitted; status comes from rider reports, with no invented ETAs. A fixed bottom tab bar (`components/bottom-tab-bar.tsx`: Explore, Report, Today, Profile) shows below md for signed-in users; `Shell` takes `home` and `tabBar` props for this.
+Home on mobile (`components/home-dashboard.tsx`, screenshot in `docs/screenshots/home-mobile.jpg`): indigo header (alerts link, Live badge, Line status / Rail map toggle), "Plan your journey" bar, mini-map card (tap opens the full map; a back button returns), "Explore more" tiles, and nearby stations with per-line status. Nearby stations start as demo data and switch to geolocation once permitted; status comes from rider reports, with no invented ETAs. A fixed bottom tab bar (`components/bottom-tab-bar.tsx`: Explore, Report, Today, Profile) shows below md for signed-in users; `Shell` takes `band` (hides its own header and footer below md) and `tabBar` props for this.
 
 ## Flow 1 — Entry
 ```
@@ -66,3 +66,5 @@ Theme, accent colour, language (en/ms).
 
 ## Error handling
 `TODO: confirm` (no `error.tsx` found in `app/`). Toasts via `components/toast-provider.tsx`.
+
+Shared mobile layout (`components/app-shell.tsx`, `AppShell`): indigo header band (alerts link, brand, Live badge, optional right slot, Log in pill when signed out) plus a rounded white sheet overlapping it, wrapped around `Shell`. Used by Home, Today, Line status, My routes (and route detail, with a back link), Settings (with a Log out card on mobile), About and Pitch. About and Pitch use `width="reading"` (text column of about 65ch); other pages pick `sm`/`md`/`lg`/`xl`. Cards use the `app-card` utility. The tab bar never covers content: `Shell` pads `main` by the bar height plus the safe-area inset. No shell or tab bar on: the full-screen map and planner (edge-to-edge, back button), Login and Sign up, and the focused `/report` and `/new` views (tab bar hidden, Back / Close link kept). `/report` is a live-reports map browser, not a form. Mobile screenshots: `docs/screenshots/{home,today,line-status,routes,settings,about,pitch,new,report}-mobile.jpg`.
