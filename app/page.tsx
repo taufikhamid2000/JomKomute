@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChangePlanModal } from "@/components/change-plan-modal";
 import { Combobox } from "@/components/combobox";
 import { ReportModal } from "@/components/report-modal";
+import { HomeDashboard } from "@/components/home-dashboard";
 import { Shell } from "@/components/shell";
 import { StationPopup } from "@/components/station-popup";
 import { EXCEPTIONAL_CROWD_THRESHOLD, isNewExceptionalCrowd } from "@/lib/crowd-alerts";
@@ -208,6 +209,9 @@ export default function HomePage() {
   // see the shared `panelSummary` computed further down for what the
   // collapsed strip shows per state.
   const [isPanelCollapsed, setIsPanelCollapsed] = useState(true);
+  // "home" is the mobile-first dashboard (components/home-dashboard.tsx);
+  // "map" is the original full-screen map + planner sheet, untouched.
+  const [view, setView] = useState<"home" | "map">("home");
 
   // Physical drag-to-collapse/expand on top of the tap-to-toggle above.
   // `dragOffset` is a live pixel translateY applied to whichever panel
@@ -717,9 +721,38 @@ export default function HomePage() {
         ? t.homePage.finderSummary(oneTimeRoute.origin, oneTimeRoute.destination)
         : t.homePage.whereTo;
 
+  if (view === "home") {
+    return (
+      <Shell home>
+        <HomeDashboard
+          reports={reports}
+          lineStatusByLine={lineStatusByLine}
+          showReports={mapPrefs.showReports}
+          showStationNames={mapPrefs.showStationNames}
+          onOpenMap={() => setView("map")}
+          onPlan={() => {
+            setIsPanelCollapsed(false);
+            setView("map");
+          }}
+        />
+      </Shell>
+    );
+  }
+
   return (
     <Shell>
       <div className="relative h-[calc(100dvh-3.5rem)] w-full overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setView("home")}
+          aria-label={t.homeScreen.backToHome}
+          title={t.homeScreen.backToHome}
+          className="absolute top-4 left-4 z-[1100] flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-background text-foreground shadow-[0_4px_12px_rgba(0,0,0,0.25)] transition-transform hover:scale-105 active:scale-95 md:left-6"
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M12 4 6 10l6 6" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
         <HomeMap
           legs={reportableLegs}
           routeOptions={routeOptions ?? undefined}

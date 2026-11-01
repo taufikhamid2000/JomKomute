@@ -10,6 +10,8 @@
 
 Nav (`components/shell.tsx`): Today, My routes, Line status, Settings, About.
 
+Home on mobile (`components/home-dashboard.tsx`, screenshot in `docs/screenshots/home-mobile.jpg`): indigo header (alerts link, Live badge, Line status / Rail map toggle), "Plan your journey" bar, mini-map card (tap opens the full map; a back button returns), "Explore more" tiles, and nearby stations with per-line status. Nearby stations start as demo data and switch to geolocation once permitted; status comes from rider reports, with no invented ETAs. A fixed bottom tab bar (`components/bottom-tab-bar.tsx`: Explore, Report, Today, Profile) shows below md for signed-in users; `Shell` takes `home` and `tabBar` props for this.
+
 ## Flow 1 — Entry
 ```
 Any page, no session ──► AuthGate ──► /login
@@ -21,7 +23,7 @@ Already signed in via Jom ID ──► skips login
 
 ## Flow 2 — Plan a route
 ```
-Home "Where to?" sheet (or Home/Work) ──► pick destination ──► route-finder (fewest transfers, GTFS)
+Home "Plan your journey" bar / "Where to?" sheet (or Home/Work) ──► pick destination ──► route-finder (fewest transfers, GTFS)
  ──► route detail / backup route ──► optionally save as a route
 ```
 

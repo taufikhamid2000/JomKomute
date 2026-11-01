@@ -5,9 +5,21 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase-client";
 import { useDictionary } from "@/lib/use-dictionary";
+import { BottomTabBar } from "@/components/bottom-tab-bar";
 import { Footer } from "@/components/footer";
 
-export function Shell({ children }: { children: React.ReactNode }) {
+// `home` hides the top header and footer below md (the home screen draws its
+// own header band there). `tabBar={false}` drops the mobile bottom tab bar
+// for full-screen views such as the map.
+export function Shell({
+  children,
+  home = false,
+  tabBar = true,
+}: {
+  children: React.ReactNode;
+  home?: boolean;
+  tabBar?: boolean;
+}) {
   const { t } = useDictionary();
   const pathname = usePathname();
   const router = useRouter();
@@ -76,9 +88,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
     router.push("/login");
   }
 
+  const showTabBar = tabBar && authed === true;
+
   return (
     <div className="flex min-h-screen flex-1 flex-col">
-      <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between border-b border-[var(--nav-border)] bg-[var(--nav-bg)] px-4 backdrop-blur md:px-6">
+      <header className={`${home ? "max-md:hidden " : ""}sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between border-b border-[var(--nav-border)] bg-[var(--nav-bg)] px-4 backdrop-blur md:px-6`}>
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -153,8 +167,18 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </nav>
         </aside>
 
-        <main className="flex flex-1 flex-col">{children}<Footer /></main>
+        <main
+          className={`flex flex-1 flex-col ${
+            showTabBar ? "pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0" : ""
+          }`}
+        >
+          {children}
+          <div className={home ? "max-md:hidden" : undefined}>
+            <Footer />
+          </div>
+        </main>
       </div>
+      {showTabBar && <BottomTabBar />}
     </div>
   );
 }
