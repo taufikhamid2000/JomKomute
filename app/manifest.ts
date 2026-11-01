@@ -4,7 +4,7 @@ import type { MetadataRoute } from "next";
 // Screen" JomKomute like a standalone app, and gives search engines /
 // AI crawlers a machine-readable name+description alongside the HTML
 // <meta> tags in app/layout.tsx. Colors match app/globals.css's
-// `--primary` and `--background` (light theme) custom properties.
+// `--band-from` and `--background` (light theme) custom properties.
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "JomKomute — Klang Valley rail commute companion",
@@ -14,13 +14,12 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",
-    theme_color: "#1e40af",
+    theme_color: "#4338ca",
     icons: [
-      {
-        src: "/icon.svg",
-        sizes: "any",
-        type: "image/svg+xml",
-      },
+      { src: "/icon.svg", sizes: "any", type: "image/svg+xml" },
+      { src: "/pwa-icon/192", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/pwa-icon/512", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/pwa-icon/maskable", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
   };
 }

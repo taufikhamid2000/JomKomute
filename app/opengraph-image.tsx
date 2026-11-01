@@ -1,9 +1,10 @@
 import { ImageResponse } from "next/og";
+import { logoDataUri } from "@/components/logo-svg-markup";
 
 // Next wires this up as the default og:image (and twitter:image, absent
 // a separate twitter-image.tsx) for every route that doesn't define its
 // own — one branded card instead of link previews falling back to
-// nothing. Colors match app/icon.svg / app/globals.css's --primary.
+// nothing. Mark and colours match app/icon.svg / app/globals.css.
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -18,36 +19,27 @@ export default function OpengraphImage() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          gap: 24,
-          backgroundColor: "#0f172a",
+          gap: 28,
+          backgroundImage: "linear-gradient(135deg, #3730a3 0%, #5b21b6 55%, #0f5f73 100%)",
           fontFamily: "sans-serif",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-          <div
-            style={{
-              width: 88,
-              height: 88,
-              borderRadius: 9999,
-              backgroundColor: "#1e40af",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <svg width="48" height="48" viewBox="0 0 32 32" fill="none">
-              <path
-                d="M9 20.5 16 8l7 12.5M12 20.5h8"
-                stroke="#f1f5f9"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-          <div style={{ display: "flex", fontSize: 72, fontWeight: 700, color: "#f8fafc" }}>JomKomute</div>
+        {/* A dashed rail line along the bottom with three stations. */}
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 70, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 80px" }}>
+          <div style={{ width: 22, height: 22, borderRadius: 9999, backgroundColor: "#fcd34d" }} />
+          <div style={{ flex: 1, height: 0, borderTop: "6px dashed rgba(255,255,255,0.35)", margin: "0 18px" }} />
+          <div style={{ width: 22, height: 22, borderRadius: 9999, backgroundColor: "#ffffff" }} />
+          <div style={{ flex: 1, height: 0, borderTop: "6px dashed rgba(255,255,255,0.35)", margin: "0 18px" }} />
+          <div style={{ width: 22, height: 22, borderRadius: 9999, backgroundColor: "#99f6e4" }} />
         </div>
-        <div style={{ display: "flex", fontSize: 32, color: "#94a3b8", maxWidth: 900, textAlign: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={logoDataUri()} width={132} height={132} alt="" />
+          <div style={{ display: "flex", fontSize: 108, fontWeight: 700, color: "#ffffff", letterSpacing: -2 }}>
+            Jom<span style={{ color: "#fcd34d" }}>Komute</span>
+          </div>
+        </div>
+        <div style={{ display: "flex", fontSize: 34, color: "#e0e7ff", maxWidth: 960, textAlign: "center" }}>
           Save your KTM/LRT/MRT commute, see how crowded it gets, and get live rider-reported delays
         </div>
       </div>
