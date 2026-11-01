@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LineHistoryChart } from "@/components/line-history-chart";
 import { ReportRow } from "@/components/report-row";
-import { Shell } from "@/components/shell";
+import { AppShell } from "@/components/app-shell";
 import { useToast } from "@/components/toast-provider";
 import { useFollowedLines } from "@/lib/followed-lines";
 import { getLineHistory, type LineHistory } from "@/lib/line-history-client";
@@ -219,12 +219,9 @@ export function LineStatusContent() {
   }, [followed, followedOnly]);
 
   return (
-    <Shell>
-      <div className="animate-page-in mx-auto flex w-full max-w-3xl flex-col gap-4 p-4 md:p-8">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-lg font-semibold text-foreground">{t.operatingHoursPage.title}</h1>
-          <p className="text-sm text-foreground/60">{t.operatingHoursPage.description}</p>
-        </div>
+    <AppShell title={t.operatingHoursPage.title} width="xl">
+      <div className="animate-page-in flex w-full flex-col gap-4">
+        <p className="text-sm text-foreground/70">{t.operatingHoursPage.description}</p>
 
         <div className="flex flex-wrap items-center gap-4">
           <label className="flex w-fit cursor-pointer items-center gap-2 text-xs text-foreground/70">
@@ -489,7 +486,7 @@ export function LineStatusContent() {
           })}
         </div>
       </div>
-    </Shell>
+    </AppShell>
   );
 }
 

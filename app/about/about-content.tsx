@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { CommuteDiagram } from "@/components/commute-diagram";
 import { LiveReportsDiagram } from "@/components/live-reports-diagram";
-import { Shell } from "@/components/shell";
+import { AppShell } from "@/components/app-shell";
 import { useDictionary } from "@/lib/use-dictionary";
 
 // Small line icons echoing the diagram's own visual language (the
@@ -65,8 +65,8 @@ export function AboutContent() {
   ];
 
   return (
-    <Shell>
-      <div className="animate-page-in mx-auto flex w-full max-w-2xl flex-col gap-10 p-4 md:p-8">
+    <AppShell width="reading">
+      <div className="animate-page-in flex w-full flex-col gap-10">
         <Link
           href="/pitch"
           className="group flex flex-col gap-2 rounded-2xl bg-primary p-5 text-primary-foreground shadow-lg transition-opacity hover:opacity-95 sm:p-6"
@@ -169,6 +169,6 @@ export function AboutContent() {
           {t.about.cta}
         </Link>
       </div>
-    </Shell>
+    </AppShell>
   );
 }

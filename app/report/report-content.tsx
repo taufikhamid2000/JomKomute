@@ -17,6 +17,7 @@
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Shell } from "@/components/shell";
 import { useDictionary } from "@/lib/use-dictionary";
 import { reportCategoryMeta } from "@/lib/report-categories";
@@ -41,7 +42,7 @@ const ReportMap = dynamic(() => import("@/components/report-map").then((m) => m.
 // app/route/page.tsx's ?id= reader.
 export function ReportContent() {
   return (
-    <Shell>
+    <Shell tabBar={false}>
       <Suspense fallback={null}>
         <ReportPageContent />
       </Suspense>
@@ -86,8 +87,14 @@ function ReportPageContent() {
   }, [refresh]);
 
   return (
-    <div className="animate-page-in flex w-full flex-1 flex-col gap-4 p-4 md:p-8">
+    <div className="animate-page-in flex w-full flex-1 flex-col gap-4 p-4 pb-[max(2rem,env(safe-area-inset-bottom))] md:p-8">
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-2">
+      <Link
+        href="/"
+        className="flex min-h-11 w-fit items-center gap-1 rounded-lg pr-3 text-sm font-medium text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      >
+        <span aria-hidden="true">←</span> {t.homeScreen.back}
+      </Link>
         <div className="flex items-center gap-2">
           <h1 className="text-lg font-semibold text-foreground">{t.reportPage.title}</h1>
           <span

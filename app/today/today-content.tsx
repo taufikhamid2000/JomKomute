@@ -8,7 +8,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Shell } from "@/components/shell";
+import { AppShell } from "@/components/app-shell";
 import { useToast } from "@/components/toast-provider";
 import { lineById } from "@/lib/lines";
 import { computeNextRoute } from "@/lib/next-route";
@@ -99,9 +99,8 @@ export function TodayContent() {
 
   if (routes.length === 0) {
     return (
-      <Shell>
-        <div className="animate-page-in mx-auto flex w-full max-w-xl flex-col gap-4 p-4 md:p-8">
-          <h1 className="text-lg font-semibold text-foreground">{t.todayPage.title}</h1>
+      <AppShell title={t.todayPage.title}>
+        <div className="animate-page-in flex w-full flex-col gap-4">
           <Link
             href="/new"
             className="flex flex-col gap-2 rounded-2xl border border-dashed border-border p-5 transition-colors hover:border-primary/40"
@@ -113,7 +112,7 @@ export function TodayContent() {
             </span>
           </Link>
         </div>
-      </Shell>
+      </AppShell>
     );
   }
 
@@ -124,17 +123,14 @@ export function TodayContent() {
     : null;
 
   return (
-    <Shell>
-      <div className="animate-page-in mx-auto flex w-full max-w-xl flex-col gap-4 p-4 md:p-8">
+    <AppShell title={t.todayPage.title}>
+      <div className="animate-page-in flex w-full flex-col gap-4">
         <div className="flex items-start justify-between gap-3">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-lg font-semibold text-foreground">{t.todayPage.title}</h1>
-            <p className="text-xs text-foreground/60">{t.todayPage.subtitle}</p>
-          </div>
+          <p className="text-sm text-foreground/70">{t.todayPage.subtitle}</p>
           <button
             type="button"
             onClick={refresh}
-            className="shrink-0 cursor-pointer rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+            className="min-h-11 shrink-0 cursor-pointer rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
           >
             {t.todayPage.refresh}
           </button>
@@ -227,7 +223,7 @@ export function TodayContent() {
           </>
         )}
       </div>
-    </Shell>
+    </AppShell>
   );
 }
 

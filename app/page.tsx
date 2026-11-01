@@ -723,24 +723,23 @@ export default function HomePage() {
 
   if (view === "home") {
     return (
-      <Shell home>
-        <HomeDashboard
-          reports={reports}
-          lineStatusByLine={lineStatusByLine}
-          showReports={mapPrefs.showReports}
-          showStationNames={mapPrefs.showStationNames}
-          onOpenMap={() => setView("map")}
-          onPlan={() => {
-            setIsPanelCollapsed(false);
-            setView("map");
-          }}
-        />
-      </Shell>
+      <HomeDashboard
+        reports={reports}
+        lineStatusByLine={lineStatusByLine}
+        showReports={mapPrefs.showReports}
+        showStationNames={mapPrefs.showStationNames}
+        onOpenMap={() => setView("map")}
+        onPlan={() => {
+          setIsPanelCollapsed(false);
+          setView("map");
+        }}
+      />
     );
   }
 
+  // Full-screen map + planner: edge-to-edge with a back button, so no tab bar.
   return (
-    <Shell>
+    <Shell tabBar={false}>
       <div className="relative h-[calc(100dvh-3.5rem)] w-full overflow-hidden">
         <button
           type="button"

@@ -6,7 +6,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import type { Metadata } from "next";
-import { Shell } from "@/components/shell";
+import { AppShell } from "@/components/app-shell";
 import { Markdown } from "./markdown";
 
 export const dynamic = "force-static";
@@ -26,10 +26,10 @@ export const metadata: Metadata = {
 export default function PitchPage() {
   const source = readFileSync(path.join(process.cwd(), "docs", "PITCH.md"), "utf8");
   return (
-    <Shell>
-      <article className="animate-page-in mx-auto flex w-full max-w-2xl flex-col gap-4 p-4 md:p-8">
+    <AppShell width="reading">
+      <article className="animate-page-in flex w-full flex-col gap-4">
         <Markdown source={source} />
       </article>
-    </Shell>
+    </AppShell>
   );
 }

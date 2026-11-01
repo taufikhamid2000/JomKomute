@@ -7,7 +7,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { ExceptionPanel } from "@/components/exception-panel";
 import { ForecastBars } from "@/components/forecast-bars";
 import { LegSummary } from "@/components/leg-summary";
-import { Shell } from "@/components/shell";
+import { AppShell } from "@/components/app-shell";
 import { useToast } from "@/components/toast-provider";
 import { crowdLevelKey, forecastEntryForTime, useForecast } from "@/lib/forecast";
 import { getLineOperatingHours, isWeekend, operatingWindowHours, type LineOperatingHours } from "@/lib/operating-hours-client";
@@ -22,12 +22,13 @@ import { useDictionary } from "@/lib/use-dictionary";
 // anywhere a server could look it up to render a specific id. Rendered
 // by the server app/route/page.tsx, which owns this route's metadata.
 export function RouteDetailContent() {
+  const { t } = useDictionary();
   return (
-    <Shell>
+    <AppShell width="lg" back={{ href: "/routes", label: t.routeDetail.backToRoutes }}>
       <Suspense fallback={null}>
         <RouteDetail />
       </Suspense>
-    </Shell>
+    </AppShell>
   );
 }
 
@@ -110,9 +111,9 @@ function RouteDetail() {
   if (!route) {
     if (isDeleting) return null;
     return (
-      <div className="animate-page-in mx-auto flex w-full max-w-2xl flex-col gap-3 p-4 md:p-8">
+      <div className="animate-page-in flex w-full flex-col gap-3">
         <p className="text-sm text-foreground/60">{t.routeDetail.notFound}</p>
-        <Link href="/routes" className="w-fit text-sm text-primary underline-offset-4 hover:underline">
+        <Link href="/routes" className="flex min-h-11 w-fit items-center text-sm text-primary underline-offset-4 hover:underline">
           {t.routeDetail.backToRoutes}
         </Link>
       </div>
@@ -133,7 +134,7 @@ function RouteDetail() {
   }
 
   return (
-    <div className="animate-page-in mx-auto flex w-full max-w-2xl flex-col gap-6 p-4 md:p-8">
+    <div className="animate-page-in flex w-full flex-col gap-6">
       <div className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-col gap-1">
