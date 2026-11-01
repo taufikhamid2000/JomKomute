@@ -147,6 +147,8 @@ export const en = {
     toggleMap: "Rail map",
     expandMap: "Open the full map",
     backToHome: "Back to home",
+    back: "Back",
+    close: "Close",
     exploreMore: "Explore more",
     exploreToday: "Today",
     exploreStatus: "Line status",

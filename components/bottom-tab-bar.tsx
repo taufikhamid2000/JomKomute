@@ -54,6 +54,7 @@ export function BottomTabBar() {
     >
       <ul className="mx-auto flex h-16 max-w-md items-stretch">
         {tabs.map((tab) => {
+          // pathname is normalised above (trailingSlash in production).
           const active = pathname === tab.href;
           return (
             <li key={tab.href} className="flex-1">
@@ -61,14 +62,14 @@ export function BottomTabBar() {
                 href={tab.href}
                 aria-current={active ? "page" : undefined}
                 className={`flex h-full min-h-11 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring ${
-                  active ? "text-primary" : "text-foreground/70 hover:text-foreground"
+                  active ? "text-[var(--tile-fg)]" : "text-foreground/70 hover:text-foreground"
                 }`}
               >
                 <span
                   className="flex h-7 w-12 items-center justify-center rounded-full"
                   style={
                     active
-                      ? { backgroundColor: "color-mix(in srgb, var(--primary) 14%, transparent)" }
+                      ? { backgroundColor: "var(--tile-bg)" }
                       : undefined
                   }
                 >

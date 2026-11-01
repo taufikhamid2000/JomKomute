@@ -149,6 +149,8 @@ export const ms: Dictionary = {
     toggleMap: "Peta rel",
     expandMap: "Buka peta penuh",
     backToHome: "Kembali ke utama",
+    back: "Kembali",
+    close: "Tutup",
     exploreMore: "Terokai lagi",
     exploreToday: "Hari ini",
     exploreStatus: "Status laluan",

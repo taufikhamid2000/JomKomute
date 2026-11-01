@@ -4,31 +4,30 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase-client";
+import { useAuthed } from "@/lib/use-auth";
 import { useDictionary } from "@/lib/use-dictionary";
 import { BottomTabBar } from "@/components/bottom-tab-bar";
 import { Footer } from "@/components/footer";
 
-// `home` hides the top header and footer below md (the home screen draws its
-// own header band there). `tabBar={false}` drops the mobile bottom tab bar
-// for full-screen views such as the map.
+// `band` hides the top header and footer below md (components/app-shell.tsx
+// draws its own header band there). `tabBar={false}` drops the mobile bottom
+// tab bar for full-screen and focused views (map, planner, report/new forms).
 export function Shell({
   children,
-  home = false,
+  band = false,
   tabBar = true,
 }: {
   children: React.ReactNode;
-  home?: boolean;
+  band?: boolean;
   tabBar?: boolean;
 }) {
   const { t } = useDictionary();
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  // Same session check as components/auth-gate.tsx (getSession on mount +
-  // onAuthStateChange subscription) — the sidebar used to hardcode a
-  // static "Sign in" link that never looked at auth state at all, so it
-  // kept showing even once "Try the demo" signed the user in anonymously.
-  const [authed, setAuthed] = useState<boolean | null>(null);
+  // Shared session check (lib/use-auth.ts). The sidebar used to hardcode a
+  // static "Sign in" link, which kept showing after "Try the demo" signed in.
+  const authed = useAuthed();
 
   const navLinks: NavItem[] = [
     // "Add route" (/new) used to sit here as a second child — dropped
@@ -43,28 +42,6 @@ export function Shell({
     { href: "/settings", label: t.nav.settings },
     { href: "/about", label: t.nav.about },
   ];
-
-  useEffect(() => {
-    let cancelled = false;
-    const supabase = supabaseBrowser();
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (cancelled) return;
-      setAuthed(!!session);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (cancelled) return;
-      setAuthed(!!session);
-    });
-
-    return () => {
-      cancelled = true;
-      subscription.unsubscribe();
-    };
-  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -92,7 +69,7 @@ export function Shell({
 
   return (
     <div className="flex min-h-screen flex-1 flex-col">
-      <header className={`${home ? "max-md:hidden " : ""}sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between border-b border-[var(--nav-border)] bg-[var(--nav-bg)] px-4 backdrop-blur md:px-6`}>
+      <header className={`${band ? "max-md:hidden " : ""}sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between border-b border-[var(--nav-border)] bg-[var(--nav-bg)] px-4 backdrop-blur md:px-6`}>
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -173,7 +150,7 @@ export function Shell({
           }`}
         >
           {children}
-          <div className={home ? "max-md:hidden" : undefined}>
+          <div className={band ? "max-md:hidden" : undefined}>
             <Footer />
           </div>
         </main>

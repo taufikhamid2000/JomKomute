@@ -22,6 +22,12 @@
   --destructive-foreground: #ffffff;
   --ring: #1e40af;
 
+  /* App shell (components/app-shell.tsx): header band + home tiles. */
+  --band: #1e1b4b;
+  --band-foreground: #ffffff;
+  --tile-bg: #eef0ff;
+  --tile-fg: #1e1b4b;
+
   --nav-bg: var(--background);
   --nav-fg: var(--foreground);
   --nav-fg-muted: color-mix(in srgb, var(--nav-fg) 65%, transparent);
@@ -70,11 +76,16 @@
 
     --chart-series-1: #3987e5;
     --chart-muted: #898781;
+
+    --tile-bg: #1c2547;
+    --tile-fg: #e0e7ff;
   }
 }
 
 /* Explicit overrides (set via /settings) win over the OS preference above. */
 :root[data-theme="dark"] {
+  --tile-bg: #1c2547;
+  --tile-fg: #e0e7ff;
   --background: #0f172a;
   --foreground: #ffffff;
   --muted: #101a34;
@@ -93,6 +104,8 @@
 }
 
 :root[data-theme="light"] {
+  --tile-bg: #eef0ff;
+  --tile-fg: #1e1b4b;
   --background: #ffffff;
   --foreground: #0f172a;
   --muted: #f1f5f9;
@@ -274,4 +287,9 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Card surface shared by every screen inside the app shell. */
+@utility app-card {
+  @apply rounded-2xl border border-border bg-background shadow-sm;
 }
