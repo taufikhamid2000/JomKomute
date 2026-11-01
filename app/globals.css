@@ -13,20 +13,53 @@
   --foreground: #0f172a;
   --muted: #f1f5f9;
   --border: rgba(15, 23, 42, 0.08);
-  --primary: #1e40af;
+  --primary: #4f46e5;
   --primary-foreground: #ffffff;
   --secondary: #3b82f6;
   --accent: #059669;
   --accent-foreground: #ffffff;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --ring: #1e40af;
+  --ring: #4f46e5;
 
-  /* App shell (components/app-shell.tsx): header band + home tiles. */
-  --band: #1e1b4b;
+  /* Brand palette (JomKomute): vivid indigo primary, with teal, amber and
+   * rose accents. Each hue has a soft surface (-bg) and a text/icon colour
+   * (-fg) that meet WCAG AA together; scripts/check-contrast.mjs verifies
+   * every pair in both themes. */
+  --band: #3730a3;
+  --band-from: #4338ca;
+  --band-via: #6d28d9;
+  --band-to: #0f5f73;
   --band-foreground: #ffffff;
-  --tile-bg: #eef0ff;
-  --tile-fg: #1e1b4b;
+  --band-accent: #fcd34d;
+  --surface-tint: #f5f7ff;
+  --brand-wordmark: #4338ca;
+
+  --indigo-bg: #e0e7ff;
+  --indigo-fg: #3730a3;
+  --teal-bg: #ccfbf1;
+  --teal-fg: #115e59;
+  --amber-bg: #fef3c7;
+  --amber-fg: #92400e;
+  --rose-bg: #ffe4e6;
+  --rose-fg: #9f1239;
+  --sky-bg: #e0f2fe;
+  --sky-fg: #075985;
+  --violet-bg: #ede9fe;
+  --violet-fg: #5b21b6;
+
+  --ok-bg: #d1fae5;
+  --ok-fg: #065f46;
+  --warn-bg: #fef3c7;
+  --warn-fg: #92400e;
+  --bad-bg: #fee2e2;
+  --bad-fg: #991b1b;
+
+  --tile-bg: var(--indigo-bg);
+  --tile-fg: var(--indigo-fg);
+
+  --chart-series-1: #2a78d6;
+  --chart-muted: #898781;
 
   --nav-bg: var(--background);
   --nav-fg: var(--foreground);
@@ -52,6 +85,25 @@
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-ring: var(--ring);
+  --color-surface-tint: var(--surface-tint);
+  --color-soft-indigo: var(--indigo-bg);
+  --color-ink-indigo: var(--indigo-fg);
+  --color-soft-teal: var(--teal-bg);
+  --color-ink-teal: var(--teal-fg);
+  --color-soft-amber: var(--amber-bg);
+  --color-ink-amber: var(--amber-fg);
+  --color-soft-rose: var(--rose-bg);
+  --color-ink-rose: var(--rose-fg);
+  --color-soft-sky: var(--sky-bg);
+  --color-ink-sky: var(--sky-fg);
+  --color-soft-violet: var(--violet-bg);
+  --color-ink-violet: var(--violet-fg);
+  --color-soft-ok: var(--ok-bg);
+  --color-ink-ok: var(--ok-fg);
+  --color-soft-warn: var(--warn-bg);
+  --color-ink-warn: var(--warn-fg);
+  --color-soft-bad: var(--bad-bg);
+  --color-ink-bad: var(--bad-fg);
   --font-sans: var(--font-fira-sans);
   --font-mono: var(--font-fira-code);
 }
@@ -65,59 +117,152 @@
     --foreground: #ffffff;
     --muted: #101a34;
     --border: rgba(255, 255, 255, 0.08);
-    --primary: #1e40af;
-    --primary-foreground: #ffffff;
+    --primary: #818cf8;
+    --primary-foreground: #0f172a;
     --secondary: #3b82f6;
     --accent: #059669;
     --accent-foreground: #ffffff;
     --destructive: #dc2626;
     --destructive-foreground: #ffffff;
-    --ring: #3b82f6;
+    --ring: #818cf8;
+
+    --band: #26206b;
+    --band-from: #2a2484;
+    --band-via: #4c1d95;
+    --band-to: #0b4a5b;
+    --band-foreground: #ffffff;
+    --band-accent: #fcd34d;
+    --surface-tint: #151d3c;
+    --brand-wordmark: #a5b4fc;
+
+    --indigo-bg: #272a5e;
+    --indigo-fg: #c7d2fe;
+    --teal-bg: #0f3b3d;
+    --teal-fg: #99f6e4;
+    --amber-bg: #3d2e0a;
+    --amber-fg: #fde68a;
+    --rose-bg: #43182a;
+    --rose-fg: #fecdd3;
+    --sky-bg: #0c3350;
+    --sky-fg: #bae6fd;
+    --violet-bg: #32205c;
+    --violet-fg: #ddd6fe;
+
+    --ok-bg: #0d3b2e;
+    --ok-fg: #6ee7b7;
+    --warn-bg: #3d2e0a;
+    --warn-fg: #fcd34d;
+    --bad-bg: #451a1a;
+    --bad-fg: #fca5a5;
+
+    --tile-bg: var(--indigo-bg);
+    --tile-fg: var(--indigo-fg);
 
     --chart-series-1: #3987e5;
     --chart-muted: #898781;
-
-    --tile-bg: #1c2547;
-    --tile-fg: #e0e7ff;
   }
 }
 
 /* Explicit overrides (set via /settings) win over the OS preference above. */
 :root[data-theme="dark"] {
-  --tile-bg: #1c2547;
-  --tile-fg: #e0e7ff;
   --background: #0f172a;
   --foreground: #ffffff;
   --muted: #101a34;
   --border: rgba(255, 255, 255, 0.08);
-  --primary: #1e40af;
-  --primary-foreground: #ffffff;
+  --primary: #818cf8;
+  --primary-foreground: #0f172a;
   --secondary: #3b82f6;
   --accent: #059669;
   --accent-foreground: #ffffff;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --ring: #3b82f6;
+  --ring: #818cf8;
+
+  --band: #26206b;
+  --band-from: #2a2484;
+  --band-via: #4c1d95;
+  --band-to: #0b4a5b;
+  --band-foreground: #ffffff;
+  --band-accent: #fcd34d;
+  --surface-tint: #151d3c;
+  --brand-wordmark: #a5b4fc;
+
+  --indigo-bg: #272a5e;
+  --indigo-fg: #c7d2fe;
+  --teal-bg: #0f3b3d;
+  --teal-fg: #99f6e4;
+  --amber-bg: #3d2e0a;
+  --amber-fg: #fde68a;
+  --rose-bg: #43182a;
+  --rose-fg: #fecdd3;
+  --sky-bg: #0c3350;
+  --sky-fg: #bae6fd;
+  --violet-bg: #32205c;
+  --violet-fg: #ddd6fe;
+
+  --ok-bg: #0d3b2e;
+  --ok-fg: #6ee7b7;
+  --warn-bg: #3d2e0a;
+  --warn-fg: #fcd34d;
+  --bad-bg: #451a1a;
+  --bad-fg: #fca5a5;
+
+  --tile-bg: var(--indigo-bg);
+  --tile-fg: var(--indigo-fg);
 
   --chart-series-1: #3987e5;
   --chart-muted: #898781;
 }
 
 :root[data-theme="light"] {
-  --tile-bg: #eef0ff;
-  --tile-fg: #1e1b4b;
   --background: #ffffff;
   --foreground: #0f172a;
   --muted: #f1f5f9;
   --border: rgba(15, 23, 42, 0.08);
-  --primary: #1e40af;
+  --primary: #4f46e5;
   --primary-foreground: #ffffff;
   --secondary: #3b82f6;
   --accent: #059669;
   --accent-foreground: #ffffff;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --ring: #1e40af;
+  --ring: #4f46e5;
+
+  /* Brand palette (JomKomute): vivid indigo primary, with teal, amber and
+   * rose accents. Each hue has a soft surface (-bg) and a text/icon colour
+   * (-fg) that meet WCAG AA together; scripts/check-contrast.mjs verifies
+   * every pair in both themes. */
+  --band: #3730a3;
+  --band-from: #4338ca;
+  --band-via: #6d28d9;
+  --band-to: #0f5f73;
+  --band-foreground: #ffffff;
+  --band-accent: #fcd34d;
+  --surface-tint: #f5f7ff;
+  --brand-wordmark: #4338ca;
+
+  --indigo-bg: #e0e7ff;
+  --indigo-fg: #3730a3;
+  --teal-bg: #ccfbf1;
+  --teal-fg: #115e59;
+  --amber-bg: #fef3c7;
+  --amber-fg: #92400e;
+  --rose-bg: #ffe4e6;
+  --rose-fg: #9f1239;
+  --sky-bg: #e0f2fe;
+  --sky-fg: #075985;
+  --violet-bg: #ede9fe;
+  --violet-fg: #5b21b6;
+
+  --ok-bg: #d1fae5;
+  --ok-fg: #065f46;
+  --warn-bg: #fef3c7;
+  --warn-fg: #92400e;
+  --bad-bg: #fee2e2;
+  --bad-fg: #991b1b;
+
+  --tile-bg: var(--indigo-bg);
+  --tile-fg: var(--indigo-fg);
 
   --chart-series-1: #2a78d6;
   --chart-muted: #898781;
@@ -289,7 +434,29 @@ body {
   }
 }
 
+/* Header band: brand gradient (indigo to violet to deep teal). The solid
+ * --band colour is the fallback and matches the gradient's start. */
+@utility band-gradient {
+  background-color: var(--band);
+  background-image: linear-gradient(135deg, var(--band-from) 0%, var(--band-via) 55%, var(--band-to) 100%);
+}
+
+/* Press feedback for tappable surfaces: a small scale-down while pressed.
+ * Transitions are neutralised by the prefers-reduced-motion rule above. */
+@utility press {
+  transition-property: transform, background-color, box-shadow, opacity;
+  transition-duration: 120ms;
+  &:active {
+    transform: scale(0.96);
+  }
+}
+
+
 /* Card surface shared by every screen inside the app shell. */
 @utility app-card {
   @apply rounded-2xl border border-border bg-background shadow-sm;
+}
+
+@utility tile-plate {
+  background-color: color-mix(in srgb, var(--background) 72%, transparent);
 }
