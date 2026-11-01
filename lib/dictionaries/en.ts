@@ -171,6 +171,12 @@ export const en = {
     tabToday: "Today",
     tabProfile: "Profile",
     tabBarLabel: "Main navigation",
+    greetMorning: "Good morning",
+    greetNoon: "Good afternoon",
+    greetAfternoon: "Good afternoon",
+    greetEvening: "Good evening",
+    greetNight: "Good evening",
+    greetSub: "Where are we heading today?",
   },
   homePage: {
     whereTo: "Where to?",

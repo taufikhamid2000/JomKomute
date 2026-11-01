@@ -7,6 +7,7 @@ import { supabaseBrowser } from "@/lib/supabase-client";
 import { useAuthed } from "@/lib/use-auth";
 import { useDictionary } from "@/lib/use-dictionary";
 import { BottomTabBar } from "@/components/bottom-tab-bar";
+import { Logo } from "@/components/logo-mark";
 import { Footer } from "@/components/footer";
 
 // `band` hides the top header and footer below md (components/app-shell.tsx
@@ -89,8 +90,8 @@ export function Shell({
               </svg>
             )}
           </button>
-          <Link href="/" className="text-sm font-semibold text-[var(--nav-fg)]">
-            {t.nav.brand}
+          <Link href="/" aria-label={t.nav.brand} className="press flex min-h-11 items-center rounded-lg px-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+            <Logo size={28} wordmarkClassName="text-base" />
           </Link>
         </div>
 

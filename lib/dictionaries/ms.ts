@@ -173,6 +173,12 @@ export const ms: Dictionary = {
     tabToday: "Hari ini",
     tabProfile: "Profil",
     tabBarLabel: "Navigasi utama",
+    greetMorning: "Selamat pagi",
+    greetNoon: "Selamat tengah hari",
+    greetAfternoon: "Selamat petang",
+    greetEvening: "Selamat malam",
+    greetNight: "Selamat malam",
+    greetSub: "Ke mana kita pergi hari ini?",
   },
   homePage: {
     whereTo: "Hendak ke mana?",

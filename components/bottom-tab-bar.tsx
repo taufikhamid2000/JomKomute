@@ -61,12 +61,12 @@ export function BottomTabBar() {
               <Link
                 href={tab.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex h-full min-h-11 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring ${
-                  active ? "text-[var(--tile-fg)]" : "text-foreground/70 hover:text-foreground"
+                className={`press flex h-full min-h-11 flex-col items-center justify-center gap-0.5 text-[11px] font-medium focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring ${
+                  active ? "font-bold text-[var(--tile-fg)]" : "text-foreground/70 hover:text-foreground"
                 }`}
               >
                 <span
-                  className="flex h-7 w-12 items-center justify-center rounded-full"
+                  className="flex h-8 w-14 items-center justify-center rounded-full transition-colors"
                   style={
                     active
                       ? { backgroundColor: "var(--tile-bg)" }

@@ -10,6 +10,8 @@ import type { LineStatus } from "@/lib/line-status";
 import type { UserReport } from "@/lib/user-reports-client";
 import { useDictionary } from "@/lib/use-dictionary";
 import { AppShell } from "@/components/app-shell";
+import { StatusChip, type StatusKind } from "@/components/status-chip";
+import { useHydrated } from "@/lib/use-hydrated";
 
 // Same dynamic-import reasoning as app/page.tsx: react-leaflet needs a browser.
 const HomeMap = dynamic(() => import("@/components/home-map").then((m) => m.HomeMap), { ssr: false });
@@ -25,19 +27,18 @@ const DEMO_STATIONS: { name: string; meters: number }[] = [
 const WALK_METERS_PER_MIN = 80;
 const MAX_NEARBY = 3;
 
-type StatusKind = "normal" | "delayed" | "incident";
-
 function statusKindOf(status: LineStatus | undefined): StatusKind {
   if (!status || status.level === "normal") return "normal";
   return status.worstCategory === "breakdown" || status.worstCategory === "accident" ? "incident" : "delayed";
 }
 
-// Colour is never the only signal: each status also gets its own glyph and label.
-const STATUS_STYLE: Record<StatusKind, { text: string; glyph: string }> = {
-  normal: { text: "text-emerald-700 dark:text-emerald-400", glyph: "●" },
-  delayed: { text: "text-amber-700 dark:text-amber-400", glyph: "▲" },
-  incident: { text: "text-red-700 dark:text-red-400", glyph: "✖" },
-};
+function greetingKey(hour: number) {
+  if (hour >= 5 && hour < 12) return "greetMorning" as const;
+  if (hour < 14 && hour >= 12) return "greetNoon" as const;
+  if (hour >= 14 && hour < 19) return "greetAfternoon" as const;
+  if (hour >= 19 && hour < 22) return "greetEvening" as const;
+  return "greetNight" as const;
+}
 
 function modeLabel(lineName: string): string {
   return lineName.split(" ")[0];
@@ -131,6 +132,7 @@ export function HomeDashboard({
 }) {
   const { t } = useDictionary();
   const h = t.homeScreen;
+  const hydrated = useHydrated();
   const [panel, setPanel] = useState<"status" | "map">("map");
   const [nearby, setNearby] = useState<Nearby[]>(DEMO_STATIONS);
   const [isDemoNearby, setIsDemoNearby] = useState(true);
@@ -171,19 +173,28 @@ export function HomeDashboard({
   }, []);
 
   const tiles = [
-    { href: "/today", label: h.exploreToday, icon: TILE_ICONS.today },
-    { href: "/line-status", label: h.exploreStatus, icon: TILE_ICONS.status },
-    { href: "/report", label: h.exploreReport, icon: TILE_ICONS.report },
-    { href: "/routes", label: h.exploreRoutes, icon: TILE_ICONS.routes },
-    { href: "/settings", label: h.exploreSettings, icon: TILE_ICONS.settings },
-    { href: "/about", label: h.exploreAbout, icon: TILE_ICONS.about },
-    { href: "/pitch", label: h.explorePitch, icon: TILE_ICONS.pitch },
+    { href: "/today", label: h.exploreToday, icon: TILE_ICONS.today, hue: "indigo" },
+    { href: "/line-status", label: h.exploreStatus, icon: TILE_ICONS.status, hue: "teal" },
+    { href: "/report", label: h.exploreReport, icon: TILE_ICONS.report, hue: "amber" },
+    { href: "/routes", label: h.exploreRoutes, icon: TILE_ICONS.routes, hue: "rose" },
+    { href: "/settings", label: h.exploreSettings, icon: TILE_ICONS.settings, hue: "sky" },
+    { href: "/about", label: h.exploreAbout, icon: TILE_ICONS.about, hue: "violet" },
+    { href: "/pitch", label: h.explorePitch, icon: TILE_ICONS.pitch, hue: "teal" },
   ];
 
   const statusLabel: Record<StatusKind, string> = {
     normal: h.statusNormal,
     delayed: h.statusDelayed,
     incident: h.statusIncident,
+  };
+
+  const TILE_HUE: Record<string, string> = {
+    indigo: "bg-soft-indigo text-ink-indigo",
+    teal: "bg-soft-teal text-ink-teal",
+    amber: "bg-soft-amber text-ink-amber",
+    rose: "bg-soft-rose text-ink-rose",
+    sky: "bg-soft-sky text-ink-sky",
+    violet: "bg-soft-violet text-ink-violet",
   };
 
   const viewToggle = (
@@ -194,8 +205,8 @@ export function HomeDashboard({
           type="button"
           aria-pressed={panel === key}
           onClick={() => setPanel(key)}
-          className={`min-h-11 cursor-pointer rounded-full px-3 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${
-            panel === key ? "bg-white text-[#1e1b4b]" : "text-white/90 hover:bg-white/10"
+          className={`min-h-11 cursor-pointer whitespace-nowrap rounded-full px-3 text-xs font-semibold press focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${
+            panel === key ? "bg-white text-[#312e81]" : "text-white/90 hover:bg-white/10"
           }`}
         >
           {key === "status" ? h.toggleStatus : h.toggleMap}
@@ -205,11 +216,16 @@ export function HomeDashboard({
   );
 
   return (
-    <AppShell width="lg" headerRight={viewToggle}>
+    <AppShell
+      width="lg"
+      headerRight={viewToggle}
+      title={hydrated ? h[greetingKey(new Date().getHours())] : undefined}
+      subtitle={hydrated ? h.greetSub : undefined}
+    >
       <button
         type="button"
         onClick={onPlan}
-        className="flex min-h-14 w-full cursor-pointer items-center gap-3 rounded-full border border-border bg-background px-5 text-left shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-shadow hover:shadow-[0_6px_20px_rgba(0,0,0,0.18)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        className="press flex min-h-14 w-full cursor-pointer items-center gap-3 rounded-full border border-border bg-background px-5 text-left shadow-[0_4px_16px_rgba(0,0,0,0.12)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.18)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" className="text-primary">
           <circle cx="9" cy="9" r="5.5" stroke="currentColor" strokeWidth="1.75" />
@@ -242,7 +258,6 @@ export function HomeDashboard({
           <ul className="divide-y divide-border">
             {LINES.map((line) => {
               const kind = statusKindOf(lineStatusByLine.get(line.id));
-              const style = STATUS_STYLE[kind];
               return (
                 <li key={line.id} className="flex min-h-11 items-center gap-3 px-4 py-2.5">
                   <span
@@ -251,10 +266,7 @@ export function HomeDashboard({
                     style={{ backgroundColor: line.color }}
                   />
                   <span className="flex-1 truncate text-sm font-medium text-foreground">{line.name}</span>
-                  <span className={`flex items-center gap-1.5 text-xs font-semibold ${style.text}`}>
-                    <span aria-hidden="true">{style.glyph}</span>
-                    {statusLabel[kind]}
-                  </span>
+                  <StatusChip kind={kind} label={statusLabel[kind]} />
                 </li>
               );
             })}
@@ -272,9 +284,11 @@ export function HomeDashboard({
             <li key={tile.href} className="shrink-0 snap-start">
               <Link
                 href={tile.href}
-                className="flex h-24 w-24 flex-col items-center justify-center gap-2 rounded-2xl bg-[var(--tile-bg)] px-1 text-center text-xs font-semibold text-[var(--tile-fg)] transition-transform hover:scale-[1.03] active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                className={`press flex h-28 w-24 flex-col items-center justify-center gap-2 rounded-2xl px-1 text-center text-xs font-semibold ${TILE_HUE[tile.hue]} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring`}
               >
-                {tile.icon && <IconBase>{tile.icon}</IconBase>}
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl tile-plate">
+                  <IconBase>{tile.icon}</IconBase>
+                </span>
                 <span className="line-clamp-2">{tile.label}</span>
               </Link>
             </li>
@@ -304,7 +318,7 @@ export function HomeDashboard({
             return (
               <li
                 key={station.name}
-                className="rounded-2xl border border-border bg-background p-4 shadow-sm"
+                className="rounded-2xl border border-border bg-surface-tint p-4 shadow-sm"
               >
                 <h3 className="text-base font-bold text-foreground">{station.name}</h3>
                 <p className="mb-2 text-xs text-foreground/70">
@@ -314,11 +328,10 @@ export function HomeDashboard({
                 <ul className="divide-y divide-border">
                   {lines.map((line) => {
                     const kind = statusKindOf(lineStatusByLine.get(line.id));
-                    const style = STATUS_STYLE[kind];
                     const terminus = line.stations[line.stations.length - 1];
                     return (
                       <li key={line.id} className="flex min-h-11 items-center gap-3 py-2">
-                        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-bold text-foreground">
+                        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-xs font-bold text-foreground">
                           <span
                             aria-hidden="true"
                             className="h-2.5 w-2.5 rounded-full"
@@ -329,10 +342,7 @@ export function HomeDashboard({
                         <span className="flex-1 truncate text-sm text-foreground/80">
                           {h.toward(terminus)}
                         </span>
-                        <span className={`flex shrink-0 items-center gap-1 text-xs font-semibold ${style.text}`}>
-                          <span aria-hidden="true">{style.glyph}</span>
-                          {statusLabel[kind]}
-                        </span>
+                        <StatusChip kind={kind} label={statusLabel[kind]} />
                       </li>
                     );
                   })}
