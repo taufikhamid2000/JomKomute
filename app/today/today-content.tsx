@@ -9,6 +9,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
+import { EmptyIllustration } from "@/components/empty-state";
 import { useToast } from "@/components/toast-provider";
 import { lineById } from "@/lib/lines";
 import { computeNextRoute } from "@/lib/next-route";
@@ -103,11 +104,12 @@ export function TodayContent() {
         <div className="animate-page-in flex w-full flex-col gap-4">
           <Link
             href="/new"
-            className="flex flex-col gap-2 rounded-2xl border border-dashed border-border p-5 transition-colors hover:border-primary/40"
+            className="press flex flex-col items-center gap-2 rounded-3xl border border-dashed border-border bg-surface-tint p-6 text-center hover:border-primary/40"
           >
-            <span className="text-sm font-semibold text-foreground">{t.todayPage.noRoutesTitle}</span>
-            <span className="text-sm text-foreground/60">{t.todayPage.noRoutesDescription}</span>
-            <span className="mt-1 w-fit rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground">
+            <EmptyIllustration />
+            <span className="text-base font-semibold text-foreground">{t.todayPage.noRoutesTitle}</span>
+            <span className="text-sm text-foreground/70">{t.todayPage.noRoutesDescription}</span>
+            <span className="mt-1 inline-flex min-h-11 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground">
               {t.todayPage.noRoutesCta}
             </span>
           </Link>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { AuthBrandingPanel } from "@/components/auth-branding-panel";
-import { LogoMark } from "@/components/logo-mark";
+import { Logo } from "@/components/logo-mark";
 import { PasswordInput } from "@/components/password-input";
 import { Spinner } from "@/components/spinner";
 import { supabaseBrowser } from "@/lib/supabase-client";
@@ -40,9 +40,8 @@ export function SignupForm() {
       <AuthBrandingPanel />
 
       <div className="flex flex-1 flex-col items-center justify-center gap-6 bg-muted px-4">
-        <Link href="/" className="flex items-center gap-2 md:hidden">
-          <LogoMark size={28} />
-          <span className="text-lg font-semibold text-foreground">JomKomute</span>
+        <Link href="/" aria-label="JomKomute" className="md:hidden">
+          <Logo size={36} wordmarkClassName="text-2xl" />
         </Link>
 
         <div className="w-full max-w-sm rounded-2xl border border-border bg-background p-8 animate-page-in">
