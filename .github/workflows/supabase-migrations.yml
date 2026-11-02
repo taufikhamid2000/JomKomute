@@ -54,7 +54,7 @@ jobs:
           fi
           for f in $files; do
             echo "Applying $f"
-            supabase db query --linked -f "$f"
+            supabase db query --linked --yes -f "$f"
           done
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
