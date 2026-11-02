@@ -7,6 +7,7 @@
 //
 // Never import this from client components — SUPABASE_SERVICE_ROLE_KEY
 // must never reach the browser bundle.
+import "server-only";
 import { createClient } from "@supabase/supabase-js";
 
 export function supabaseServer() {

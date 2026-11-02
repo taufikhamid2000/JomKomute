@@ -10,11 +10,14 @@
 // suppressed=true for an implausible spike pending review.
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase-server";
+import { isValidDate, isValidStation, rateLimit } from "@/lib/api-guard";
 
 const PUBLICATION_FLOOR = 20;
 const DEFAULT_WINDOW_MINUTES = 30;
 
 export async function GET(request: NextRequest) {
+  const limited = rateLimit(request, "pings-read", 120);
+  if (limited) return limited;
   const { searchParams } = new URL(request.url);
   const station = searchParams.get("station");
   const date = searchParams.get("date");
@@ -26,6 +29,10 @@ export async function GET(request: NextRequest) {
       { error: "station, date, and bucket query params are required" },
       { status: 400 },
     );
+  }
+
+  if (!isValidStation(station) || !isValidDate(date)) {
+    return NextResponse.json({ error: "Invalid station or date" }, { status: 400 });
   }
 
   const bucket = Number(bucketParam);

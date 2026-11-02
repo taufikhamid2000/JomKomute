@@ -35,6 +35,7 @@ import webpush from "web-push";
 import { LINES } from "@/lib/lines";
 import { lineStatusesByLine } from "@/lib/line-status";
 import { supabaseServer } from "@/lib/supabase-server";
+import { isAllowedPushEndpoint } from "@/lib/api-guard";
 import type { ReportCategory, UserReport } from "@/lib/user-reports-client";
 
 type NotifiedRow = { line_id: string; level: string };
@@ -162,7 +163,9 @@ export async function GET(request: NextRequest) {
         : "Back to normal service.";
     const payload = JSON.stringify({ title, body, lineId: transition.lineId, url: "/line-status" });
 
-    const subscribers = ((subscriptionRows ?? []) as SubscriptionRow[]).filter((s) => s.line_ids.includes(transition.lineId));
+    const subscribers = ((subscriptionRows ?? []) as SubscriptionRow[]).filter(
+      (s) => isAllowedPushEndpoint(s.endpoint) && s.line_ids.includes(transition.lineId),
+    );
 
     await Promise.all(
       subscribers.map(async (sub) => {

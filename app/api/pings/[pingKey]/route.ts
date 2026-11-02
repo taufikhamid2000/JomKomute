@@ -9,6 +9,10 @@
 // since it's a read-time behavior.
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase-server";
+import { isKnownLineId, isValidDate, isValidStation, rateLimit, readJson } from "@/lib/api-guard";
+
+const PING_KEY_RE = /^[0-9a-f]{64}$/; // sha256 hex, see lib/pings-client.ts
+const MAX_BODY_BYTES = 1024;
 
 type PingBody = {
   station: string;
@@ -21,15 +25,13 @@ function isValidBody(body: unknown): body is PingBody {
   if (!body || typeof body !== "object") return false;
   const b = body as Record<string, unknown>;
   return (
-    typeof b.station === "string" &&
-    b.station.length > 0 &&
-    typeof b.tripDate === "string" &&
-    /^\d{4}-\d{2}-\d{2}$/.test(b.tripDate) &&
+    isValidStation(b.station) &&
+    isValidDate(b.tripDate) &&
     typeof b.timeBucket === "number" &&
     Number.isFinite(b.timeBucket) &&
     b.timeBucket >= 0 &&
     b.timeBucket < 24 * 60 &&
-    (b.lineId === undefined || typeof b.lineId === "string")
+    (b.lineId === undefined || isKnownLineId(b.lineId))
   );
 }
 
@@ -42,16 +44,15 @@ function roundToBucket(minutes: number): number {
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ pingKey: string }> }) {
   const { pingKey } = await params;
-  if (!pingKey) {
-    return NextResponse.json({ error: "Missing pingKey" }, { status: 400 });
+  if (!pingKey || !PING_KEY_RE.test(pingKey)) {
+    return NextResponse.json({ error: "Invalid pingKey" }, { status: 400 });
   }
+  const limited = rateLimit(request, "pings-write", 30);
+  if (limited) return limited;
 
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
+  const parsed = await readJson(request, MAX_BODY_BYTES);
+  if (!parsed.ok) return parsed.res;
+  const body = parsed.body;
 
   if (!isValidBody(body)) {
     return NextResponse.json(
@@ -80,11 +81,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   return new NextResponse(null, { status: 204 });
 }
 
-export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ pingKey: string }> }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ pingKey: string }> }) {
   const { pingKey } = await params;
-  if (!pingKey) {
-    return NextResponse.json({ error: "Missing pingKey" }, { status: 400 });
+  if (!pingKey || !PING_KEY_RE.test(pingKey)) {
+    return NextResponse.json({ error: "Invalid pingKey" }, { status: 400 });
   }
+  const limited = rateLimit(request, "pings-write", 30);
+  if (limited) return limited;
 
   const supabase = supabaseServer();
   // No-op if it doesn't exist, per openapi.yaml — delete() doesn't error

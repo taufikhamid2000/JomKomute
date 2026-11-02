@@ -4,17 +4,17 @@
 // app/api/pings/[pingKey]/route.ts's DELETE.
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase-server";
+import { isAllowedPushEndpoint, rateLimit, readJson } from "@/lib/api-guard";
 
 export async function POST(request: NextRequest) {
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
+  const limited = rateLimit(request, "push-unsubscribe", 10);
+  if (limited) return limited;
+  const parsed = await readJson(request, 4096);
+  if (!parsed.ok) return parsed.res;
+  const body = parsed.body;
 
   const endpoint = (body as { endpoint?: unknown })?.endpoint;
-  if (typeof endpoint !== "string" || endpoint.length === 0) {
+  if (!isAllowedPushEndpoint(endpoint)) {
     return NextResponse.json({ error: "Body must include endpoint" }, { status: 400 });
   }
 

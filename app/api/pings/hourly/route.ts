@@ -10,18 +10,25 @@
 // plausibility check).
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase-server";
+import { isValidDate, isValidStation, rateLimit } from "@/lib/api-guard";
 
 const PUBLICATION_FLOOR = 20;
 const MINUTES_PER_HOUR = 60;
 const HOURS_PER_DAY = 24;
 
 export async function GET(request: NextRequest) {
+  const limited = rateLimit(request, "pings-read", 120);
+  if (limited) return limited;
   const { searchParams } = new URL(request.url);
   const station = searchParams.get("station");
   const date = searchParams.get("date");
 
   if (!station || !date) {
     return NextResponse.json({ error: "station and date query params are required" }, { status: 400 });
+  }
+
+  if (!isValidStation(station) || !isValidDate(date)) {
+    return NextResponse.json({ error: "Invalid station or date" }, { status: 400 });
   }
 
   const supabase = supabaseServer();
