@@ -16,7 +16,7 @@ const PUBLICATION_FLOOR = 20;
 const DEFAULT_WINDOW_MINUTES = 30;
 
 export async function GET(request: NextRequest) {
-  const limited = rateLimit(request, "pings-read", 120);
+  const limited = await rateLimit(request, "pings-read", 120);
   if (limited) return limited;
   const { searchParams } = new URL(request.url);
   const station = searchParams.get("station");

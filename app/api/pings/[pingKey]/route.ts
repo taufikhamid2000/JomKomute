@@ -47,7 +47,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   if (!pingKey || !PING_KEY_RE.test(pingKey)) {
     return NextResponse.json({ error: "Invalid pingKey" }, { status: 400 });
   }
-  const limited = rateLimit(request, "pings-write", 30);
+  const limited = await rateLimit(request, "pings-write", 30);
   if (limited) return limited;
 
   const parsed = await readJson(request, MAX_BODY_BYTES);
@@ -86,7 +86,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   if (!pingKey || !PING_KEY_RE.test(pingKey)) {
     return NextResponse.json({ error: "Invalid pingKey" }, { status: 400 });
   }
-  const limited = rateLimit(request, "pings-write", 30);
+  const limited = await rateLimit(request, "pings-write", 30);
   if (limited) return limited;
 
   const supabase = supabaseServer();

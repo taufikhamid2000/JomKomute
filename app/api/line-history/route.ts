@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { LINES } from "@/lib/lines";
 import { supabaseServer } from "@/lib/supabase-server";
+import { rateLimit } from "@/lib/api-guard";
 
 const MAX_DAYS = 180;
 const DEFAULT_DAYS = 30;
@@ -22,6 +23,8 @@ function dateKey(iso: string): string {
 }
 
 export async function GET(request: NextRequest) {
+  const limited = await rateLimit(request, "line-history", 60);
+  if (limited) return limited;
   const { searchParams } = new URL(request.url);
   const daysParam = searchParams.get("days");
   const days = daysParam !== null ? Math.min(MAX_DAYS, Math.max(1, Number(daysParam) || DEFAULT_DAYS)) : DEFAULT_DAYS;

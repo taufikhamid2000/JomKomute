@@ -1,43 +1,26 @@
 import "server-only";
 import { NextRequest, NextResponse } from "next/server";
 import { LINES } from "@/lib/stations";
+import { checkRateLimit } from "@/lib/rate-limit";
 
-// Best-effort per-IP limiter. In-memory, so it is per serverless instance:
-// it blunts bursts and scripted abuse but is not a global quota.
-const buckets = new Map<string, { count: number; resetAt: number }>();
-const MAX_BUCKETS = 10_000;
+export { clientIp } from "@/lib/rate-limit";
 
-export function clientIp(request: NextRequest): string {
-  const fwd = request.headers.get("x-forwarded-for");
-  const first = fwd?.split(",")[0]?.trim();
-  return first || request.headers.get("x-real-ip") || "unknown";
-}
-
-export function rateLimit(
+// Per-IP fixed-window limiter. Durable (Postgres, jomkomute.rate_limit_hit)
+// so it survives cold starts and is shared across instances; if the store
+// errors or times out it falls back to a per-instance in-memory limit
+// (fail safe: neither open nor hard-down). See lib/rate-limit.ts.
+export async function rateLimit(
   request: NextRequest,
   scope: string,
   limit: number,
   windowMs = 60_000,
-): NextResponse | null {
-  const now = Date.now();
-  if (buckets.size > MAX_BUCKETS) {
-    for (const [k, v] of buckets) if (v.resetAt <= now) buckets.delete(k);
-    if (buckets.size > MAX_BUCKETS) buckets.clear();
-  }
-  const key = `${scope}:${clientIp(request)}`;
-  const b = buckets.get(key);
-  if (!b || b.resetAt <= now) {
-    buckets.set(key, { count: 1, resetAt: now + windowMs });
-    return null;
-  }
-  b.count += 1;
-  if (b.count > limit) {
-    return NextResponse.json(
-      { error: "Too many requests" },
-      { status: 429, headers: { "Retry-After": String(Math.ceil((b.resetAt - now) / 1000)) } },
-    );
-  }
-  return null;
+): Promise<NextResponse | null> {
+  const result = await checkRateLimit(request, scope, limit, windowMs);
+  if (result.allowed) return null;
+  return NextResponse.json(
+    { error: "Too many requests" },
+    { status: 429, headers: { "Retry-After": String(result.retryAfter) } },
+  );
 }
 
 // Reads and parses a JSON body, refusing anything over maxBytes.

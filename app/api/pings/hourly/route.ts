@@ -17,7 +17,7 @@ const MINUTES_PER_HOUR = 60;
 const HOURS_PER_DAY = 24;
 
 export async function GET(request: NextRequest) {
-  const limited = rateLimit(request, "pings-read", 120);
+  const limited = await rateLimit(request, "pings-read", 120);
   if (limited) return limited;
   const { searchParams } = new URL(request.url);
   const station = searchParams.get("station");

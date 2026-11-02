@@ -38,7 +38,7 @@ function isValidBody(body: unknown): body is SubscribeBody {
 }
 
 export async function POST(request: NextRequest) {
-  const limited = rateLimit(request, "push-subscribe", 10);
+  const limited = await rateLimit(request, "push-subscribe", 10);
   if (limited) return limited;
   const parsed = await readJson(request, MAX_BODY_BYTES);
   if (!parsed.ok) return parsed.res;

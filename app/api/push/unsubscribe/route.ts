@@ -7,7 +7,7 @@ import { supabaseServer } from "@/lib/supabase-server";
 import { isAllowedPushEndpoint, rateLimit, readJson } from "@/lib/api-guard";
 
 export async function POST(request: NextRequest) {
-  const limited = rateLimit(request, "push-unsubscribe", 10);
+  const limited = await rateLimit(request, "push-unsubscribe", 10);
   if (limited) return limited;
   const parsed = await readJson(request, 4096);
   if (!parsed.ok) return parsed.res;
