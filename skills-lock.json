@@ -7,6 +7,13 @@
       "sourceType": "github",
       "skillPath": "skills/frontend-design/SKILL.md",
       "computedHash": "83485963700bcf11d5bf78118facb301676b69d918fee2e45a95e7f1a2840f6c"
+    },
+    "appllama-app-design-skill": {
+      "source": "appllama/appllama-skills",
+      "commit": "dd5caaec3d5d50ad7fc0324da238119c6b7c3707",
+      "sourceType": "github",
+      "skillPath": "skills/appllama-app-design-skill/SKILL.md",
+      "computedHash": "72e277fb3fd2baa1429824132269715feac74ab8cabbf7067a0fb1cddf666ffa"
     }
   }
 }
